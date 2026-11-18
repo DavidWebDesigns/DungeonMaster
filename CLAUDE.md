@@ -6,7 +6,8 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 
 - Fase 0 (cimientos): terminada. Puerta 0 cumplida.
 - Fase 1 (núcleo de la simulación): terminada. Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`).
-- Siguiente: fase 2, cliente gris jugable en local (docs/PLAN.md, sección 8). Propón archivos y pruebas antes de escribir código.
+- Fase 2 (cliente gris jugable en local): implementada y probada (`pnpm dev`, `pnpm e2e`). Falta el playtest humano de sensaciones para cumplir la Puerta 2.
+- Siguiente: playtest de la fase 2 y, después, fase 3 (criaturas vivas). Propón archivos y pruebas antes de escribir código.
 
 ## Reglas de arquitectura
 
@@ -43,7 +44,8 @@ pnpm lint           ESLint
 pnpm format         Prettier
 pnpm validate-data  valida /data contra los esquemas
 pnpm gen-map        regenera data/mvp/maps/map-4p-01.json
-pnpm dev            cliente + servidor en local (fase 2)
+pnpm dev            cliente en local con el sandbox (fase 2); el servidor llega en la fase 5
+pnpm e2e            pruebas de navegador con Playwright (cliente en pnpm dev)
 pnpm sim            partida headless de bots (fase 4)
 pnpm balance        informe de balance (fase 4)
 ```

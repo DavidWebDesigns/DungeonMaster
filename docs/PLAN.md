@@ -11,7 +11,7 @@
 |---|---|
 | Fase 0: cimientos | **Terminada.** Puerta 0 cumplida y reconfirmada. |
 | Fase 1: núcleo de la simulación | **Terminada.** Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`). |
-| Fase 2: cliente gris jugable en local | **Siguiente.** Falta proponer archivos y pruebas y que se confirmen. |
+| Fase 2: cliente gris jugable en local | **Implementada.** Puerta 2 técnica cumplida (60 fps medidos con WebGL por software, tick de 0,02 ms). **Falta el playtest humano de sensaciones.** |
 | Fases 3 a 6 | Pendientes. |
 
 ### Qué dejó hecho la fase 0
@@ -38,6 +38,17 @@
 - **2026-11-18:** se borraron los datos locales de la app de Claude y con ellos el historial de las sesiones anteriores. El proyecto no se perdió, pero solo queda lo que está escrito en este archivo, `CLAUDE.md` y `docs/DUDAS.md`.
 - La carpeta del proyecto **no es un repositorio git** (no hay `.git`): no hay historial de commits y la CI no puede correr.
 - No había `node_modules`. La reinstalación se empezó y se detuvo a mitad.
+
+### Qué dejó hecho la fase 2
+
+- **Cliente** en `packages/client` con Vite, Babylon.js y Preact. `pnpm dev` abre el juego; `pnpm e2e` corre las pruebas de navegador.
+- **Sandbox** (`src/sandbox`): la simulación de `shared` dentro del navegador, un jugador, reloj inyectado y recuperación limitada.
+- **Render** (`src/render`): cámara isométrica ortográfica (rotación en pasos de 90°, zoom, WASD y bordes), terreno con una instancia por tile, Imps interpolados, Corazón, Portal, montones de oro y placeholders de las 5 salas.
+- **Entrada** (`src/input`): arrastrar para excavar, reclamar y reforzar; fantasma de sala con coste y color; vender; Crear Imp; atajos.
+- **HUD** (`src/ui`): oro con capacidad, maná con regeneración, Imps, reloj, herramientas, salas, hechizo y avisos del consejero.
+- **Game feel** (`src/feel`): tierra al excavar, monedas al minar y depositar, polvo al construir, sonidos con WebAudio.
+- **En `shared`:** `previewCommand` (validación de solo lectura para los fantasmas) y `work.autoClaimRadius` (fase 1).
+- Decisiones en `docs/DUDAS.md` (23 a 31). Controles: ver el pie de pantalla del juego.
 
 ### Verificado (2026-11-18)
 
