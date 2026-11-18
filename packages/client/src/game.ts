@@ -1,7 +1,7 @@
 /**
  * Une el sandbox (simulación), el motor gráfico y la cámara en un bucle de dibujo a la frecuencia de la pantalla.
  */
-import type { DataSet } from '@dm/shared';
+import type { DataSet, SimEvent } from '@dm/shared';
 import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
 import {
   centerOn,
@@ -16,6 +16,9 @@ import { keyAction } from './input/keymap';
 import { errorMessage } from './input/messages';
 import { render as renderUi } from 'preact';
 import { Hud } from './ui/Hud';
+import { deriveEffects, takeSnapshot, type FeelSnapshot, type SoundName } from './feel/effects';
+import { ParticleSim } from './feel/particleSim';
+import { AudioEngine } from './feel/sounds';
 import { buildHudModel } from './ui/hudModel';
 import { treasuryCapacity, rulesOf } from '@dm/shared';
 import { Renderer } from './render/renderer';
@@ -31,6 +34,9 @@ export class Game {
   /** FPS medidos en el último segundo. */
   fps = 0;
   private readonly dom: DomInput;
+  readonly particles = new ParticleSim();
+  readonly audio = new AudioEngine();
+  private feelSnapshot: FeelSnapshot;
   private readonly hudHost: HTMLElement;
   private hudKey = '';
   private wasFull = false;
@@ -46,6 +52,7 @@ export class Game {
     seed: number,
   ) {
     this.sandbox = new Sandbox(data, seed);
+    this.feelSnapshot = takeSnapshot(this.sandbox.state);
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block;outline:none';
     host.appendChild(canvas);
@@ -67,7 +74,10 @@ export class Game {
         send: (cmd) => this.sandbox.send(cmd),
       },
       (_cmd, res) => {
-        if (!res.ok) this.notice = { text: errorMessage(res.error), tick: this.sandbox.state.tick };
+        if (!res.ok) {
+          this.notice = { text: errorMessage(res.error), tick: this.sandbox.state.tick };
+          this.playSound('error', 0.8);
+        }
       },
     );
     const map = data.map;
@@ -75,7 +85,11 @@ export class Game {
       pick: (nx, ny) =>
         pickTile(this.camera, nx, ny, (t) => (this.renderer.tileHeight(t.x, t.y) ?? 0) > 0.9, map),
       move: (t) => this.input.pointerMove(t),
-      down: (t, button, shift) => this.input.pointerDown(t, button, shift),
+      down: (t, button, shift) => {
+        this.audio.unlock();
+        this.playSound('click', 1);
+        this.input.pointerDown(t, button, shift);
+      },
       up: (t) => this.input.pointerUp(t),
       wheel: (dy) => (this.camera = applyWheel(this.camera, dy)),
       key: (k) => this.onKey(k),
@@ -92,7 +106,7 @@ export class Game {
       if (!this.running) return;
       const dt = this.lastMs === 0 ? 0 : nowMs - this.lastMs;
       this.lastMs = nowMs;
-      this.sandbox.advance(dt);
+      this.feel(this.sandbox.advance(dt), dt / 1000);
       this.camera = updateCamera(
         { ...this.camera, aspect: this.renderer.aspect },
         this.dom.cameraInput(),
@@ -101,11 +115,43 @@ export class Game {
       );
       this.input.pump();
       this.updateHud();
-      this.renderer.render(this.sandbox, this.camera, nowMs / 1000, this.input.preview());
+      this.renderer.render(
+        this.sandbox,
+        this.camera,
+        nowMs / 1000,
+        this.input.preview(),
+        this.particles,
+      );
       this.countFps(nowMs);
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+  }
+
+  /** Efectos de la simulación: partículas y sonidos, y avance de las partículas. */
+  private feel(events: SimEvent[], dtSeconds: number): void {
+    if (this.sandbox.state.tick !== this.lastFeelTick) {
+      const effects = deriveEffects(
+        this.feelSnapshot,
+        this.sandbox.state,
+        this.data,
+        events,
+        LOCAL_PLAYER,
+      );
+      for (const e of effects) {
+        if (e.type === 'burst') this.particles.burst(e);
+        else this.playSound(e.sound, e.volume);
+      }
+      this.feelSnapshot = takeSnapshot(this.sandbox.state);
+      this.lastFeelTick = this.sandbox.state.tick;
+    }
+    this.particles.step(dtSeconds);
+  }
+
+  private lastFeelTick = -1;
+
+  private playSound(sound: SoundName, volume: number): void {
+    this.audio.play(sound, volume);
   }
 
   /** Repinta el HUD solo cuando algo que se ve ha cambiado (cada tick, o al cambiar de herramienta). */
@@ -152,6 +198,7 @@ export class Game {
   }
 
   private onKey(key: string): void {
+    this.audio.unlock();
     const action = keyAction(key, this.data);
     this.camera = applyRotateKey(this.camera, key);
     if (!action) return;
