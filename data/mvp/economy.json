@@ -1,0 +1,19 @@
+{
+  "paydayIntervalSeconds": 120,
+  "impCarryGold": 300,
+  "miningGoldPerSecond": 100,
+  "hunger": {
+    "max": 100,
+    "risePerSecond": 0.3889,
+    "eatThreshold": 70,
+    "starvationHpFractionPerSecond": 0.01
+  },
+  "sleep": {
+    "max": 100,
+    "risePerSecond": 0.3333,
+    "sleepThreshold": 80,
+    "restSeconds": 20,
+    "lairHealFractionPerSecond": 0.01
+  },
+  "wanderRadius": 6
+}

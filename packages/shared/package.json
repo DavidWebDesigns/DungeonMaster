@@ -1,0 +1,14 @@
+{
+  "name": "@dm/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Simulación pura del juego: esquemas, fórmulas y sistemas. Sin DOM, sin Node, sin motor gráfico.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node/index.ts"
+  },
+  "dependencies": {
+    "zod": "4.6.7"
+  }
+}

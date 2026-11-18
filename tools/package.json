@@ -1,0 +1,10 @@
+{
+  "name": "@dm/tools",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Herramientas de línea de comandos: validate-data, gen-map y, más adelante, sim y balance-report.",
+  "dependencies": {
+    "@dm/shared": "workspace:*"
+  }
+}

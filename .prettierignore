@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+pnpm-lock.yaml
+docs/PLAN.md
+PLAN_DUNGEON_MASTER.md
+data/mvp/maps/*.json

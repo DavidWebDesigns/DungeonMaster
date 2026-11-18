@@ -1,0 +1,9 @@
+{
+  "maxLevel": 5,
+  "levelMultiplierStep": 0.35,
+  "scalesWithLevel": ["hp", "damage", "wage"],
+  "xpToNextLevel": [100, 250, 450, 700],
+  "xpPerHit": 1,
+  "xpPerKillPerEnemyLevel": 20,
+  "noXpOnDeath": ["imp"]
+}

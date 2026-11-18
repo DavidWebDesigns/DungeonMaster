@@ -1,0 +1,52 @@
+{
+  "tickRate": 10,
+  "map": { "id": "map-4p-01", "width": 64, "height": 64 },
+  "players": {
+    "min": 2,
+    "max": 4,
+    "cornersByPlayerCount": {
+      "2": [0, 2],
+      "3": [0, 1, 2],
+      "4": [0, 1, 2, 3]
+    }
+  },
+  "match": {
+    "maxMinutes": 45,
+    "countdownSeconds": 10,
+    "endedCloseSeconds": 60,
+    "roomCodeLength": 6
+  },
+  "startingGold": 5000,
+  "mana": {
+    "max": 5000,
+    "start": 2000,
+    "regenBasePerSecond": 4,
+    "regenPerClaimedTilePerSecond": 0.1,
+    "regenCapPerSecond": 25
+  },
+  "imps": { "start": 4, "max": 12 },
+  "maxCreaturesPerPlayer": 20,
+  "heart": { "hp": 8000, "size": 3 },
+  "roomTileHp": 1000,
+  "portal": { "attractIntervalSeconds": 30, "reservePerPortal": 15 },
+  "work": {
+    "claimSeconds": 1.5,
+    "enemyClaimSeconds": 3,
+    "enemyClaimBlockRadius": 3,
+    "reinforceSeconds": 4
+  },
+  "connection": { "reconnectSeconds": 120, "inactivitySurrenderSeconds": 300 },
+  "commands": { "maxPerSecond": 30, "maxTilesPerCommand": 64 },
+  "hand": { "capacity": 8 },
+  "slap": { "cooldownSeconds": 1, "workSpeedBonus": 0.25, "durationSeconds": 10 },
+  "vision": { "creatureRadius": 6, "heartRadius": 8, "ownTileRadius": 2 },
+  "pathfinding": { "maxPerTickPerPlayer": 8, "straightCost": 1, "diagonalCost": 1.41 },
+  "combat": {
+    "aggroRadius": 6,
+    "meleeReach": 1.2,
+    "damageRandomMin": 0.9,
+    "damageRandomMax": 1.1,
+    "fleeHpFraction": 0.25
+  },
+  "tiebreak": ["heartHpFraction", "creaturePower", "gold"]
+}

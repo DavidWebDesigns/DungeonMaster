@@ -1,0 +1,6 @@
+# Finales de línea LF en todo el repo (evita diferencias entre Windows y Linux/CI)
+* text=auto eol=lf
+*.glb binary
+*.png binary
+*.jpg binary
+*.ktx2 binary

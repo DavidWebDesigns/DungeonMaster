@@ -1,0 +1,110 @@
+[
+  {
+    "id": "imp",
+    "name": "Imp",
+    "modelId": "creature_imp",
+    "tier": "common",
+    "jobClass": "worker",
+    "fightStyle": "none",
+    "base": {
+      "hp": 600,
+      "damage": 15,
+      "attackInterval": 1.0,
+      "range": 1,
+      "speed": 2.5,
+      "wage": 0,
+      "lairTiles": 0
+    },
+    "needs": { "eats": false, "sleeps": true, "paid": false, "hasMood": false },
+    "attraction": null,
+    "enemies": [],
+    "flags": ["worker", "sleepsOnAnyOwnTile"]
+  },
+  {
+    "id": "goblin",
+    "name": "Goblin",
+    "modelId": "creature_goblin",
+    "tier": "common",
+    "jobClass": "fighter",
+    "fightStyle": "flanker",
+    "base": {
+      "hp": 1500,
+      "damage": 60,
+      "attackInterval": 1.0,
+      "range": 1,
+      "speed": 2.0,
+      "wage": 100,
+      "lairTiles": 1
+    },
+    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
+    "attraction": { "requires": [{ "room": "lair" }], "attractWeight": 4 },
+    "enemies": [],
+    "flags": []
+  },
+  {
+    "id": "troll",
+    "name": "Troll",
+    "modelId": "creature_troll",
+    "tier": "common",
+    "jobClass": "worker",
+    "fightStyle": "blocker",
+    "base": {
+      "hp": 2500,
+      "damage": 90,
+      "attackInterval": 1.2,
+      "range": 1,
+      "speed": 1.6,
+      "wage": 150,
+      "lairTiles": 1
+    },
+    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
+    "attraction": { "requires": [{ "room": "trainingRoom" }], "attractWeight": 3 },
+    "enemies": [],
+    "flags": []
+  },
+  {
+    "id": "warlock",
+    "name": "Warlock",
+    "modelId": "creature_warlock",
+    "tier": "common",
+    "jobClass": "thinker",
+    "fightStyle": "support",
+    "base": {
+      "hp": 1000,
+      "damage": 80,
+      "attackInterval": 1.5,
+      "range": 5,
+      "speed": 1.8,
+      "wage": 200,
+      "lairTiles": 1
+    },
+    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
+    "attraction": { "requires": [{ "room": "library" }], "attractWeight": 3 },
+    "enemies": [],
+    "flags": ["ranged"]
+  },
+  {
+    "id": "bileDemon",
+    "name": "Demonio de bilis",
+    "modelId": "creature_bile_demon",
+    "tier": "common",
+    "jobClass": "fighter",
+    "fightStyle": "blocker",
+    "base": {
+      "hp": 4000,
+      "damage": 120,
+      "attackInterval": 1.5,
+      "range": 1,
+      "speed": 1.2,
+      "wage": 300,
+      "lairTiles": 2
+    },
+    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
+    "attraction": {
+      "requires": [{ "room": "hatchery" }, { "room": "trainingRoom" }],
+      "attractWeight": 2
+    },
+    "enemies": [],
+    "flags": []
+  }
+]

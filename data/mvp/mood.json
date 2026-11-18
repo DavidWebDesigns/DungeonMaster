@@ -1,0 +1,77 @@
+{
+  "min": 0,
+  "max": 100,
+  "start": 60,
+  "baseline": 50,
+  "approachRatePerSecond": 0.1,
+  "needs": {
+    "wage": { "weight": 20, "decayPerSecond": 0.005 },
+    "lair": { "weight": 15 },
+    "food": { "weight": 15 }
+  },
+  "slapMoodPenalty": 3,
+  "angryIgnoreOrderChance": 0.3,
+  "furiousLeaveSeconds": 30,
+  "bands": [
+    {
+      "id": "radiant",
+      "name": "Radiante",
+      "min": 90,
+      "max": 100,
+      "damageMod": 0.15,
+      "workSpeedMod": 0.1,
+      "xpMod": 0.1,
+      "behavior": "normal"
+    },
+    {
+      "id": "happy",
+      "name": "Contento",
+      "min": 65,
+      "max": 89,
+      "damageMod": 0.05,
+      "workSpeedMod": 0.05,
+      "xpMod": 0.05,
+      "behavior": "normal"
+    },
+    {
+      "id": "neutral",
+      "name": "Neutral",
+      "min": 40,
+      "max": 64,
+      "damageMod": 0,
+      "workSpeedMod": 0,
+      "xpMod": 0,
+      "behavior": "normal"
+    },
+    {
+      "id": "unhappy",
+      "name": "Descontento",
+      "min": 20,
+      "max": 39,
+      "damageMod": -0.1,
+      "workSpeedMod": -0.15,
+      "xpMod": -0.1,
+      "behavior": "complains"
+    },
+    {
+      "id": "angry",
+      "name": "Enfadado",
+      "min": 6,
+      "max": 19,
+      "damageMod": -0.25,
+      "workSpeedMod": -0.35,
+      "xpMod": -0.25,
+      "behavior": "headsToPortal"
+    },
+    {
+      "id": "furious",
+      "name": "Furioso",
+      "min": 0,
+      "max": 5,
+      "damageMod": -0.4,
+      "workSpeedMod": null,
+      "xpMod": -1,
+      "behavior": "leaves"
+    }
+  ]
+}

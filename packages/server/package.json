@@ -1,0 +1,13 @@
+{
+  "name": "@dm/server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Servidor autoritativo (Colyseus). Se implementa en la fase 5.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@dm/shared": "workspace:*"
+  }
+}

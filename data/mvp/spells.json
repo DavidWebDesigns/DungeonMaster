@@ -1,0 +1,59 @@
+[
+  {
+    "id": "createImp",
+    "name": "Crear Imp",
+    "mana": 300,
+    "manaPerExtraImp": 50,
+    "cooldownSeconds": 2,
+    "target": "ownClaimedTile",
+    "effect": { "type": "spawnImp" },
+    "availableFromStart": true
+  },
+  {
+    "id": "callToArms",
+    "name": "Llamada a las armas",
+    "mana": 600,
+    "cooldownSeconds": 20,
+    "target": "visibleTile",
+    "effect": { "type": "rallyPoint", "durationSeconds": 20 },
+    "availableFromStart": true
+  },
+  {
+    "id": "haste",
+    "name": "Acelerar",
+    "mana": 300,
+    "cooldownSeconds": 10,
+    "target": "ownCreature",
+    "effect": {
+      "type": "haste",
+      "moveSpeedBonus": 0.5,
+      "attackSpeedBonus": 0.5,
+      "durationSeconds": 20
+    },
+    "availableFromStart": true
+  },
+  {
+    "id": "heal",
+    "name": "Curar",
+    "mana": 400,
+    "cooldownSeconds": 8,
+    "target": "ownCreature",
+    "effect": { "type": "heal", "maxHpFraction": 0.4, "overSeconds": 3 },
+    "availableFromStart": true
+  },
+  {
+    "id": "lightning",
+    "name": "Rayo",
+    "mana": 500,
+    "cooldownSeconds": 10,
+    "target": "visibleTile",
+    "effect": {
+      "type": "areaDamage",
+      "damage": 600,
+      "radius": 1.5,
+      "damagesHeart": false,
+      "damagesRooms": false
+    },
+    "availableFromStart": true
+  }
+]

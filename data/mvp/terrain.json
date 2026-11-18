@@ -1,0 +1,91 @@
+[
+  {
+    "id": "solidRock",
+    "name": "Roca sólida",
+    "char": "#",
+    "walkable": false,
+    "diggable": false,
+    "reinforceable": false,
+    "ownable": false,
+    "buildable": false
+  },
+  {
+    "id": "earth",
+    "name": "Tierra",
+    "char": ".",
+    "walkable": false,
+    "diggable": true,
+    "reinforceable": true,
+    "ownable": false,
+    "buildable": false,
+    "digSeconds": 2,
+    "becomesOnDig": "neutralFloor",
+    "becomesOnReinforce": "reinforcedWall"
+  },
+  {
+    "id": "reinforcedWall",
+    "name": "Muro reforzado",
+    "char": "R",
+    "walkable": false,
+    "diggable": true,
+    "reinforceable": false,
+    "ownable": true,
+    "buildable": false,
+    "digSeconds": 4,
+    "becomesOnDig": "neutralFloor"
+  },
+  {
+    "id": "goldVein",
+    "name": "Veta de oro",
+    "char": "g",
+    "walkable": false,
+    "diggable": true,
+    "reinforceable": false,
+    "ownable": false,
+    "buildable": false,
+    "digSeconds": 2,
+    "goldPerTile": 600,
+    "becomesOnDig": "neutralFloor"
+  },
+  {
+    "id": "neutralFloor",
+    "name": "Suelo sin reclamar",
+    "char": "_",
+    "walkable": true,
+    "diggable": false,
+    "reinforceable": false,
+    "ownable": false,
+    "buildable": false,
+    "becomesOnClaim": "claimedFloor"
+  },
+  {
+    "id": "claimedFloor",
+    "name": "Suelo reclamado",
+    "char": "c",
+    "walkable": true,
+    "diggable": false,
+    "reinforceable": false,
+    "ownable": true,
+    "buildable": true
+  },
+  {
+    "id": "water",
+    "name": "Agua",
+    "char": "w",
+    "walkable": false,
+    "diggable": false,
+    "reinforceable": false,
+    "ownable": false,
+    "buildable": false
+  },
+  {
+    "id": "lava",
+    "name": "Lava",
+    "char": "l",
+    "walkable": false,
+    "diggable": false,
+    "reinforceable": false,
+    "ownable": false,
+    "buildable": false
+  }
+]

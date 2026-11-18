@@ -1,0 +1,35 @@
+{
+  "name": "dungeon-master",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Dungeon Master: gestor de mazmorras multijugador para navegador",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "validate-data": "tsx tools/validate-data/index.ts",
+    "gen-map": "tsx tools/gen-map/index.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm validate-data && pnpm test",
+    "dev": "tsx tools/lib/not-yet.ts dev 2",
+    "sim": "tsx tools/lib/not-yet.ts sim 4",
+    "balance": "tsx tools/lib/not-yet.ts balance 4"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "22.20.5",
+    "eslint": "10.15.0",
+    "prettier": "3.10.1",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.1.1"
+  }
+}
