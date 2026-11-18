@@ -5,7 +5,9 @@ import { applyCommand } from './applyCommand';
 import { createMatch, type MatchConfig } from './createMatch';
 import { tileIndex } from './grid';
 import { step } from './step';
-import type { Command, CommandResult, MatchState, PlayerId } from './types';
+import { newCreature } from './portal';
+import { rulesOf } from './rules';
+import type { Command, CommandResult, Creature, MatchState, PlayerId } from './types';
 
 export function loadData(): DataSet {
   const r = parseDataSet(realRawData());
@@ -90,4 +92,41 @@ export function buildRooms(
     if (!res.ok) throw new Error(`no se pudo construir ${t}: ${res.error}`);
     step(state, data);
   }
+}
+
+/** Partida de 2 jugadores (jugador 1 en la esquina 0, jugador 2 en la 2) sin llegadas por el Portal. */
+export function duel(): { state: MatchState; data: DataSet } {
+  const m = matchAtCorner0(2);
+  m.data.global.portal.attractIntervalSeconds = 100000;
+  return m;
+}
+
+/** Añade una criatura ya hecha en una posición (en tiles, con decimales). */
+export function spawn(
+  state: MatchState,
+  data: DataSet,
+  owner: number,
+  type: string,
+  x: number,
+  y: number,
+  patch: Partial<Creature> = {},
+): Creature {
+  const c = newCreature(
+    state,
+    rulesOf(data),
+    owner,
+    type,
+    Math.floor(y) * state.width + Math.floor(x),
+  );
+  c.x = x;
+  c.y = y;
+  Object.assign(c, patch);
+  state.creatures.push(c);
+  return c;
+}
+
+/** Rectángulo de una sala inicial del jugador de la esquina dada (heart, portal o treasury). */
+export function baseRoom(data: DataSet, slot: number, type: 'heart' | 'portal' | 'treasury') {
+  const base = data.map.bases.find((b) => b.slot === slot)!;
+  return type === 'heart' ? base.heart : base.rooms.find((r) => r.type === type)!.rect;
 }

@@ -78,6 +78,10 @@ export const GlobalConfig = z.strictObject({
     damageRandomMin: PositiveNumber,
     damageRandomMax: PositiveNumber,
     fleeHpFraction: Fraction,
+    /** Una criatura que huyó a su cama vuelve a la acción al recuperar esta fracción de su vida. */
+    recoverHpFraction: Fraction,
+    /** Distancia (en tiles, al borde del tile) a la que una criatura puede golpear una sala o el Corazón enemigo. */
+    structureReach: PositiveNumber,
   }),
   tiebreak: z.array(z.enum(['heartHpFraction', 'creaturePower', 'gold'])).min(1),
 });

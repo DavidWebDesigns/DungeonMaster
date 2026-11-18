@@ -41,7 +41,7 @@ export function tickNeeds(state: MatchState, rules: Rules, events: SimEvent[]): 
       }
     }
     // Descansando en la cama se cura un 1 % por segundo.
-    if (c.goal === 'bed' && c.mode === 'acting') {
+    if ((c.goal === 'bed' || c.goal === 'flee') && c.mode === 'acting') {
       c.hp = Math.min(maxHp, c.hp + maxHp * economy.sleep.lairHealFractionPerSecond);
     }
     if (c.beds.length === 0) assignBed(state, rules, c);

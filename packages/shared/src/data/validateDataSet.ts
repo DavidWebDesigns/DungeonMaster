@@ -89,6 +89,12 @@ export function validateDataSet(d: DataSet): DataError[] {
     err(F.global, 'imps.start', 'los Imps iniciales superan el máximo');
   if (g.combat.damageRandomMin > g.combat.damageRandomMax)
     err(F.global, 'combat.damageRandomMin', 'damageRandomMin no puede superar damageRandomMax');
+  if (g.combat.recoverHpFraction <= g.combat.fleeHpFraction)
+    err(
+      F.global,
+      'combat.recoverHpFraction',
+      'debe ser mayor que fleeHpFraction (si no, una criatura que huye nunca recupera)',
+    );
   if (duplicates(g.tiebreak).length > 0)
     err(F.global, 'tiebreak', 'criterios de desempate repetidos');
 

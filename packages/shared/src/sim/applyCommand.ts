@@ -3,6 +3,9 @@ import { createImpCost, getPlayer, impCount } from './economy';
 import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
 import { stopCreature } from './behavior';
+import { isVisible } from './fog';
+import { castEffect } from './spells';
+import { eliminatePlayer } from './victory';
 import { buildRoomNow, getRoom, sellRoomNow } from './rooms';
 import { rulesOf, type Rules } from './rules';
 import { canClaim, canDig, canReinforce, isOwnGround, removeTask, setTask } from './tasks';
@@ -155,18 +158,37 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       return { ok: true, tiles: [i] };
     }
     case 'castSpell': {
-      if (typeof cmd.spell !== 'string' || !isPoint(cmd.target)) return fail('INVALID_COMMAND');
+      if (typeof cmd.spell !== 'string') return fail('INVALID_COMMAND');
       const spell = rules.spells[cmd.spell];
-      // En la fase 1 solo existe Crear Imp; el resto de hechizos necesita criaturas y combate.
-      if (!spell || spell.effect.type !== 'spawnImp') return fail('INVALID_COMMAND');
+      if (!spell) return fail('INVALID_COMMAND');
       if (state.tick < (player.cooldowns[spell.id] ?? 0)) return fail('COOLDOWN');
-      if (!inBounds(state, cmd.target.x, cmd.target.y)) return fail('INVALID_TARGET');
-      const i = tileIndex(state, cmd.target.x, cmd.target.y);
-      if (!isOwnGround(state, rules, i, pid)) return fail('INVALID_TARGET');
-      if (impCount(state, pid) >= rules.data.global.imps.max) return fail('LIMIT_REACHED');
-      const cost = createImpCost(state, rules, pid);
+      let tile: number;
+      if (spell.target === 'ownCreature') {
+        if (!isInt(cmd.creature)) return fail('INVALID_COMMAND');
+        const c = state.creatures.find((k) => k.id === cmd.creature);
+        if (!c || c.held) return fail('INVALID_TARGET');
+        if (c.owner !== pid) return fail('NOT_OWNER');
+        tile = tileIndex(state, Math.floor(c.x), Math.floor(c.y));
+      } else {
+        if (!isPoint(cmd.target)) return fail('INVALID_COMMAND');
+        if (!inBounds(state, cmd.target.x, cmd.target.y)) return fail('INVALID_TARGET');
+        tile = tileIndex(state, cmd.target.x, cmd.target.y);
+        if (spell.target === 'ownClaimedTile') {
+          if (!isOwnGround(state, rules, tile, pid)) return fail('INVALID_TARGET');
+        } else {
+          // Solo sobre tiles que se ven ahora mismo; la Llamada a las armas además pide suelo caminable.
+          if (!isVisible(state, rules, pid, tile)) return fail('INVALID_TARGET');
+          if (spell.effect.type === 'rallyPoint' && !rules.walkable[state.terrain[tile] as number])
+            return fail('INVALID_TARGET');
+        }
+      }
+      let cost = spell.mana;
+      if (spell.effect.type === 'spawnImp') {
+        if (impCount(state, pid) >= rules.data.global.imps.max) return fail('LIMIT_REACHED');
+        cost = createImpCost(state, rules, pid);
+      }
       if (player.mana < cost) return fail('NO_MANA');
-      return { ok: true, tiles: [i], cost };
+      return { ok: true, tiles: [tile], cost };
     }
     case 'pickUp': {
       if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
@@ -181,10 +203,13 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       if (player.hand.length === 0 || !inBounds(state, cmd.tile.x, cmd.tile.y))
         return fail('INVALID_TARGET');
       const i = tileIndex(state, cmd.tile.x, cmd.tile.y);
-      // Se puede soltar en cualquier tile transitable, también en territorio enemigo.
+      // Cualquier tile transitable propio o que se vea ahora mismo, también en territorio enemigo.
       if (!rules.walkable[state.terrain[i] as number]) return fail('INVALID_TARGET');
+      if (state.owner[i] !== pid && !isVisible(state, rules, pid, i)) return fail('INVALID_TARGET');
       return { ok: true, tiles: [i] };
     }
+    case 'surrender':
+      return { ok: true, tiles: [] };
     case 'slap': {
       if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
       const c = state.creatures.find((k) => k.id === cmd.id);
@@ -264,15 +289,23 @@ function execute(
       events.push({ type: 'slapped', playerId: player.id, creatureId: c.id });
       break;
     }
+    case 'surrender':
+      eliminatePlayer(state, rules, player, events);
+      break;
     case 'castSpell': {
       const spell = rules.spells[cmd.spell];
       if (!spell) break;
       player.mana -= v.cost ?? 0;
       player.cooldowns[spell.id] =
         state.tick + Math.ceil(spell.cooldownSeconds * rules.data.global.tickRate);
-      const imp = makeImp(state.nextImpId++, player.id, cmd.target.x, cmd.target.y);
-      state.imps.push(imp);
-      events.push({ type: 'impSpawned', playerId: player.id, impId: imp.id });
+      if (spell.effect.type === 'spawnImp') {
+        const target = cmd.target as { x: number; y: number };
+        const imp = makeImp(state.nextImpId++, player.id, target.x, target.y, rules.imp.base.hp);
+        state.imps.push(imp);
+        events.push({ type: 'impSpawned', playerId: player.id, impId: imp.id });
+      } else {
+        castEffect(state, rules, player, spell.id, v.tiles[0] as number, cmd.creature, events);
+      }
       break;
     }
   }
@@ -307,6 +340,7 @@ export function applyCommand(
   const rules = rulesOf(data);
   const player = getPlayer(state, playerId);
   if (!player || player.eliminated) return { ok: false, error: 'NOT_OWNER' };
+  if (state.status === 'ended') return { ok: false, error: 'INVALID_COMMAND' };
 
   const second = Math.floor(state.tick / rules.data.global.tickRate);
   if (player.rateSecond !== second) {

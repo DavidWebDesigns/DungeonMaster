@@ -20,6 +20,11 @@ export interface PlayerState {
   hand: number[];
   /** Tick a partir del cual se puede volver a abofetear. */
   slapReadyTick: number;
+  /** Punto de Llamada a las armas (tile) y hasta qué tick vale; -1 si no hay. */
+  rallyTile: number;
+  rallyUntil: number;
+  /** Tiles que ha llegado a ver alguna vez (1) o no (0): el terreno visto queda recordado. */
+  seen: number[];
 }
 
 export type TaskKind = 'dig' | 'claim' | 'reinforce';
@@ -60,6 +65,10 @@ export interface Imp {
   haulBlockedVersion: number;
   /** Versión de mapa en que no se encontró nada que reclamar por su cuenta. */
   autoBlockedVersion: number;
+  hp: number;
+  /** Criatura que lo atacó la última vez (0 = nadie) y cuándo. */
+  attackedBy: number;
+  attackedTick: number;
 }
 
 export interface Room {
@@ -75,7 +84,21 @@ export interface Room {
 
 /** Qué está haciendo o a dónde va una criatura. */
 export type CreatureGoal =
-  'none' | 'portal' | 'hatchery' | 'bed' | 'treasury' | 'training' | 'wander';
+  | 'none'
+  | 'portal'
+  | 'hatchery'
+  | 'bed'
+  | 'treasury'
+  | 'training'
+  | 'wander'
+  /** Persigue y ataca a un enemigo. */
+  | 'combat'
+  /** Va a golpear una sala o el Corazón enemigo. */
+  | 'siege'
+  /** Huye herida a su cama. */
+  | 'flee'
+  /** Acude al punto de Llamada a las armas. */
+  | 'rally';
 export type CreatureMode = 'idle' | 'needPath' | 'moving' | 'acting';
 
 /** Una criatura que llegó por el Portal (no incluye a los Imps). */
@@ -124,6 +147,27 @@ export interface Creature {
   ignoring: boolean;
   /** Por tipo de objetivo: versión de mapa en la que no se encontró ruta. */
   blocked: Record<string, number>;
+  /** A quién ataca: una criatura, un Imp o un tile de sala (índice) / el Corazón (tile del Corazón). */
+  targetKind: 'none' | 'creature' | 'imp' | 'structure';
+  targetId: number;
+  /** Tick a partir del cual puede volver a golpear. */
+  attackReadyTick: number;
+  /** Acelerada hasta este tick. */
+  hasteUntil: number;
+  /** Curación en marcha: ticks que quedan y cuánta vida por tick. */
+  healTicksLeft: number;
+  healPerTick: number;
+  /** Quién la atacó por última vez: tipo, id y tick. */
+  attackedByKind: 'none' | 'creature' | 'imp';
+  attackedBy: number;
+  attackedTick: number;
+}
+
+export interface MatchResult {
+  /** Jugadores que ganan (varios si hay empate). */
+  winners: PlayerId[];
+  reason: 'lastStanding' | 'draw' | 'timeout';
+  tick: number;
 }
 
 export interface QueuedCommand {
@@ -165,6 +209,11 @@ export interface MatchState {
   nextPayTick: number;
   nextTaskId: number;
   nextRoomId: number;
+  /** Daño recibido por cada tile de sala (la sala pierde el tile al llegar a roomTileHp). */
+  tileDamage: number[];
+  /** La partida sigue en juego o ya terminó. */
+  status: 'playing' | 'ended';
+  result: MatchResult | null;
   queue: QueuedCommand[];
   /** Todos los comandos que pasaron el límite de ritmo, para reproducir la partida. No entra en el hash. */
   log: CommandRecord[];
@@ -179,7 +228,8 @@ export type Command =
   | { type: 'reinforce'; tiles: Point[] }
   | { type: 'buildRoom'; room: string; rect: { x: number; y: number; w: number; h: number } }
   | { type: 'sellRoom'; tile: Point }
-  | { type: 'castSpell'; spell: string; target: Point }
+  | { type: 'castSpell'; spell: string; target?: Point; creature?: number }
+  | { type: 'surrender' }
   | { type: 'pickUp'; id: number }
   | { type: 'drop'; tile: Point }
   | { type: 'slap'; id: number };
@@ -216,6 +266,25 @@ export type SimEvent =
   | { type: 'moodBand'; playerId: PlayerId; creatureId: number; band: string }
   | { type: 'levelUp'; playerId: PlayerId; creatureId: number; level: number }
   | { type: 'creatureLeft'; playerId: PlayerId; creatureId: number }
-  | { type: 'creatureDied'; playerId: PlayerId; creatureId: number; cause: 'starvation' }
+  | {
+      type: 'creatureDied';
+      playerId: PlayerId;
+      creatureId: number;
+      cause: 'starvation' | 'combat' | 'spell' | 'eliminated';
+    }
+  | { type: 'impDied'; playerId: PlayerId; impId: number }
+  | {
+      type: 'hit';
+      attackerOwner: PlayerId;
+      targetOwner: PlayerId;
+      targetKind: 'creature' | 'imp' | 'room' | 'heart';
+      damage: number;
+      x: number;
+      y: number;
+    }
+  | { type: 'tileDestroyed'; tile: number; owner: PlayerId }
+  | { type: 'spellCast'; playerId: PlayerId; spell: string; x: number; y: number }
+  | { type: 'eliminated'; playerId: PlayerId }
+  | { type: 'gameOver'; result: MatchResult }
   | { type: 'slapped'; playerId: PlayerId; creatureId: number }
   | { type: 'ate'; playerId: PlayerId; creatureId: number };

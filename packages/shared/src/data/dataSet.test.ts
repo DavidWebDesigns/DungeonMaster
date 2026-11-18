@@ -197,4 +197,22 @@ describe('errores de referencias cruzadas', () => {
     (raw.economy as any).wanderPauseSeconds = { min: -1, max: 2 };
     expectError(parseDataSet(raw), 'economy.json', 'wanderPauseSeconds.min');
   });
+
+  it('exige blocksSight en cada terreno', () => {
+    const raw = realRawData();
+    delete (raw.terrain as any)[1].blocksSight;
+    expectError(parseDataSet(raw), 'terrain.json', '[1].blocksSight');
+  });
+
+  it('rechaza una recuperación de vida que no supere la fracción de huida', () => {
+    const raw = realRawData();
+    (raw.global as any).combat.recoverHpFraction = 0.2;
+    expectError(parseDataSet(raw), 'global.json', 'recoverHpFraction');
+  });
+
+  it('rechaza un alcance a estructuras que no sea positivo', () => {
+    const raw = realRawData();
+    (raw.global as any).combat.structureReach = 0;
+    expectError(parseDataSet(raw), 'global.json', 'combat.structureReach');
+  });
 });

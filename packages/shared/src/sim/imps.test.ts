@@ -227,10 +227,10 @@ describe('Crear Imp', () => {
     ).toEqual({ ok: false, error: 'LIMIT_REACHED' });
   });
 
-  it('los hechizos que aún no existen en la simulación se rechazan', () => {
+  it('un hechizo que no existe se rechaza como orden inválida', () => {
     const { state, data } = matchAtCorner0();
     expect(
-      applyCommand(state, data, 1, { type: 'castSpell', spell: 'lightning', target: pt(3, 8) }),
+      applyCommand(state, data, 1, { type: 'castSpell', spell: 'inventado', target: pt(3, 8) }),
     ).toEqual({ ok: false, error: 'INVALID_COMMAND' });
   });
 

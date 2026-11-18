@@ -52,6 +52,15 @@ export function newCreature(
     slapUntil: 0,
     ignoring: false,
     blocked: {},
+    targetKind: 'none',
+    targetId: 0,
+    attackReadyTick: 0,
+    hasteUntil: 0,
+    healTicksLeft: 0,
+    healPerTick: 0,
+    attackedByKind: 'none',
+    attackedBy: 0,
+    attackedTick: -1000000,
   };
   c.hp = creatureMaxHp(rules, c);
   c.band = rules.bands.find((b) => c.mood >= b.min)?.id ?? '';

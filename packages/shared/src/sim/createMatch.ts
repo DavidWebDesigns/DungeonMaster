@@ -9,7 +9,7 @@ export interface MatchConfig {
   playerCount: number;
 }
 
-export function makeImp(id: number, owner: number, tileX: number, tileY: number): Imp {
+export function makeImp(id: number, owner: number, tileX: number, tileY: number, hp: number): Imp {
   return {
     id,
     owner,
@@ -24,6 +24,9 @@ export function makeImp(id: number, owner: number, tileX: number, tileY: number)
     work: 0,
     haulBlockedVersion: -1,
     autoBlockedVersion: -1,
+    hp,
+    attackedBy: 0,
+    attackedTick: -1000000,
   };
 }
 
@@ -58,6 +61,9 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     nextPayTick: Math.round(data.economy.paydayIntervalSeconds * data.global.tickRate),
     nextTaskId: 1,
     nextRoomId: 1,
+    tileDamage: new Array<number>(map.width * map.height).fill(0),
+    status: 'playing',
+    result: null,
     queue: [],
     log: [],
   };
@@ -116,6 +122,9 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
       rateCount: 0,
       hand: [],
       slapReadyTick: 0,
+      rallyTile: -1,
+      rallyUntil: 0,
+      seen: new Array<number>(map.width * map.height).fill(0),
     };
     state.players.push(player);
     const c = base.claimed;
@@ -124,7 +133,7 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     addRoom('heart', id, base.heart);
     for (const r of base.rooms) addRoom(r.type, id, r.rect);
     for (const p of base.imps.slice(0, global.imps.start)) {
-      state.imps.push(makeImp(state.nextImpId++, id, p.x, p.y));
+      state.imps.push(makeImp(state.nextImpId++, id, p.x, p.y, rules.imp.base.hp));
     }
   });
 

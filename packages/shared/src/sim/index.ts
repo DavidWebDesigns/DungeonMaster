@@ -15,3 +15,8 @@ export * from './creatureStats';
 export * from './lairs';
 export { creatureCount, attractionCandidates, newCreature } from './portal';
 export { removeCreature } from './needs';
+export * from './fog';
+export * from './combat';
+export * from './victory';
+export { castEffect } from './spells';
+export { gainXp } from './xp';

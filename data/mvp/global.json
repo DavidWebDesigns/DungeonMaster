@@ -48,7 +48,9 @@
     "meleeReach": 1.2,
     "damageRandomMin": 0.9,
     "damageRandomMax": 1.1,
-    "fleeHpFraction": 0.25
+    "fleeHpFraction": 0.25,
+    "recoverHpFraction": 0.5,
+    "structureReach": 0.6
   },
   "tiebreak": ["heartHpFraction", "creaturePower", "gold"]
 }

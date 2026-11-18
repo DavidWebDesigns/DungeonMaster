@@ -7,7 +7,8 @@
     "diggable": false,
     "reinforceable": false,
     "ownable": false,
-    "buildable": false
+    "buildable": false,
+    "blocksSight": true
   },
   {
     "id": "earth",
@@ -20,7 +21,8 @@
     "buildable": false,
     "digSeconds": 2,
     "becomesOnDig": "neutralFloor",
-    "becomesOnReinforce": "reinforcedWall"
+    "becomesOnReinforce": "reinforcedWall",
+    "blocksSight": true
   },
   {
     "id": "reinforcedWall",
@@ -32,7 +34,8 @@
     "ownable": true,
     "buildable": false,
     "digSeconds": 4,
-    "becomesOnDig": "neutralFloor"
+    "becomesOnDig": "neutralFloor",
+    "blocksSight": true
   },
   {
     "id": "goldVein",
@@ -45,7 +48,8 @@
     "buildable": false,
     "digSeconds": 2,
     "goldPerTile": 600,
-    "becomesOnDig": "neutralFloor"
+    "becomesOnDig": "neutralFloor",
+    "blocksSight": true
   },
   {
     "id": "neutralFloor",
@@ -56,7 +60,8 @@
     "reinforceable": false,
     "ownable": false,
     "buildable": false,
-    "becomesOnClaim": "claimedFloor"
+    "becomesOnClaim": "claimedFloor",
+    "blocksSight": false
   },
   {
     "id": "claimedFloor",
@@ -66,7 +71,8 @@
     "diggable": false,
     "reinforceable": false,
     "ownable": true,
-    "buildable": true
+    "buildable": true,
+    "blocksSight": false
   },
   {
     "id": "water",
@@ -76,7 +82,8 @@
     "diggable": false,
     "reinforceable": false,
     "ownable": false,
-    "buildable": false
+    "buildable": false,
+    "blocksSight": false
   },
   {
     "id": "lava",
@@ -86,6 +93,7 @@
     "diggable": false,
     "reinforceable": false,
     "ownable": false,
-    "buildable": false
+    "buildable": false,
+    "blocksSight": false
   }
 ]

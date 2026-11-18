@@ -17,6 +17,8 @@ export interface Rules {
   spells: Record<string, SpellDef>;
   imp: CreatureDef;
   creatureDefs: Record<string, CreatureDef>;
+  /** Índice del terreno "suelo sin reclamar" (el que se puede reclamar y es caminable). */
+  neutralTerrain: number | undefined;
   /** Bandas de ánimo de mayor a menor. */
   bands: DataSet['mood']['bands'];
 }
@@ -48,6 +50,10 @@ export function rulesOf(data: DataSet): Rules {
     spells,
     imp,
     creatureDefs,
+    neutralTerrain:
+      data.terrain.findIndex((t) => t.walkable && t.becomesOnClaim !== undefined) >= 0
+        ? data.terrain.findIndex((t) => t.walkable && t.becomesOnClaim !== undefined)
+        : undefined,
     bands: [...data.mood.bands].sort((a, b) => b.min - a.min),
   };
   cache.set(data, rules);

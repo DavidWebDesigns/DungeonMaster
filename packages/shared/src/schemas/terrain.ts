@@ -16,6 +16,8 @@ export const TerrainDef = z.strictObject({
   ownable: z.boolean(),
   /** Se pueden construir salas encima si es propio. */
   buildable: z.boolean(),
+  /** Tapa la línea de visión de los ataques a distancia (muros y rocas; no el agua ni la lava). */
+  blocksSight: z.boolean(),
   digSeconds: PositiveNumber.optional(),
   goldPerTile: NonNegativeInt.optional(),
   becomesOnDig: Id.optional(),
