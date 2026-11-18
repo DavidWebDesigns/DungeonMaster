@@ -164,35 +164,50 @@ function playBots(
   return { state, hashes, avgStepMs: stepMs / ticks };
 }
 
+/** Simular 6.000 ticks varias veces es lento a propósito: no debe depender del límite por defecto (5 s). */
+const SLOW = 120_000;
+
 describe('Puerta 1: determinismo', () => {
   const data = loadData();
   const TICKS = 6000;
   const checkpoints = [1000, 2000, 3000, 4000, 5000, 6000];
 
-  it('misma semilla + mismos comandos = mismo hash tras 6.000 ticks (y en cada punto intermedio)', () => {
-    const a = playBots(data, 1234, 77, TICKS, checkpoints);
-    const b = playBots(data, 1234, 77, TICKS, checkpoints);
-    expect(hashState(a.state)).toBe(hashState(b.state));
-    expect(b.hashes).toEqual(a.hashes);
-    // La partida hizo cosas: no es un hash trivial.
-    expect(a.state.log.length).toBeGreaterThan(1000);
-    // 12 salas iniciales (Corazón, Portal y Tesorería por jugador): el bot construyó alguna más.
-    expect(a.state.nextRoomId).toBeGreaterThan(12 + 1);
-    expect(a.state.mapVersion).toBeGreaterThan(100);
-  });
+  it(
+    'misma semilla + mismos comandos = mismo hash tras 6.000 ticks (y en cada punto intermedio)',
+    () => {
+      const a = playBots(data, 1234, 77, TICKS, checkpoints);
+      const b = playBots(data, 1234, 77, TICKS, checkpoints);
+      expect(hashState(a.state)).toBe(hashState(b.state));
+      expect(b.hashes).toEqual(a.hashes);
+      // La partida hizo cosas: no es un hash trivial.
+      expect(a.state.log.length).toBeGreaterThan(1000);
+      // 12 salas iniciales (Corazón, Portal y Tesorería por jugador): el bot construyó alguna más.
+      expect(a.state.nextRoomId).toBeGreaterThan(12 + 1);
+      expect(a.state.mapVersion).toBeGreaterThan(100);
+    },
+    SLOW,
+  );
 
-  it('reproducir el registro de comandos da el mismo hash final', () => {
-    const a = playBots(data, 99, 5, TICKS);
-    const log: CommandRecord[] = JSON.parse(JSON.stringify(a.state.log));
-    const again = replay({ playerCount: 4 }, data, 99, log, TICKS);
-    expect(hashState(again)).toBe(hashState(a.state));
-  });
+  it(
+    'reproducir el registro de comandos da el mismo hash final',
+    () => {
+      const a = playBots(data, 99, 5, TICKS);
+      const log: CommandRecord[] = JSON.parse(JSON.stringify(a.state.log));
+      const again = replay({ playerCount: 4 }, data, 99, log, TICKS);
+      expect(hashState(again)).toBe(hashState(a.state));
+    },
+    SLOW,
+  );
 
-  it('otra semilla de partida o otros comandos dan otro hash', () => {
-    const a = playBots(data, 1234, 77, 1500);
-    expect(hashState(playBots(data, 4321, 77, 1500).state)).not.toBe(hashState(a.state));
-    expect(hashState(playBots(data, 1234, 78, 1500).state)).not.toBe(hashState(a.state));
-  });
+  it(
+    'otra semilla de partida o otros comandos dan otro hash',
+    () => {
+      const a = playBots(data, 1234, 77, 1500);
+      expect(hashState(playBots(data, 4321, 77, 1500).state)).not.toBe(hashState(a.state));
+      expect(hashState(playBots(data, 1234, 78, 1500).state)).not.toBe(hashState(a.state));
+    },
+    SLOW,
+  );
 
   it('el hash no depende del orden de las claves ni de pasar por JSON', () => {
     const { state } = playBots(data, 7, 7, 800);
