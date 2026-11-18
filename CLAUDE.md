@@ -5,7 +5,8 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 ## Estado actual
 
 - Fase 0 (cimientos): terminada. Puerta 0 cumplida.
-- Siguiente: fase 1, núcleo de la simulación sin gráficos (docs/PLAN.md, sección 8).
+- Fase 1 (núcleo de la simulación): terminada. Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`).
+- Siguiente: fase 2, cliente gris jugable en local (docs/PLAN.md, sección 8). Propón archivos y pruebas antes de escribir código.
 
 ## Reglas de arquitectura
 

@@ -9,9 +9,10 @@
 
 | Fase | Estado |
 |---|---|
-| Fase 0: cimientos | **Terminada.** Puerta 0 cumplida (según el registro anterior; ver "Pendiente de verificar"). |
-| Fase 1: núcleo de la simulación | **Siguiente.** Aún no empieza: falta proponer tareas y pruebas y que se confirmen. |
-| Fases 2 a 6 | Pendientes. |
+| Fase 0: cimientos | **Terminada.** Puerta 0 cumplida y reconfirmada. |
+| Fase 1: núcleo de la simulación | **Terminada.** Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`). |
+| Fase 2: cliente gris jugable en local | **Siguiente.** Falta proponer archivos y pruebas y que se confirmen. |
+| Fases 3 a 6 | Pendientes. |
 
 ### Qué dejó hecho la fase 0
 
@@ -38,11 +39,11 @@
 - La carpeta del proyecto **no es un repositorio git** (no hay `.git`): no hay historial de commits y la CI no puede correr.
 - No había `node_modules`. La reinstalación se empezó y se detuvo a mitad.
 
-### Pendiente de verificar antes de la fase 1
+### Verificado (2026-11-18)
 
-1. Recuperar o reiniciar el repositorio git (`git init` o clonar el remoto, si existía).
-2. `pnpm install` completo y `pnpm check` en verde, para reconfirmar la Puerta 0.
-3. Proponer la lista de tareas y pruebas de la fase 1 y esperar confirmación.
+1. Repositorio git creado (`main`, remoto `DavidWebDesigns/DungeonMaster`).
+2. `pnpm install` y `pnpm check` en verde: Puerta 0 reconfirmada.
+3. Fase 1 propuesta, confirmada e implementada en `packages/shared/src/sim/`. Decisiones tomadas en `docs/DUDAS.md` (11 a 22).
 
 ---
 
