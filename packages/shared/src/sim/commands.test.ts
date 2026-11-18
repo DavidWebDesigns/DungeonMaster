@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyCommand } from './applyCommand';
+import { applyCommand, previewCommand } from './applyCommand';
 import { tileIndex } from './grid';
 import { step } from './step';
 import type { Command } from './types';
@@ -279,5 +279,34 @@ describe('límite de comandos', () => {
     });
     run(state, data, 10);
     expect(applyCommand(state, data, 1, cmd).ok).toBe(true);
+  });
+});
+
+describe('previewCommand', () => {
+  const lair = { x: 6, y: 2, w: 2, h: 2 };
+
+  it('no encola, no registra y no gasta el límite de ritmo', () => {
+    const { state, data } = matchAtCorner0();
+    for (let i = 0; i < 100; i++)
+      previewCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair });
+    expect(state.queue).toHaveLength(0);
+    expect(state.log).toHaveLength(0);
+    expect(applyCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair }).ok).toBe(
+      true,
+    );
+  });
+
+  it('da el coste y los mismos errores que applyCommand', () => {
+    const { state, data } = matchAtCorner0();
+    expect(
+      previewCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair }),
+    ).toMatchObject({ ok: true, cost: 1200 });
+    state.players[0]!.gold = 10;
+    expect(previewCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair })).toEqual(
+      { ok: false, error: 'NO_GOLD' },
+    );
+    expect(previewCommand(state, data, 9, { type: 'buildRoom', room: 'lair', rect: lair })).toEqual(
+      { ok: false, error: 'NOT_OWNER' },
+    );
   });
 });

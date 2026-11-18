@@ -7,7 +7,7 @@ export * from './createMatch';
 export * from './economy';
 export * from './rooms';
 export * from './tasks';
-export { applyCommand } from './applyCommand';
+export { applyCommand, previewCommand } from './applyCommand';
 export { step } from './step';
 export { hashState } from './hashState';
 export { replay } from './replay';

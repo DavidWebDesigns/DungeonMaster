@@ -223,6 +223,22 @@ function execute(
 }
 
 /**
+ * Comprueba un comando sin encolarlo, sin registrarlo y sin gastar el límite de ritmo.
+ * Es lo que usa el cliente para dibujar fantasmas (por ejemplo una sala en rojo) con las mismas
+ * reglas exactas que la simulación. `tiles` son los tiles aceptados; `cost` el coste en oro o maná.
+ */
+export function previewCommand(
+  state: MatchState,
+  data: DataSet,
+  playerId: PlayerId,
+  cmd: Command,
+): { ok: true; tiles: number[]; cost?: number } | { ok: false; error: ErrorCode } {
+  const player = getPlayer(state, playerId);
+  if (!player || player.eliminated) return { ok: false, error: 'NOT_OWNER' };
+  return validate(state, rulesOf(data), player, cmd);
+}
+
+/**
  * Valida un comando del jugador y lo encola para el próximo tick. Devuelve `ok` o un código de error.
  * Todo comando que pasa el límite de ritmo se guarda en `state.log` (acertado o no), para poder reproducir la partida.
  */
