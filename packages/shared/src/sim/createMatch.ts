@@ -50,9 +50,12 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     roomAt: new Array<number>(map.width * map.height).fill(0),
     players: [],
     imps: [],
+    creatures: [],
     tasks: [],
     rooms: [],
     nextImpId: 1,
+    nextCreatureId: 1,
+    nextPayTick: Math.round(data.economy.paydayIntervalSeconds * data.global.tickRate),
     nextTaskId: 1,
     nextRoomId: 1,
     queue: [],
@@ -86,7 +89,7 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     owner: number,
     rect: { x: number; y: number; w: number; h: number },
   ) => {
-    const room: Room = { id: state.nextRoomId++, type, owner, tiles: [] };
+    const room: Room = { id: state.nextRoomId++, type, owner, tiles: [], timer: 0, stock: 0 };
     for (let y = rect.y; y < rect.y + rect.h; y++) {
       for (let x = rect.x; x < rect.x + rect.w; x++) {
         const i = tileIndex(state, x, y);
@@ -111,6 +114,8 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
       cooldowns: {},
       rateSecond: -1,
       rateCount: 0,
+      hand: [],
+      slapReadyTick: 0,
     };
     state.players.push(player);
     const c = base.claimed;

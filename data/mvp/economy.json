@@ -15,5 +15,6 @@
     "restSeconds": 20,
     "lairHealFractionPerSecond": 0.01
   },
-  "wanderRadius": 6
+  "wanderRadius": 6,
+  "wanderPauseSeconds": { "min": 2, "max": 5 }
 }

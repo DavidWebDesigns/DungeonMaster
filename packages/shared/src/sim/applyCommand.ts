@@ -2,6 +2,7 @@ import type { DataSet } from '../data';
 import { createImpCost, getPlayer, impCount } from './economy';
 import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
+import { stopCreature } from './behavior';
 import { buildRoomNow, getRoom, sellRoomNow } from './rooms';
 import { rulesOf, type Rules } from './rules';
 import { canClaim, canDig, canReinforce, isOwnGround, removeTask, setTask } from './tasks';
@@ -167,6 +168,31 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       if (player.mana < cost) return fail('NO_MANA');
       return { ok: true, tiles: [i], cost };
     }
+    case 'pickUp': {
+      if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
+      const c = state.creatures.find((k) => k.id === cmd.id);
+      if (!c || c.held) return fail('INVALID_TARGET');
+      if (c.owner !== pid) return fail('NOT_OWNER');
+      if (player.hand.length >= rules.data.global.hand.capacity) return fail('LIMIT_REACHED');
+      return { ok: true, tiles: [] };
+    }
+    case 'drop': {
+      if (!isPoint(cmd.tile)) return fail('INVALID_COMMAND');
+      if (player.hand.length === 0 || !inBounds(state, cmd.tile.x, cmd.tile.y))
+        return fail('INVALID_TARGET');
+      const i = tileIndex(state, cmd.tile.x, cmd.tile.y);
+      // Se puede soltar en cualquier tile transitable, también en territorio enemigo.
+      if (!rules.walkable[state.terrain[i] as number]) return fail('INVALID_TARGET');
+      return { ok: true, tiles: [i] };
+    }
+    case 'slap': {
+      if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
+      const c = state.creatures.find((k) => k.id === cmd.id);
+      if (!c || c.held) return fail('INVALID_TARGET');
+      if (c.owner !== pid) return fail('NOT_OWNER');
+      if (state.tick < player.slapReadyTick) return fail('COOLDOWN');
+      return { ok: true, tiles: [] };
+    }
     default:
       return fail('INVALID_COMMAND');
   }
@@ -206,6 +232,36 @@ function execute(
     case 'sellRoom': {
       const room = getRoom(state, state.roomAt[v.tiles[0] as number] as number);
       if (room) sellRoomNow(state, rules, player, room, events);
+      break;
+    }
+    case 'pickUp': {
+      const c = state.creatures.find((k) => k.id === cmd.id);
+      if (!c) break;
+      stopCreature(c);
+      c.held = true;
+      player.hand.push(c.id);
+      break;
+    }
+    case 'drop': {
+      const id = player.hand.pop();
+      const c = state.creatures.find((k) => k.id === id);
+      const tile = v.tiles[0] as number;
+      if (!c) break;
+      c.held = false;
+      c.x = (tile % state.width) + 0.5;
+      c.y = Math.floor(tile / state.width) + 0.5;
+      stopCreature(c);
+      c.blocked = {};
+      break;
+    }
+    case 'slap': {
+      const c = state.creatures.find((k) => k.id === cmd.id);
+      if (!c) break;
+      const g = rules.data.global;
+      c.mood = Math.max(rules.data.mood.min, c.mood - rules.data.mood.slapMoodPenalty);
+      c.slapUntil = state.tick + Math.round(g.slap.durationSeconds * g.tickRate);
+      player.slapReadyTick = state.tick + Math.round(g.slap.cooldownSeconds * g.tickRate);
+      events.push({ type: 'slapped', playerId: player.id, creatureId: c.id });
       break;
     }
     case 'castSpell': {

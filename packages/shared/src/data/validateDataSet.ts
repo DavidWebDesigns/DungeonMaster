@@ -237,6 +237,8 @@ export function validateDataSet(d: DataSet): DataError[] {
     err('economy.json', 'hunger.eatThreshold', 'supera hunger.max');
   if (e.sleep.sleepThreshold > e.sleep.max)
     err('economy.json', 'sleep.sleepThreshold', 'supera sleep.max');
+  if (e.wanderPauseSeconds.min > e.wanderPauseSeconds.max)
+    err('economy.json', 'wanderPauseSeconds', 'min no puede ser mayor que max');
 
   // ---------- map ----------
   const map = d.map;

@@ -236,11 +236,12 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
 }
 
 /** Paso 6 del tick para los Imps: rutas (con límite por jugador), movimiento y trabajo. */
-export function updateImps(state: MatchState, rules: Rules, events: SimEvent[]): void {
-  const budgets = new Map<PlayerId, number>();
-  for (const p of state.players)
-    budgets.set(p.id, rules.data.global.pathfinding.maxPerTickPerPlayer);
-
+export function updateImps(
+  state: MatchState,
+  rules: Rules,
+  events: SimEvent[],
+  budgets: Map<PlayerId, number>,
+): void {
   for (const imp of state.imps) {
     // ¿Sigue siendo válida su tarea?
     if (imp.goal === 'task') {

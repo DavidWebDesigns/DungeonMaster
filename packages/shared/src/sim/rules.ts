@@ -16,6 +16,9 @@ export interface Rules {
   roomDefs: Record<string, RoomDef>;
   spells: Record<string, SpellDef>;
   imp: CreatureDef;
+  creatureDefs: Record<string, CreatureDef>;
+  /** Bandas de ánimo de mayor a menor. */
+  bands: DataSet['mood']['bands'];
 }
 
 const cache = new WeakMap<DataSet, Rules>();
@@ -31,6 +34,8 @@ export function rulesOf(data: DataSet): Rules {
   for (const r of data.rooms) roomDefs[r.id] = r;
   const spells: Record<string, SpellDef> = {};
   for (const s of data.spells) spells[s.id] = s;
+  const creatureDefs: Record<string, CreatureDef> = {};
+  for (const c of data.creatures) creatureDefs[c.id] = c;
   const imp = data.creatures.find((c) => c.id === 'imp');
   if (!imp) throw new Error('creatures.json no define al Imp');
   const rules: Rules = {
@@ -42,6 +47,8 @@ export function rulesOf(data: DataSet): Rules {
     roomDefs,
     spells,
     imp,
+    creatureDefs,
+    bands: [...data.mood.bands].sort((a, b) => b.min - a.min),
   };
   cache.set(data, rules);
   return rules;

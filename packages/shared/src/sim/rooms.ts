@@ -35,7 +35,14 @@ export function buildRoomNow(
 ): void {
   const def = rules.roomDefs[type];
   if (!def) return;
-  const room: Room = { id: state.nextRoomId++, type, owner: player.id, tiles: [] };
+  const room: Room = {
+    id: state.nextRoomId++,
+    type,
+    owner: player.id,
+    tiles: [],
+    timer: 0,
+    stock: 0,
+  };
   for (let y = rect.y; y < rect.y + rect.h; y++) {
     for (let x = rect.x; x < rect.x + rect.w; x++) {
       const i = y * state.width + x;

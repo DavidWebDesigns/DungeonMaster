@@ -52,3 +52,42 @@ export function send(state: MatchState, data: DataSet, pid: PlayerId, cmd: Comma
 
 export const terrainId = (state: MatchState, data: DataSet, x: number, y: number) =>
   data.terrain[state.terrain[tileIndex(state, x, y)] as number]?.id;
+
+/** Amplía el territorio del jugador 1 (esquina 0) con suelo propio libre en x 2..10, y 11..19, para construir salas. */
+export function extendTerritory(state: MatchState, data: DataSet): void {
+  const claimed = data.terrain.findIndex((t) => t.id === 'claimedFloor');
+  for (let y = 11; y < 20; y++) {
+    for (let x = 2; x < 11; x++) {
+      state.terrain[y * state.width + x] = claimed;
+      state.owner[y * state.width + x] = 1;
+    }
+  }
+  state.mapVersion++;
+}
+
+export const ROOM_SPOTS = {
+  lair: { x: 2, y: 11, w: 4, h: 2 },
+  hatchery: { x: 6, y: 11, w: 3, h: 3 },
+  trainingRoom: { x: 2, y: 14, w: 3, h: 3 },
+  library: { x: 5, y: 14, w: 3, h: 3 },
+} as const;
+
+/** Construye salas (por tipo) en sitios fijos con oro de sobra; deja la partida lista para criaturas. */
+export function buildRooms(
+  state: MatchState,
+  data: DataSet,
+  types: ReadonlyArray<keyof typeof ROOM_SPOTS>,
+  gold = 50000,
+): void {
+  extendTerritory(state, data);
+  state.players[0]!.gold = gold;
+  for (const t of types) {
+    const res = applyCommand(state, data, 1, {
+      type: 'buildRoom',
+      room: t,
+      rect: { ...ROOM_SPOTS[t] },
+    });
+    if (!res.ok) throw new Error(`no se pudo construir ${t}: ${res.error}`);
+    step(state, data);
+  }
+}

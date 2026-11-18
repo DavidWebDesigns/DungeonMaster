@@ -21,5 +21,7 @@ export const EconomyConfig = z.strictObject({
     lairHealFractionPerSecond: Fraction,
   }),
   wanderRadius: NonNegativeNumber,
+  /** Pausa entre dos paseos de una criatura ociosa (al azar entre min y max). */
+  wanderPauseSeconds: z.strictObject({ min: NonNegativeNumber, max: NonNegativeNumber }),
 });
 export type EconomyConfig = z.infer<typeof EconomyConfig>;
