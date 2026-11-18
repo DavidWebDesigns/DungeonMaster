@@ -61,9 +61,9 @@ export function applyWheel(cam: CameraState, deltaY: number): CameraState {
   );
 }
 
-/** Q y E giran la cámara en pasos de 90°. */
+/** Z y X giran la cámara en pasos de 90° (Q W E R T quedan para hechizos). */
 export function applyRotateKey(cam: CameraState, key: string): CameraState {
-  if (key === 'q' || key === 'Q') return rotateCamera(cam, -1);
-  if (key === 'e' || key === 'E') return rotateCamera(cam, 1);
+  if (key === 'z' || key === 'Z') return rotateCamera(cam, -1);
+  if (key === 'x' || key === 'X') return rotateCamera(cam, 1);
   return cam;
 }

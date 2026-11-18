@@ -109,10 +109,10 @@ describe('rotación', () => {
     expect(pickTile(c, 0, 0, noWalls, map)).toEqual({ x: 30, y: 30 });
   });
 
-  it('Q y E giran en sentidos opuestos y otras teclas no hacen nada', () => {
-    expect(applyRotateKey(cam(), 'e').rotation).toBe(1);
-    expect(applyRotateKey(cam(), 'q').rotation).toBe(3);
-    expect(applyRotateKey(cam(), 'x')).toEqual(cam());
+  it('Z y X giran en sentidos opuestos y otras teclas no hacen nada', () => {
+    expect(applyRotateKey(cam(), 'x').rotation).toBe(1);
+    expect(applyRotateKey(cam(), 'z').rotation).toBe(3);
+    expect(applyRotateKey(cam(), 'q')).toEqual(cam());
   });
 });
 

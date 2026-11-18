@@ -2,7 +2,18 @@
  * Une el sandbox (simulación), el motor gráfico y la cámara en un bucle de dibujo a la frecuencia de la pantalla.
  */
 import type { DataSet } from '@dm/shared';
-import { centerOn, defaultCamera, type CameraState } from './render/cameraMath';
+import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
+import {
+  centerOn,
+  defaultCamera,
+  pickTile,
+  worldToScreen,
+  type CameraState,
+} from './render/cameraMath';
+import { DomInput } from './input/domInput';
+import { InputModel } from './input/inputModel';
+import { keyAction } from './input/keymap';
+import { errorMessage } from './input/messages';
 import { Renderer } from './render/renderer';
 import { LOCAL_PLAYER, Sandbox } from './sandbox/sandbox';
 
@@ -10,8 +21,13 @@ export class Game {
   readonly sandbox: Sandbox;
   readonly renderer: Renderer;
   camera: CameraState;
+  readonly input: InputModel;
+  /** Último aviso para el jugador (texto del consejero) y el tick en que salió. */
+  notice: { text: string; tick: number } | null = null;
   /** FPS medidos en el último segundo. */
   fps = 0;
+  private readonly dom: DomInput;
+  private readonly heartTile: { x: number; y: number };
   private lastMs = 0;
   private frames = 0;
   private fpsSince = 0;
@@ -34,6 +50,29 @@ export class Game {
       x: heart.x + Math.floor(heart.w / 2),
       y: heart.y + Math.floor(heart.h / 2),
     });
+    this.heartTile = { x: heart.x + Math.floor(heart.w / 2), y: heart.y + Math.floor(heart.h / 2) };
+
+    this.input = new InputModel(
+      {
+        state: this.sandbox.state,
+        data,
+        player: LOCAL_PLAYER,
+        send: (cmd) => this.sandbox.send(cmd),
+      },
+      (_cmd, res) => {
+        if (!res.ok) this.notice = { text: errorMessage(res.error), tick: this.sandbox.state.tick };
+      },
+    );
+    const map = data.map;
+    this.dom = new DomInput(canvas, {
+      pick: (nx, ny) =>
+        pickTile(this.camera, nx, ny, (t) => (this.renderer.tileHeight(t.x, t.y) ?? 0) > 0.9, map),
+      move: (t) => this.input.pointerMove(t),
+      down: (t, button, shift) => this.input.pointerDown(t, button, shift),
+      up: (t) => this.input.pointerUp(t),
+      wheel: (dy) => (this.camera = applyWheel(this.camera, dy)),
+      key: (k) => this.onKey(k),
+    });
     window.addEventListener('resize', () => this.renderer.resize());
   }
 
@@ -45,12 +84,35 @@ export class Game {
       const dt = this.lastMs === 0 ? 0 : nowMs - this.lastMs;
       this.lastMs = nowMs;
       this.sandbox.advance(dt);
-      this.camera = { ...this.camera, aspect: this.renderer.aspect };
-      this.renderer.render(this.sandbox, this.camera, nowMs / 1000);
+      this.camera = updateCamera(
+        { ...this.camera, aspect: this.renderer.aspect },
+        this.dom.cameraInput(),
+        dt / 1000,
+        this.data.map,
+      );
+      this.input.pump();
+      this.renderer.render(this.sandbox, this.camera, nowMs / 1000, this.input.preview());
       this.countFps(nowMs);
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+  }
+
+  /** Posición en píxeles de la ventana del centro de un tile (para pruebas de navegador y avisos en pantalla).
+   * `height` es la altura a la que se mira: 1 para la cara superior de un muro, ~0,1 para un suelo. */
+  tileToScreen(x: number, y: number, height = 0.05): { x: number; y: number } {
+    const r = this.renderer.canvas.getBoundingClientRect();
+    const s = worldToScreen(this.camera, x + 0.5, height, y + 0.5);
+    return { x: r.left + ((s.nx + 1) / 2) * r.width, y: r.top + ((1 - s.ny) / 2) * r.height };
+  }
+
+  private onKey(key: string): void {
+    const action = keyAction(key, this.data);
+    this.camera = applyRotateKey(this.camera, key);
+    if (!action) return;
+    if (action.type === 'tool') this.input.setTool(action.tool);
+    else if (action.type === 'cancel') this.input.setTool({ kind: 'dig' });
+    else if (action.type === 'center') this.camera = centerOn(this.camera, this.heartTile);
   }
 
   stop(): void {

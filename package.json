@@ -20,7 +20,8 @@
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm validate-data && pnpm test",
     "dev": "pnpm --filter @dm/client dev",
     "sim": "tsx tools/lib/not-yet.ts sim 4",
-    "balance": "tsx tools/lib/not-yet.ts balance 4"
+    "balance": "tsx tools/lib/not-yet.ts balance 4",
+    "e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

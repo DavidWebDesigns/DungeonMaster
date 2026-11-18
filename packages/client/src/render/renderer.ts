@@ -13,6 +13,8 @@ import type { DataSet } from '@dm/shared';
 import type { Sandbox } from '../sandbox/sandbox';
 import { cameraPose, orthoBounds, type CameraState } from './cameraMath';
 import { EntitiesView } from './entitiesView';
+import { OverlayView } from './overlayView';
+import type { Preview } from '../input/inputModel';
 import { TerrainView } from './terrainView';
 import { TerrainStyles } from './terrainStyles';
 
@@ -23,6 +25,7 @@ export class Renderer {
   private readonly terrain: TerrainView;
   private readonly styles = new TerrainStyles();
   private readonly entities: EntitiesView;
+  private readonly overlay: OverlayView;
   private lastTick = -1;
 
   constructor(
@@ -51,6 +54,12 @@ export class Renderer {
 
     this.terrain = new TerrainView(this.scene, data.map.width, data.map.height);
     this.entities = new EntitiesView(this.scene);
+    this.overlay = new OverlayView(this.scene, data.map.width, data.map.height);
+  }
+
+  /** Altura del bloque dibujado en un tile (para saber si es un muro al apuntar con el ratón). */
+  tileHeight(x: number, y: number): number | undefined {
+    return this.styles.styles[y * this.data.map.width + x]?.height;
   }
 
   /** Aspecto actual de la ventana (ancho / alto). */
@@ -62,7 +71,7 @@ export class Renderer {
     this.engine.resize();
   }
 
-  render(sandbox: Sandbox, cam: CameraState, timeSeconds: number): void {
+  render(sandbox: Sandbox, cam: CameraState, timeSeconds: number, preview: Preview): void {
     const pose = cameraPose(cam);
     this.camera.position.set(...pose.position);
     this.camera.setTarget(new Vector3(...pose.target));
@@ -80,6 +89,7 @@ export class Renderer {
       );
     }
     this.entities.update(sandbox, this.data, timeSeconds);
+    this.overlay.set(preview, this.styles.styles);
     this.scene.render();
   }
 
