@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyCommand, step, tileIndex, type SimEvent } from '@dm/shared';
+import { applyCommand, newCreature, rulesOf, step, tileIndex, type SimEvent } from '@dm/shared';
 import { loadGameData } from '../data/loadGameData';
 import { LOCAL_PLAYER, Sandbox } from '../sandbox/sandbox';
 import { deriveEffects, takeSnapshot, type Effect } from './effects';
@@ -191,5 +191,52 @@ describe('recetas de sonido', () => {
 
   it('los sonidos repetidos se limitan en el tiempo', () => {
     expect(MIN_REPEAT_SECONDS).toBeGreaterThan(0);
+  });
+});
+
+describe('efectos de las criaturas', () => {
+  const withCreature = () => {
+    const sb = new Sandbox(data, 1);
+    const c = newCreature(sb.state, rulesOf(data), 1, 'goblin', 9 * 64 + 9);
+    sb.state.creatures.push(c);
+    return { sb, c };
+  };
+  const fxFor = (sb: Sandbox, events: SimEvent[]) =>
+    deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER);
+
+  it('una criatura nueva llega con un estallido morado y sonido', () => {
+    const { sb, c } = withCreature();
+    const fx = fxFor(sb, [
+      { type: 'creatureArrived', playerId: 1, creatureId: c.id, creature: 'goblin' },
+    ]);
+    expect(sounds(fx)).toContain('pop');
+    expect(bursts(fx)).toHaveLength(1);
+  });
+
+  it('subir de nivel da destello dorado y fanfarria', () => {
+    const { sb, c } = withCreature();
+    const fx = fxFor(sb, [{ type: 'levelUp', playerId: 1, creatureId: c.id, level: 2 }]);
+    expect(sounds(fx)).toContain('levelup');
+    expect(bursts(fx)[0]).toMatchObject({ color: [0.98, 0.82, 0.2] });
+  });
+
+  it('la bofetada suena y levanta chispas blancas', () => {
+    const { sb, c } = withCreature();
+    const fx = fxFor(sb, [{ type: 'slapped', playerId: 1, creatureId: c.id }]);
+    expect(sounds(fx)).toContain('slap');
+    expect(bursts(fx)[0]).toMatchObject({ color: [1, 1, 1] });
+  });
+
+  it('el día de pago suena una campanilla y que se vaya una criatura da un sonido de aviso', () => {
+    const { sb } = withCreature();
+    expect(sounds(fxFor(sb, [{ type: 'payday', tick: 1200 }]))).toContain('payday');
+    expect(sounds(fxFor(sb, [{ type: 'creatureLeft', playerId: 1, creatureId: 1 }]))).toContain(
+      'error',
+    );
+  });
+
+  it('lo que le pasa a otro jugador no suena', () => {
+    const { sb, c } = withCreature();
+    expect(fxFor(sb, [{ type: 'slapped', playerId: 2, creatureId: c.id }])).toEqual([]);
   });
 });

@@ -62,11 +62,17 @@
 .clock {
   font-variant-numeric: tabular-nums;
 }
-.notice {
+.notices {
   position: absolute;
   bottom: 120px;
   left: 50%;
   transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+.notice {
   padding: 8px 16px;
   background: rgba(30, 14, 18, 0.92);
   border: 1px solid #b04a4a;
@@ -142,4 +148,89 @@
   font-size: 11px;
   opacity: 0.6;
   white-space: nowrap;
+}
+
+.creatures {
+  position: absolute;
+  right: 10px;
+  top: 52px;
+  width: 236px;
+  max-height: 58vh;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 4px;
+}
+.creatures-title {
+  font-size: 12px;
+  font-weight: 700;
+  opacity: 0.8;
+  padding: 0 2px 2px;
+}
+.creature {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-rows: auto auto auto;
+  column-gap: 6px;
+  text-align: left;
+  padding: 4px 6px;
+  background: #2b2234;
+  color: inherit;
+  border: 1px solid #54405f;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.creature:hover {
+  background: #3a2d47;
+}
+.creature .glyph {
+  grid-row: 1 / span 3;
+  align-self: center;
+  font-size: 18px;
+}
+.creature .cname {
+  font-size: 12px;
+  font-weight: 600;
+}
+.creature small {
+  opacity: 0.7;
+  font-weight: 400;
+}
+.creature .cact {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.hpbar {
+  display: block;
+  height: 5px;
+  margin-top: 3px;
+  background: #17121c;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.hpfill {
+  display: block;
+  height: 100%;
+  background: #4cc44c;
+}
+.creature.radiant .glyph {
+  color: #ffd84a;
+}
+.creature.happy .glyph {
+  color: #66e066;
+}
+.creature.neutral .glyph {
+  color: #c0c0c0;
+}
+.creature.unhappy .glyph {
+  color: #ffd84a;
+}
+.creature.angry .glyph {
+  color: #ff8026;
+}
+.creature.furious .glyph {
+  color: #ff2626;
+}
+.chip.hand {
+  border-color: #f0c84a;
 }

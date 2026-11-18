@@ -5,11 +5,12 @@ export type KeyAction =
   | { type: 'tool'; tool: Tool }
   | { type: 'rotate'; step: 1 | -1 }
   | { type: 'center' }
-  | { type: 'cancel' };
+  | { type: 'cancel' }
+  | { type: 'slap' };
 
 /**
  * Atajos (docs/PLAN.md 10.2): 1 a 5 construyen salas, Q lanza Crear Imp, Espacio centra en el Corazón.
- * F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, Z y X giran la cámara
+ * F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
 export function keyAction(key: string, data: DataSet): KeyAction | null {
@@ -30,6 +31,8 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
       return { type: 'tool', tool: { kind: 'cancelDig' } };
     case 'Delete':
       return { type: 'tool', tool: { kind: 'sell' } };
+    case 'b':
+      return { type: 'slap' };
     case 'Escape':
       return { type: 'cancel' };
     case 'z':

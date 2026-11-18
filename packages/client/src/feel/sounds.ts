@@ -40,6 +40,20 @@ export const SOUND_RECIPES: Readonly<Record<SoundName, readonly Layer[]>> = {
   ],
   pop: [{ kind: 'tone', freq: [300, 900], wave: 'sine', dur: 0.16, gain: 0.18 }],
   error: [{ kind: 'tone', freq: [180, 140], wave: 'sawtooth', dur: 0.18, gain: 0.14 }],
+  slap: [
+    { kind: 'noise', dur: 0.08, gain: 0.3, lowpass: 2500 },
+    { kind: 'tone', freq: [400, 120], wave: 'square', dur: 0.08, gain: 0.12 },
+  ],
+  levelup: [
+    { kind: 'tone', freq: [660, 660], wave: 'triangle', dur: 0.1, gain: 0.14 },
+    { kind: 'tone', freq: [880, 880], wave: 'triangle', dur: 0.1, gain: 0.14, delay: 0.09 },
+    { kind: 'tone', freq: [1320, 1320], wave: 'triangle', dur: 0.2, gain: 0.14, delay: 0.18 },
+  ],
+  payday: [
+    { kind: 'tone', freq: [1568, 1568], wave: 'sine', dur: 0.25, gain: 0.12 },
+    { kind: 'tone', freq: [2093, 2093], wave: 'sine', dur: 0.35, gain: 0.1, delay: 0.12 },
+  ],
+  pickup: [{ kind: 'tone', freq: [500, 800], wave: 'sine', dur: 0.07, gain: 0.1 }],
 };
 
 /** Evita que el mismo sonido suene muchas veces seguidas (por ejemplo 10 excavaciones en un tick). */

@@ -12,7 +12,8 @@
 | Fase 0: cimientos | **Terminada.** Puerta 0 cumplida y reconfirmada. |
 | Fase 1: núcleo de la simulación | **Terminada.** Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`). |
 | Fase 2: cliente gris jugable en local | **Implementada.** Puerta 2 técnica cumplida (60 fps medidos con WebGL por software, tick de 0,02 ms). **Falta el playtest humano de sensaciones.** |
-| Fases 3 a 6 | Pendientes. |
+| Fase 3: criaturas vivas | **Implementada.** Puerta 3 cubierta por pruebas. Falta jugarla (playtest humano). |
+| Fases 4 a 6 | Pendientes. |
 
 ### Qué dejó hecho la fase 0
 
@@ -49,6 +50,13 @@
 - **Game feel** (`src/feel`): tierra al excavar, monedas al minar y depositar, polvo al construir, sonidos con WebAudio.
 - **En `shared`:** `previewCommand` (validación de solo lectura para los fantasmas) y `work.autoClaimRadius` (fase 1).
 - Decisiones en `docs/DUDAS.md` (23 a 31). Controles: ver el pie de pantalla del juego.
+
+### Qué dejó hecho la fase 3
+
+- **Simulación** (`shared/src/sim`): Portal con atracción ponderada (`portal.ts`), camas de Guarida (`lairs.ts`), niveles y bandas de ánimo (`creatureStats.ts`), hambre, sueño, ánimo y abandono (`needs.ts`), día de pago y pollos del Criadero (`creatureEconomy.ts`), comportamiento por prioridades y entrenamiento (`behavior.ts`), y los comandos `pickUp`, `drop` y `slap`.
+- **Cliente:** criaturas dibujadas (placeholders por tipo) con barra de vida e icono de ánimo, lista de criaturas, cuenta atrás del pago, mano, avisos del consejero apilados y nuevos efectos y sonidos.
+- **Controles nuevos:** clic en una criatura la recoge, clic derecho la suelta, B abofetea.
+- Decisiones en `docs/DUDAS.md` (32 a 45).
 
 ### Verificado (2026-11-18)
 

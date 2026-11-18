@@ -4,6 +4,8 @@ export default defineConfig({
   testDir: 'packages/client/e2e',
   timeout: 90_000,
   retries: 0,
+  // Un solo navegador a la vez: WebGL por software gasta mucha CPU y en paralelo las pruebas se vuelven lentas e inestables.
+  workers: 1,
   reporter: [['list']],
   use: {
     baseURL: 'http://localhost:5173',

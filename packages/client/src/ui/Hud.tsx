@@ -4,6 +4,8 @@ import type { HudModel } from './hudModel';
 export interface HudProps {
   model: HudModel;
   onTool(tool: Tool): void;
+  /** Clic en una criatura de la lista (centra la cámara en ella). */
+  onSelectCreature?(id: number): void;
 }
 
 const fmt = (n: number) => n.toLocaleString('es');
@@ -18,7 +20,7 @@ function Bar(props: { value: number; max: number; kind: 'gold' | 'mana'; label: 
   );
 }
 
-export function Hud({ model, onTool }: HudProps) {
+export function Hud({ model, onTool, onSelectCreature }: HudProps) {
   const { spell } = model;
   return (
     <div class="hud">
@@ -39,9 +41,46 @@ export function Hud({ model, onTool }: HudProps) {
           Imps {model.imps}/{model.impsMax}
         </div>
         <div class="chip clock">{model.clock}</div>
+        <div class="chip" title="Tiempo hasta que tus criaturas cobren">
+          Pago {Math.ceil(model.payday)} s
+        </div>
+        {model.hand.count > 0 && (
+          <div class="chip hand" title="Criaturas en tu mano: clic derecho para soltarlas">
+            Mano {model.hand.count}/{model.hand.capacity}
+          </div>
+        )}
       </div>
 
-      {model.notice && <div class="notice">{model.notice}</div>}
+      <div class="notices">
+        {model.notices.map((text, i) => (
+          <div key={`${i}-${text}`} class="notice">
+            {text}
+          </div>
+        ))}
+      </div>
+
+      {model.creatures.length > 0 && (
+        <div class="creatures panel">
+          <div class="creatures-title">Criaturas ({model.creatures.length})</div>
+          {model.creatures.map((c) => (
+            <button
+              key={c.id}
+              class={`creature ${c.band}`}
+              onClick={() => onSelectCreature?.(c.id)}
+              title={`${c.bandName} · ánimo ${c.mood}`}
+            >
+              <span class="glyph">{c.glyph}</span>
+              <span class="cname">
+                {c.name} <small>nv {c.level}</small>
+              </span>
+              <span class="cact">{c.activity}</span>
+              <span class="hpbar">
+                <span class="hpfill" style={{ width: `${Math.round(c.hpFraction * 100)}%` }} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <div class="bottom">
         <div class="panel tools">

@@ -33,6 +33,8 @@ export class Sandbox {
   readonly data: DataSet;
   /** Posición de cada Imp al inicio del último tick, para interpolar el dibujo a 60 fps. */
   readonly previous = new Map<number, ImpPose>();
+  /** Lo mismo para las criaturas. */
+  readonly previousCreatures = new Map<number, ImpPose>();
   paused = false;
   private accumulatorMs = 0;
   private readonly tickMs: number;
@@ -80,5 +82,7 @@ export class Sandbox {
   private snapshot(): void {
     this.previous.clear();
     for (const imp of this.state.imps) this.previous.set(imp.id, { x: imp.x, y: imp.y });
+    this.previousCreatures.clear();
+    for (const c of this.state.creatures) this.previousCreatures.set(c.id, { x: c.x, y: c.y });
   }
 }

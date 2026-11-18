@@ -26,8 +26,15 @@ const KEY_GROUPS = {
 export interface DomHandlers {
   /** Qué tile hay bajo la posición normalizada (o null si ninguno). */
   pick(nx: number, ny: number): { x: number; y: number } | null;
-  move(tile: { x: number; y: number } | null): void;
-  down(tile: { x: number; y: number } | null, button: 0 | 2, shift: boolean): void;
+  /** Id de la criatura propia que se ve bajo ese punto de la pantalla, si hay. */
+  creatureAt(nx: number, ny: number): number | null;
+  move(tile: { x: number; y: number } | null, creatureId: number | null): void;
+  down(
+    tile: { x: number; y: number } | null,
+    button: 0 | 2,
+    shift: boolean,
+    creatureId: number | null,
+  ): void;
   up(tile: { x: number; y: number } | null): void;
   key(key: string): void;
   wheel(deltaY: number): void;
@@ -54,7 +61,8 @@ export class DomInput {
       (e) => {
         const r = canvas.getBoundingClientRect();
         this.mouse = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
-        h.move(tileAt(e));
+        const n = toNdc(e.clientX, e.clientY, r);
+        h.move(tileAt(e), h.creatureAt(n.nx, n.ny));
       },
       opts,
     );
@@ -62,7 +70,7 @@ export class DomInput {
       'pointerleave',
       () => {
         this.mouse = null;
-        h.move(null);
+        h.move(null, null);
       },
       opts,
     );
@@ -71,7 +79,8 @@ export class DomInput {
       (e) => {
         if (e.button !== 0 && e.button !== 2) return;
         canvas.setPointerCapture(e.pointerId);
-        h.down(tileAt(e), e.button, e.shiftKey);
+        const n = toNdc(e.clientX, e.clientY, canvas.getBoundingClientRect());
+        h.down(tileAt(e), e.button, e.shiftKey, h.creatureAt(n.nx, n.ny));
       },
       opts,
     );

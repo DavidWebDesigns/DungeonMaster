@@ -49,6 +49,8 @@ const TILE_TOOLS = new Set(['dig', 'claim', 'reinforce', 'cancelDig']);
 export class InputModel {
   tool: Tool = { kind: 'dig' };
   hover: Point | null = null;
+  /** Criatura propia bajo el cursor (la calcula el dibujo, que sabe dónde se ven). */
+  hoverCreature: number | null = null;
   private drag: { start: Point; cancelMode: boolean } | null = null;
   private queue: Command[] = [];
   private lastSentTick = -1;
@@ -67,15 +69,32 @@ export class InputModel {
     this.drag = null;
   }
 
-  pointerMove(tile: Point | null): void {
+  pointerMove(tile: Point | null, creatureId: number | null = null): void {
     this.hover = tile;
+    this.hoverCreature = creatureId;
   }
 
-  pointerDown(tile: Point | null, button: 0 | 2, shift = false): void {
+  /** Criaturas que lleva el jugador en la mano. */
+  get handSize(): number {
+    return this.host.state.players.find((p) => p.id === this.host.player)?.hand.length ?? 0;
+  }
+
+  pointerDown(
+    tile: Point | null,
+    button: 0 | 2,
+    shift = false,
+    creatureId: number | null = null,
+  ): void {
     if (button === 2) {
-      // Clic derecho: cancela el arrastre y, si no había, vuelve a la herramienta de excavar.
-      if (this.drag) this.drag = null;
+      // Clic derecho: con criaturas en la mano las suelta; si no, cancela el arrastre o vuelve a excavar.
+      if (this.handSize > 0 && tile) this.dispatch({ type: 'drop', tile });
+      else if (this.drag) this.drag = null;
       else this.setTool({ kind: 'dig' });
+      return;
+    }
+    // Un clic sobre una criatura propia la recoge (salvo con las herramientas de construir, vender o lanzar hechizos).
+    if (creatureId !== null && TILE_TOOLS.has(this.tool.kind)) {
+      this.dispatch({ type: 'pickUp', id: creatureId });
       return;
     }
     if (!tile) return;
@@ -116,6 +135,11 @@ export class InputModel {
     this.queue.push(...rest);
   }
 
+  /** Abofetea a la criatura que hay bajo el cursor (tecla B). */
+  slapHovered(): void {
+    if (this.hoverCreature !== null) this.dispatch({ type: 'slap', id: this.hoverCreature });
+  }
+
   /** Llamar una vez por frame: envía el siguiente trozo pendiente en cuanto avanza el tick. */
   pump(): void {
     if (this.queue.length === 0 || this.host.state.tick <= this.lastSentTick) return;
@@ -138,6 +162,15 @@ export class InputModel {
     const { state, data, player } = this.host;
     const t = this.tool;
     const rules = rulesOf(data);
+
+    // Con criaturas en la mano, el cursor muestra dónde se pueden soltar.
+    if (this.handSize > 0 && this.hover) {
+      return {
+        kind: 'target',
+        tile: this.hover,
+        ok: previewCommand(state, data, player, { type: 'drop', tile: this.hover }).ok,
+      };
+    }
 
     if (TILE_TOOLS.has(t.kind)) {
       const action: TileAction = this.drag?.cancelMode ? 'cancelDig' : (t.kind as TileAction);

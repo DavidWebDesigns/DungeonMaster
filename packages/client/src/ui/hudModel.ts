@@ -4,6 +4,7 @@
  */
 import {
   createImpCost,
+  creatureMaxHp,
   impCount,
   manaRegenPerSecond,
   rulesOf,
@@ -12,6 +13,8 @@ import {
   type MatchState,
 } from '@dm/shared';
 import type { Tool } from '../input/inputModel';
+import { activityLabel, hpFraction, moodIconOf } from '../render/creatureStyle';
+import type { Notice } from './notices';
 
 export interface ToolButton {
   id: string;
@@ -45,6 +48,20 @@ export interface SpellButton {
   active: boolean;
 }
 
+export interface CreatureRow {
+  id: number;
+  name: string;
+  level: number;
+  band: string;
+  bandName: string;
+  glyph: string;
+  mood: number;
+  hp: number;
+  hpFraction: number;
+  activity: string;
+  held: boolean;
+}
+
 export interface HudModel {
   gold: number;
   goldCapacity: number;
@@ -58,11 +75,17 @@ export interface HudModel {
   tools: ToolButton[];
   rooms: RoomButton[];
   spell: SpellButton;
-  notice: string | null;
+  creatures: CreatureRow[];
+  /** Criaturas en la mano y su capacidad. */
+  hand: { count: number; capacity: number };
+  /** Segundos que faltan para el próximo día de pago. */
+  payday: number;
+  notices: string[];
 }
 
-/** Cuánto dura un aviso en pantalla, en segundos de juego. */
-export const NOTICE_SECONDS = 4;
+/** Cuánto dura un aviso en pantalla, en segundos de juego, y cuántos se ven a la vez. */
+export const NOTICE_SECONDS = 5;
+export const NOTICES_VISIBLE = 3;
 
 const sameTool = (a: Tool, b: Tool) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -78,7 +101,7 @@ export function buildHudModel(
   data: DataSet,
   playerId: number,
   tool: Tool,
-  notice: { text: string; tick: number } | null,
+  notices: readonly Notice[],
 ): HudModel {
   const rules = rulesOf(data);
   const player = state.players.find((p) => p.id === playerId);
@@ -151,7 +174,25 @@ export function buildHudModel(
     active: tool.kind === 'spell' && tool.spell === 'createImp',
   };
 
-  const showNotice = notice && state.tick - notice.tick < NOTICE_SECONDS * data.global.tickRate;
+  const rows: CreatureRow[] = state.creatures
+    .filter((c) => c.owner === playerId)
+    .map((c) => {
+      const band = rules.bands.find((b) => b.id === c.band);
+      return {
+        id: c.id,
+        name: rules.creatureDefs[c.type]?.name ?? c.type,
+        level: c.level,
+        band: c.band,
+        bandName: band?.name ?? '',
+        glyph: moodIconOf(c.band).glyph,
+        mood: Math.round(c.mood),
+        hp: Math.round(c.hp),
+        hpFraction: hpFraction(c, creatureMaxHp(rules, c)),
+        activity: activityLabel(c),
+        held: c.held,
+      };
+    });
+
   return {
     gold: Math.floor(player.gold),
     goldCapacity: capacity,
@@ -165,6 +206,9 @@ export function buildHudModel(
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
     rooms,
     spell,
-    notice: showNotice ? notice.text : null,
+    creatures: rows,
+    hand: { count: player.hand.length, capacity: data.global.hand.capacity },
+    payday: Math.max(0, (state.nextPayTick - state.tick) / data.global.tickRate),
+    notices: notices.map((n) => n.text),
   };
 }

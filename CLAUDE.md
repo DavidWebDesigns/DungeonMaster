@@ -7,7 +7,8 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 - Fase 0 (cimientos): terminada. Puerta 0 cumplida.
 - Fase 1 (núcleo de la simulación): terminada. Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`).
 - Fase 2 (cliente gris jugable en local): implementada y probada (`pnpm dev`, `pnpm e2e`). Falta el playtest humano de sensaciones para cumplir la Puerta 2.
-- Siguiente: playtest de la fase 2 y, después, fase 3 (criaturas vivas). Propón archivos y pruebas antes de escribir código.
+- Fase 3 (criaturas vivas): implementada y probada. Puerta 3 cubierta por pruebas (`sim/creatures.test.ts` y `sim/gate3.test.ts`). Falta el playtest humano de las fases 2 y 3.
+- Siguiente: fase 4 (combate, victoria y bots). Propón archivos y pruebas antes de escribir código.
 
 ## Reglas de arquitectura
 

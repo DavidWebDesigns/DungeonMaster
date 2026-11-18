@@ -7,7 +7,19 @@ import type { RGB } from '../render/palette';
 import { playerColor } from '../render/palette';
 
 export type SoundName =
-  'click' | 'dig' | 'coin' | 'deposit' | 'claim' | 'build' | 'sell' | 'pop' | 'error';
+  | 'click'
+  | 'dig'
+  | 'coin'
+  | 'deposit'
+  | 'claim'
+  | 'build'
+  | 'sell'
+  | 'pop'
+  | 'error'
+  | 'slap'
+  | 'levelup'
+  | 'payday'
+  | 'pickup';
 
 export type Effect =
   | {
@@ -138,6 +150,28 @@ export function deriveEffects(
         out.push({ type: 'sound', sound: 'pop', volume: 1 });
         break;
       }
+      case 'creatureArrived': {
+        // Llega por el Portal: estallido morado donde aparece.
+        const c = state.creatures.find((k) => k.id === e.creatureId);
+        if (c) burst(c.x, 0.6, c.y, PURPLE, 14, 1.8, 2.8, 0.14);
+        out.push({ type: 'sound', sound: 'pop', volume: 1 });
+        break;
+      }
+      case 'slapped': {
+        const c = state.creatures.find((k) => k.id === e.creatureId);
+        if (c) burst(c.x, 0.8, c.y, [1, 1, 1], 8, 1.6, 2, 0.1);
+        out.push({ type: 'sound', sound: 'slap', volume: 1 });
+        break;
+      }
+      case 'levelUp': {
+        const c = state.creatures.find((k) => k.id === e.creatureId);
+        if (c) burst(c.x, 0.9, c.y, GOLD, 16, 1.4, 3.4, 0.12);
+        out.push({ type: 'sound', sound: 'levelup', volume: 1 });
+        break;
+      }
+      case 'creatureLeft':
+        out.push({ type: 'sound', sound: 'error', volume: 0.8 });
+        break;
       case 'commandRejected':
         out.push({ type: 'sound', sound: 'error', volume: 0.8 });
         break;
@@ -145,6 +179,10 @@ export function deriveEffects(
         break;
     }
   }
+
+  // Día de pago: campanilla (no tiene jugador, es de toda la partida).
+  if (events.some((e) => e.type === 'payday'))
+    out.push({ type: 'sound', sound: 'payday', volume: 0.9 });
 
   // Monedas que saltan mientras un Imp mina (su carga sube).
   if (state.tick % COIN_EVERY_TICKS === 0) {

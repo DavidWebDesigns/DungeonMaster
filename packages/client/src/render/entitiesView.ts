@@ -12,11 +12,14 @@ import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { Mesh } from '@babylonjs/core/Meshes/mesh';
 import type { AbstractMesh } from '@babylonjs/core/Meshes/abstractMesh';
 import type { Scene } from '@babylonjs/core/scene';
-import type { DataSet, MatchState, Room } from '@dm/shared';
+import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
+import { Mesh as BabylonMesh } from '@babylonjs/core/Meshes/mesh';
+import { creatureMaxHp, rulesOf, type DataSet, type MatchState, type Room } from '@dm/shared';
 import type { Sandbox } from '../sandbox/sandbox';
 import { playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
+import { hpColor, hpFraction, lookOf, moodIconOf } from './creatureStyle';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 
 function material(scene: Scene, color: RGB, emissive = 0): StandardMaterial {
@@ -33,8 +36,19 @@ interface ImpMesh {
   gold: Mesh;
 }
 
+interface CreatureMesh {
+  body: Mesh;
+  mood: Mesh;
+  barBack: Mesh;
+  barFill: Mesh;
+  fillMat: StandardMaterial;
+  moodMat: StandardMaterial;
+  height: number;
+}
+
 export class EntitiesView {
   private readonly imps = new Map<number, ImpMesh>();
+  private readonly creatures = new Map<number, CreatureMesh>();
   private propSignature = '';
   private props: AbstractMesh[] = [];
   private pulsing: Mesh[] = [];
@@ -47,7 +61,12 @@ export class EntitiesView {
   }
 
   /** Coloca a los Imps y reconstruye los accesorios de las salas si cambiaron. */
-  update(sandbox: Sandbox, data: DataSet, timeSeconds: number): void {
+  update(
+    sandbox: Sandbox,
+    data: DataSet,
+    timeSeconds: number,
+    handAt: { x: number; y: number } | null = null,
+  ): void {
     const { state } = sandbox;
     const alive = new Set<number>();
     for (const imp of state.imps) {
@@ -96,6 +115,7 @@ export class EntitiesView {
       }
     }
 
+    this.updateCreatures(sandbox, data, timeSeconds, handAt);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
     for (const s of this.spinning) s.rotation.y = timeSeconds * 0.8;
@@ -106,6 +126,98 @@ export class EntitiesView {
       const h = Math.max(0.02, fill * 0.55);
       b.mesh.scaling.y = h / 0.5;
       b.mesh.position.y = 0.16 + h / 2;
+    }
+  }
+
+  private makeCreature(id: number, type: string): CreatureMesh {
+    const look = lookOf(type);
+    const body = CreateCapsule(
+      `creature${id}`,
+      { height: look.height, radius: look.radius },
+      this.scene,
+    );
+    body.material = material(this.scene, look.color);
+    body.isPickable = false;
+    const moodMat = new StandardMaterial(`mood${id}`, this.scene);
+    moodMat.disableLighting = true;
+    const mood = CreateSphere(`moodIcon${id}`, { diameter: 0.22, segments: 6 }, this.scene);
+    mood.material = moodMat;
+    mood.parent = body;
+    mood.position.y = look.height / 2 + 0.3;
+    mood.isPickable = false;
+    const barBack = CreatePlane(`barBack${id}`, { width: 0.7, height: 0.08 }, this.scene);
+    const backMat = new StandardMaterial(`barBackMat${id}`, this.scene);
+    backMat.disableLighting = true;
+    backMat.emissiveColor = new Color3(0.08, 0.06, 0.1);
+    barBack.material = backMat;
+    barBack.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+    barBack.parent = body;
+    barBack.position.y = look.height / 2 + 0.12;
+    barBack.isPickable = false;
+    const fillMat = new StandardMaterial(`barFillMat${id}`, this.scene);
+    fillMat.disableLighting = true;
+    const barFill = CreatePlane(`barFill${id}`, { width: 0.7, height: 0.08 }, this.scene);
+    barFill.material = fillMat;
+    barFill.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+    barFill.parent = body;
+    barFill.position.y = look.height / 2 + 0.12;
+    barFill.renderingGroupId = 1;
+    barFill.isPickable = false;
+    return { body, mood, barBack, barFill, fillMat, moodMat, height: look.height };
+  }
+
+  /** Criaturas: cápsulas de color por tipo con barra de vida (si están heridas) e icono de ánimo. */
+  private updateCreatures(
+    sandbox: Sandbox,
+    data: DataSet,
+    timeSeconds: number,
+    handAt: { x: number; y: number } | null,
+  ): void {
+    const { state } = sandbox;
+    const rules = rulesOf(data);
+    const alive = new Set<number>();
+    let held = 0;
+    for (const c of state.creatures) {
+      alive.add(c.id);
+      let m = this.creatures.get(c.id);
+      if (!m) {
+        m = this.makeCreature(c.id, c.type);
+        this.creatures.set(c.id, m);
+      }
+      const a = sandbox.alpha;
+      const prev = sandbox.previousCreatures.get(c.id) ?? c;
+      if (c.held) {
+        // En la mano: cuelga junto al cursor y se balancea.
+        const at = handAt ?? { x: c.x, y: c.y };
+        m.body.setEnabled(handAt !== null);
+        m.body.position.set(at.x + held * 0.25, 1.5 + 0.1 * Math.sin(timeSeconds * 6 + held), at.y);
+        held++;
+      } else {
+        m.body.setEnabled(true);
+        m.body.position.set(
+          prev.x + (c.x - prev.x) * a,
+          0.1 + m.height / 2,
+          prev.y + (c.y - prev.y) * a,
+        );
+      }
+      const frac = hpFraction(c, creatureMaxHp(rules, c));
+      m.barBack.setEnabled(frac < 1);
+      m.barFill.setEnabled(frac < 1);
+      if (frac < 1) {
+        m.barFill.scaling.x = Math.max(0.001, frac);
+        m.barFill.position.x = -0.35 * (1 - frac);
+        const col = hpColor(frac);
+        m.fillMat.emissiveColor = new Color3(...col);
+      }
+      const icon = moodIconOf(c.band);
+      m.mood.setEnabled(icon.showOverHead);
+      m.moodMat.emissiveColor = new Color3(...icon.color);
+    }
+    for (const [id, m] of this.creatures) {
+      if (!alive.has(id)) {
+        m.body.dispose();
+        this.creatures.delete(id);
+      }
     }
   }
 

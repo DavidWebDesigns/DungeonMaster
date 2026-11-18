@@ -81,6 +81,7 @@ export class Renderer {
     timeSeconds: number,
     preview: Preview,
     particles: ParticleSim,
+    handAt: { x: number; y: number } | null = null,
   ): void {
     const pose = cameraPose(cam);
     this.camera.position.set(...pose.position);
@@ -98,7 +99,7 @@ export class Renderer {
         this.styles.styles,
       );
     }
-    this.entities.update(sandbox, this.data, timeSeconds);
+    this.entities.update(sandbox, this.data, timeSeconds, handAt);
     this.overlay.set(preview, this.styles.styles);
     this.particles.update(particles);
     this.scene.render();

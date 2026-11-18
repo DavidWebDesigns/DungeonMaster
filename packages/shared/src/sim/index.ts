@@ -11,3 +11,7 @@ export { applyCommand, previewCommand } from './applyCommand';
 export { step } from './step';
 export { hashState } from './hashState';
 export { replay } from './replay';
+export * from './creatureStats';
+export * from './lairs';
+export { creatureCount, attractionCandidates, newCreature } from './portal';
+export { removeCreature } from './needs';

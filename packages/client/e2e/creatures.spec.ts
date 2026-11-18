@@ -1,0 +1,147 @@
+import { expect, test, type Page } from '@playwright/test';
+
+/** Lo que estas pruebas necesitan del juego (gancho de depuración en window.__dm). */
+interface Hook {
+  sandbox: {
+    advance(ms: number): unknown;
+    state: {
+      tick: number;
+      width: number;
+      terrain: number[];
+      owner: number[];
+      mapVersion: number;
+      players: Array<{ gold: number; hand: number[] }>;
+      creatures: Array<{
+        id: number;
+        type: string;
+        held: boolean;
+        x: number;
+        y: number;
+        mood: number;
+        slapUntil: number;
+      }>;
+      rooms: Array<{ type: string }>;
+    };
+  };
+  data: { terrain: Array<{ id: string }> };
+  fastForward(seconds: number): void;
+  tileToScreen(x: number, y: number, h?: number): { x: number; y: number };
+  creatureToScreen(id: number): { x: number; y: number } | null;
+}
+const dm = () => (window as unknown as { __dm: Hook }).__dm;
+
+/** Avanza `seconds` segundos de juego; el dibujo se pone al día después. */
+async function advance(page: Page, seconds: number) {
+  await page.evaluate((s) => {
+    dm().fastForward(s);
+  }, seconds);
+  await page.waitForTimeout(250);
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    (window as unknown as { dm: () => unknown }).dm = () =>
+      (window as unknown as { __dm: unknown }).__dm;
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  // Territorio libre para construir y oro de sobra.
+  await page.evaluate(() => {
+    const s = dm().sandbox.state;
+    const claimed = dm().data.terrain.findIndex((t) => t.id === 'claimedFloor');
+    for (let y = 11; y < 20; y++)
+      for (let x = 2; x < 11; x++) {
+        s.terrain[y * s.width + x] = claimed;
+        s.owner[y * s.width + x] = 1;
+      }
+    s.mapVersion++;
+    s.players[0]!.gold = 30000;
+  });
+  await page.waitForTimeout(300);
+});
+
+async function buildLair(page: Page) {
+  await page.keyboard.press('1');
+  const p = await page.evaluate(() => dm().tileToScreen(2, 11));
+  await page.mouse.click(p.x, p.y);
+  await advance(page, 1);
+  // Tras construir se sigue en modo construir; Esc vuelve a la herramienta de excavar (y de recoger criaturas).
+  await page.keyboard.press('Escape');
+}
+
+test('con una Guarida llega un Goblin por el Portal y sale en la lista y con aviso', async ({
+  page,
+}) => {
+  await advance(page, 31); // sin Guarida: avisa de que falta
+  await expect(page.locator('.notice').first()).toContainText('Guarida');
+  await buildLair(page);
+  await advance(page, 31);
+  const types = await page.evaluate(() => dm().sandbox.state.creatures.map((c) => c.type));
+  expect(types).toContain('goblin');
+  await expect(page.locator('.creatures')).toContainText('Goblin');
+  await expect(page.locator('.chip', { hasText: 'Pago' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/creature.png' });
+});
+
+test('se recoge una criatura con el ratón, aparece en la mano y se suelta con clic derecho', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await advance(page, 31);
+  const id = await page.evaluate(() => dm().sandbox.state.creatures[0]!.id);
+  await page.evaluate(() => {
+    // Quieta mientras se prueba el ratón.
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 3.5;
+    c.y = 9.5;
+  });
+  const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
+  await page.mouse.move(at!.x, at!.y);
+  await page.mouse.click(at!.x, at!.y);
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(1);
+  await expect(page.locator('.chip.hand')).toContainText('Mano 1/8');
+
+  const target = await page.evaluate(() => dm().tileToScreen(3, 6));
+  await page.mouse.move(target.x, target.y);
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: 'test-results/hand.png' });
+  await page.mouse.click(target.x, target.y, { button: 'right' });
+  await advance(page, 1);
+  const c = await page.evaluate(() => dm().sandbox.state.creatures[0]!);
+  expect(c.held).toBe(false);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
+  await expect(page.locator('.chip.hand')).toHaveCount(0);
+});
+
+test('B abofetea a la criatura bajo el cursor y baja su ánimo', async ({ page }) => {
+  await buildLair(page);
+  await advance(page, 31);
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 3.5;
+    c.y = 9.5;
+  });
+  const id = await page.evaluate(() => dm().sandbox.state.creatures[0]!.id);
+  const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
+  await page.mouse.move(at!.x, at!.y);
+  await page.waitForTimeout(100);
+  await page.keyboard.press('b');
+  await advance(page, 1);
+  // La bofetada da +25 % de velocidad de trabajo durante 10 s (el ánimo sube solo con el tiempo, así que no se compara).
+  const slapped = await page.evaluate(() => {
+    const st = dm().sandbox.state;
+    return st.creatures[0]!.slapUntil > st.tick;
+  });
+  expect(slapped).toBe(true);
+});
+
+test('el panel de criaturas centra la cámara al hacer clic en una', async ({ page }) => {
+  await buildLair(page);
+  await advance(page, 31);
+  await page.locator('.creature').first().click();
+  await page.waitForTimeout(200);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  expect(errors).toEqual([]);
+});

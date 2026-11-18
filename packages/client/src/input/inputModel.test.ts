@@ -4,6 +4,7 @@ import { loadGameData } from '../data/loadGameData';
 import { LOCAL_PLAYER, Sandbox } from '../sandbox/sandbox';
 import { InputModel } from './inputModel';
 import { keyAction } from './keymap';
+import { newCreature, rulesOf } from '@dm/shared';
 import { errorMessage } from './messages';
 
 const data = loadGameData();
@@ -283,5 +284,75 @@ describe('mensajes', () => {
     ] as const) {
       expect(errorMessage(code).length).toBeGreaterThan(5);
     }
+  });
+});
+
+describe('la mano', () => {
+  function withCreature() {
+    const ctx = setup();
+    const c = newCreature(ctx.sandbox.state, rulesOf(data), 1, 'goblin', 9 * 64 + 9);
+    ctx.sandbox.state.creatures.push(c);
+    return { ...ctx, c };
+  }
+
+  it('un clic sobre una criatura propia con la herramienta de excavar la recoge', () => {
+    const { input, sent, sandbox, c } = withCreature();
+    input.pointerDown(pt(9, 9), 0, false, c.id);
+    expect(sent[0]!.cmd).toEqual({ type: 'pickUp', id: c.id });
+    expect(sent[0]!.res.ok).toBe(true);
+    sandbox.advance(100);
+    expect(c.held).toBe(true);
+    expect(input.handSize).toBe(1);
+  });
+
+  it('con la herramienta de construir, un clic sobre una criatura no la recoge', () => {
+    const { input, sent, c } = withCreature();
+    input.setTool({ kind: 'build', room: 'lair' });
+    input.pointerDown(pt(6, 2), 0, false, c.id);
+    input.pointerUp(pt(6, 2));
+    expect(sent.every((s) => s.cmd.type !== 'pickUp')).toBe(true);
+  });
+
+  it('el clic derecho con criaturas en la mano las suelta donde está el cursor', () => {
+    const { input, sent, sandbox, c } = withCreature();
+    input.pointerDown(pt(9, 9), 0, false, c.id);
+    sandbox.advance(100);
+    input.pointerDown(pt(3, 8), 2);
+    expect(sent.at(-1)!.cmd).toEqual({ type: 'drop', tile: pt(3, 8) });
+    expect(sent.at(-1)!.res.ok).toBe(true);
+    sandbox.advance(100);
+    expect(c.held).toBe(false);
+    expect([Math.floor(c.x), Math.floor(c.y)]).toEqual([3, 8]);
+    // Con la mano vacía, el clic derecho vuelve a excavar.
+    input.setTool({ kind: 'claim' });
+    input.pointerDown(pt(3, 8), 2);
+    expect(input.tool).toEqual({ kind: 'dig' });
+  });
+
+  it('con la mano llena el cursor muestra si se puede soltar ahí', () => {
+    const { input, sandbox, c } = withCreature();
+    input.pointerDown(pt(9, 9), 0, false, c.id);
+    sandbox.advance(100);
+    input.pointerMove(pt(3, 8));
+    expect(input.preview()).toEqual({ kind: 'target', tile: pt(3, 8), ok: true });
+    input.pointerMove(pt(11, 4));
+    expect(input.preview()).toEqual({ kind: 'target', tile: pt(11, 4), ok: false });
+  });
+
+  it('B abofetea a la criatura bajo el cursor y respeta el enfriamiento', () => {
+    const { input, sent, sandbox, c } = withCreature();
+    input.slapHovered(); // sin criatura bajo el cursor: no hace nada
+    expect(sent).toHaveLength(0);
+    input.pointerMove(pt(9, 9), c.id);
+    input.slapHovered();
+    expect(sent[0]!.cmd).toEqual({ type: 'slap', id: c.id });
+    sandbox.advance(100);
+    expect(c.mood).toBe(57);
+    input.slapHovered();
+    expect(sent[1]!.res).toEqual({ ok: false, error: 'COOLDOWN' });
+  });
+
+  it('el atajo B es la bofetada', () => {
+    expect(keyAction('b', data)).toEqual({ type: 'slap' });
   });
 });
