@@ -1,0 +1,145 @@
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: system-ui, sans-serif;
+  color: #efe3cf;
+  user-select: none;
+}
+.hud > * {
+  pointer-events: none;
+}
+.top {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.bar {
+  position: relative;
+  width: 240px;
+  height: 26px;
+  background: #17121c;
+  border: 1px solid #54405f;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  transition: width 0.15s linear;
+}
+.bar.gold .bar-fill {
+  background: linear-gradient(#e8bf3a, #b58a14);
+}
+.bar.mana .bar-fill {
+  background: linear-gradient(#6f8cff, #3a4fbf);
+}
+.bar-text {
+  position: relative;
+  display: block;
+  line-height: 26px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px #000;
+}
+.chip {
+  padding: 4px 10px;
+  height: 26px;
+  line-height: 26px;
+  box-sizing: border-box;
+  background: #17121c;
+  border: 1px solid #54405f;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.clock {
+  font-variant-numeric: tabular-nums;
+}
+.notice {
+  position: absolute;
+  bottom: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(30, 14, 18, 0.92);
+  border: 1px solid #b04a4a;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.bottom {
+  position: absolute;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+.panel {
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(20, 14, 26, 0.88);
+  border: 1px solid #54405f;
+  border-radius: 8px;
+  pointer-events: auto;
+}
+.btn {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 82px;
+  padding: 6px 8px 8px;
+  background: #2b2234;
+  color: inherit;
+  border: 1px solid #54405f;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.btn:hover {
+  background: #3a2d47;
+}
+.btn.active {
+  border-color: #f0c84a;
+  background: #4a3a1f;
+  box-shadow: 0 0 0 1px #f0c84a inset;
+}
+.btn.poor .cost {
+  color: #ff8a7a;
+}
+.btn .name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.btn .cost {
+  font-size: 12px;
+  color: #e8bf3a;
+}
+.btn kbd {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 10px;
+  opacity: 0.6;
+  font-family: inherit;
+}
+.help {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  opacity: 0.6;
+  white-space: nowrap;
+}

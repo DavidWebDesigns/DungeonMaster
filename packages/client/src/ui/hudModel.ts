@@ -1,0 +1,170 @@
+/**
+ * Lo que muestra el HUD, calculado a partir del estado de la simulación. Función pura y probada;
+ * los componentes solo lo pintan.
+ */
+import {
+  createImpCost,
+  impCount,
+  manaRegenPerSecond,
+  rulesOf,
+  treasuryCapacity,
+  type DataSet,
+  type MatchState,
+} from '@dm/shared';
+import type { Tool } from '../input/inputModel';
+
+export interface ToolButton {
+  id: string;
+  label: string;
+  hotkey: string;
+  tool: Tool;
+  active: boolean;
+  hint: string;
+}
+
+export interface RoomButton {
+  id: string;
+  name: string;
+  hotkey: string;
+  costPerTile: number;
+  /** Coste de la sala más pequeña posible. */
+  minCost: number;
+  minSize: string;
+  affordable: boolean;
+  active: boolean;
+}
+
+export interface SpellButton {
+  id: string;
+  name: string;
+  hotkey: string;
+  cost: number;
+  affordable: boolean;
+  /** Segundos que faltan para poder volver a lanzarlo (0 si está listo). */
+  cooldownLeft: number;
+  active: boolean;
+}
+
+export interface HudModel {
+  gold: number;
+  goldCapacity: number;
+  goldFull: boolean;
+  mana: number;
+  manaMax: number;
+  manaRegen: number;
+  imps: number;
+  impsMax: number;
+  clock: string;
+  tools: ToolButton[];
+  rooms: RoomButton[];
+  spell: SpellButton;
+  notice: string | null;
+}
+
+/** Cuánto dura un aviso en pantalla, en segundos de juego. */
+export const NOTICE_SECONDS = 4;
+
+const sameTool = (a: Tool, b: Tool) => JSON.stringify(a) === JSON.stringify(b);
+
+export function formatClock(tick: number, tickRate: number): string {
+  const total = Math.floor(tick / tickRate);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+export function buildHudModel(
+  state: MatchState,
+  data: DataSet,
+  playerId: number,
+  tool: Tool,
+  notice: { text: string; tick: number } | null,
+): HudModel {
+  const rules = rulesOf(data);
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player) throw new Error(`No existe el jugador ${playerId}`);
+  const capacity = treasuryCapacity(state, rules, playerId);
+
+  const toolDefs: Array<{ id: string; label: string; hotkey: string; tool: Tool; hint: string }> = [
+    {
+      id: 'dig',
+      label: 'Excavar',
+      hotkey: 'Clic',
+      tool: { kind: 'dig' },
+      hint: 'Arrastra sobre la tierra o las vetas de oro',
+    },
+    {
+      id: 'claim',
+      label: 'Reclamar',
+      hotkey: 'C',
+      tool: { kind: 'claim' },
+      hint: 'Convierte el suelo en tuyo',
+    },
+    {
+      id: 'reinforce',
+      label: 'Reforzar',
+      hotkey: 'F',
+      tool: { kind: 'reinforce' },
+      hint: 'Solo tú podrás excavar ese muro',
+    },
+    {
+      id: 'cancelDig',
+      label: 'Quitar marca',
+      hotkey: 'U',
+      tool: { kind: 'cancelDig' },
+      hint: 'Cancela las excavaciones marcadas',
+    },
+    {
+      id: 'sell',
+      label: 'Vender',
+      hotkey: 'Supr',
+      tool: { kind: 'sell' },
+      hint: 'Devuelve el 50 % del coste',
+    },
+  ];
+
+  const buildable = data.rooms.filter((r) => r.buildable);
+  const rooms: RoomButton[] = buildable.map((r, i) => {
+    const minTiles = r.minSize.w * r.minSize.h;
+    return {
+      id: r.id,
+      name: r.name,
+      hotkey: String(i + 1),
+      costPerTile: r.goldPerTile,
+      minCost: r.goldPerTile * minTiles,
+      minSize: `${r.minSize.w}×${r.minSize.h}`,
+      affordable: player.gold >= r.goldPerTile * minTiles,
+      active: tool.kind === 'build' && tool.room === r.id,
+    };
+  });
+
+  const spellDef = rules.spells['createImp'];
+  const cost = createImpCost(state, rules, playerId);
+  const readyAt = player.cooldowns['createImp'] ?? 0;
+  const spell: SpellButton = {
+    id: 'createImp',
+    name: spellDef?.name ?? 'Crear Imp',
+    hotkey: 'Q',
+    cost,
+    affordable: player.mana >= cost,
+    cooldownLeft: Math.max(0, (readyAt - state.tick) / data.global.tickRate),
+    active: tool.kind === 'spell' && tool.spell === 'createImp',
+  };
+
+  const showNotice = notice && state.tick - notice.tick < NOTICE_SECONDS * data.global.tickRate;
+  return {
+    gold: Math.floor(player.gold),
+    goldCapacity: capacity,
+    goldFull: capacity > 0 && player.gold >= capacity - 0.5,
+    mana: Math.floor(player.mana),
+    manaMax: data.global.mana.max,
+    manaRegen: manaRegenPerSecond(state, rules, playerId),
+    imps: impCount(state, playerId),
+    impsMax: data.global.imps.max,
+    clock: formatClock(state.tick, data.global.tickRate),
+    tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
+    rooms,
+    spell,
+    notice: showNotice ? notice.text : null,
+  };
+}

@@ -18,5 +18,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
+  },
+  "devDependencies": {
+    "preact-render-to-string": "6.8.3"
   }
 }

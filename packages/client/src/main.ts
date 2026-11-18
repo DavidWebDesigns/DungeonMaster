@@ -1,3 +1,4 @@
+import './ui/hud.css';
 import { loadGameData } from './data/loadGameData';
 import { Game } from './game';
 

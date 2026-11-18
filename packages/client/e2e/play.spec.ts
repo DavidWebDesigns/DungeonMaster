@@ -204,3 +204,35 @@ test('sin errores en consola', async ({ page }) => {
   await page.waitForTimeout(1200);
   expect(errors).toEqual([]);
 });
+
+test('el HUD muestra oro, maná y salas, y sus botones eligen la herramienta', async ({ page }) => {
+  await expect(page.locator('.bar.gold')).toContainText('Oro 5000 / 9000');
+  await expect(page.locator('.bar.mana')).toContainText('Maná');
+  await expect(page.locator('.chip').first()).toContainText('Imps 4/12');
+  await expect(page.locator('.panel.rooms .btn')).toHaveCount(5);
+
+  await page.getByRole('button', { name: /Guarida/ }).click();
+  expect(
+    await page.evaluate(() => (window as unknown as { __dm: DmHook }).__dm.input.tool),
+  ).toEqual({
+    kind: 'build',
+    room: 'lair',
+  });
+  await expect(page.locator('.panel.rooms .btn.active')).toContainText('Guarida');
+
+  await page.getByRole('button', { name: /Reforzar/ }).click();
+  expect(
+    (await page.evaluate(() => (window as unknown as { __dm: DmHook }).__dm.input.tool)).kind,
+  ).toBe('reinforce');
+  await page.screenshot({ path: 'test-results/hud.png' });
+});
+
+test('un clic en el HUD no marca nada en el mapa', async ({ page }) => {
+  await page.getByRole('button', { name: /Quitar marca/ }).click();
+  const log = await page.evaluate(
+    () =>
+      (window as unknown as { __dm: { sandbox: { state: { log: unknown[] } } } }).__dm.sandbox.state
+        .log.length,
+  );
+  expect(log).toBe(0);
+});

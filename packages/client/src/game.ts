@@ -14,6 +14,10 @@ import { DomInput } from './input/domInput';
 import { InputModel } from './input/inputModel';
 import { keyAction } from './input/keymap';
 import { errorMessage } from './input/messages';
+import { render as renderUi } from 'preact';
+import { Hud } from './ui/Hud';
+import { buildHudModel } from './ui/hudModel';
+import { treasuryCapacity, rulesOf } from '@dm/shared';
 import { Renderer } from './render/renderer';
 import { LOCAL_PLAYER, Sandbox } from './sandbox/sandbox';
 
@@ -27,6 +31,9 @@ export class Game {
   /** FPS medidos en el último segundo. */
   fps = 0;
   private readonly dom: DomInput;
+  private readonly hudHost: HTMLElement;
+  private hudKey = '';
+  private wasFull = false;
   private readonly heartTile: { x: number; y: number };
   private lastMs = 0;
   private frames = 0;
@@ -73,6 +80,8 @@ export class Game {
       wheel: (dy) => (this.camera = applyWheel(this.camera, dy)),
       key: (k) => this.onKey(k),
     });
+    this.hudHost = document.createElement('div');
+    host.appendChild(this.hudHost);
     window.addEventListener('resize', () => this.renderer.resize());
   }
 
@@ -91,11 +100,47 @@ export class Game {
         this.data.map,
       );
       this.input.pump();
+      this.updateHud();
       this.renderer.render(this.sandbox, this.camera, nowMs / 1000, this.input.preview());
       this.countFps(nowMs);
       requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
+  }
+
+  /** Repinta el HUD solo cuando algo que se ve ha cambiado (cada tick, o al cambiar de herramienta). */
+  private updateHud(): void {
+    const { state } = this.sandbox;
+    this.checkTreasury();
+    const key = `${state.tick}|${JSON.stringify(this.input.tool)}|${this.notice?.tick ?? ''}`;
+    if (key === this.hudKey) return;
+    this.hudKey = key;
+    const model = buildHudModel(state, this.data, LOCAL_PLAYER, this.input.tool, this.notice);
+    renderUi(
+      Hud({
+        model,
+        onTool: (tool) => {
+          this.input.setTool(tool);
+          this.hudKey = '';
+        },
+      }),
+      this.hudHost,
+    );
+  }
+
+  /** Aviso del consejero cuando la Tesorería se llena. */
+  private checkTreasury(): void {
+    const { state } = this.sandbox;
+    const player = state.players[0];
+    if (!player) return;
+    const cap = treasuryCapacity(state, rulesOf(this.data), LOCAL_PLAYER);
+    const full = cap > 0 && player.gold >= cap - 0.5;
+    if (full && !this.wasFull)
+      this.notice = {
+        text: 'La Tesorería está llena: gasta oro o construye otra.',
+        tick: state.tick,
+      };
+    this.wasFull = full;
   }
 
   /** Posición en píxeles de la ventana del centro de un tile (para pruebas de navegador y avisos en pantalla).
