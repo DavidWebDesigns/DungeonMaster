@@ -1,0 +1,22 @@
+import { defineConfig } from '@playwright/test';
+
+export default defineConfig({
+  testDir: 'packages/client/e2e',
+  timeout: 90_000,
+  retries: 0,
+  reporter: [['list']],
+  use: {
+    baseURL: 'http://localhost:5173',
+    viewport: { width: 1280, height: 720 },
+    launchOptions: {
+      // WebGL por software: funciona en máquinas sin GPU y en CI.
+      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    },
+  },
+  webServer: {
+    command: 'pnpm dev',
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+    timeout: 60_000,
+  },
+});

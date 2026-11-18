@@ -1,0 +1,90 @@
+/**
+ * Motor gráfico: crea Babylon (motor, escena, luces, cámara ortográfica) y dibuja un frame del sandbox.
+ */
+import { Engine } from '@babylonjs/core/Engines/engine';
+import { FreeCamera } from '@babylonjs/core/Cameras/freeCamera';
+import { Camera } from '@babylonjs/core/Cameras/camera';
+import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight';
+import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
+import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
+import { Vector3 } from '@babylonjs/core/Maths/math.vector';
+import { Scene } from '@babylonjs/core/scene';
+import type { DataSet } from '@dm/shared';
+import type { Sandbox } from '../sandbox/sandbox';
+import { cameraPose, orthoBounds, type CameraState } from './cameraMath';
+import { EntitiesView } from './entitiesView';
+import { TerrainView } from './terrainView';
+import { TerrainStyles } from './terrainStyles';
+
+export class Renderer {
+  readonly engine: Engine;
+  readonly scene: Scene;
+  private readonly camera: FreeCamera;
+  private readonly terrain: TerrainView;
+  private readonly styles = new TerrainStyles();
+  private readonly entities: EntitiesView;
+  private lastTick = -1;
+
+  constructor(
+    readonly canvas: HTMLCanvasElement,
+    private readonly data: DataSet,
+    private readonly localPlayer: number,
+  ) {
+    this.engine = new Engine(canvas, true, { preserveDrawingBuffer: false, stencil: false });
+    this.scene = new Scene(this.engine);
+    // El mundo de dibujo es de mano derecha (x = columna, z = fila, y = altura).
+    this.scene.useRightHandedSystem = true;
+    this.scene.clearColor = new Color4(0.05, 0.04, 0.07, 1);
+    this.scene.autoClear = true;
+
+    // Mazmorra oscura y acogedora: ambiente bajo y una luz direccional para dar volumen a los bloques.
+    const ambient = new HemisphericLight('ambient', new Vector3(0, 1, 0), this.scene);
+    ambient.intensity = 0.55;
+    ambient.groundColor = new Color3(0.25, 0.22, 0.3);
+    const sun = new DirectionalLight('sun', new Vector3(-0.5, -1, -0.3), this.scene);
+    sun.intensity = 0.8;
+
+    this.camera = new FreeCamera('cam', new Vector3(0, 50, 0), this.scene);
+    this.camera.mode = Camera.ORTHOGRAPHIC_CAMERA;
+    this.camera.minZ = 0.1;
+    this.camera.maxZ = 400;
+
+    this.terrain = new TerrainView(this.scene, data.map.width, data.map.height);
+    this.entities = new EntitiesView(this.scene);
+  }
+
+  /** Aspecto actual de la ventana (ancho / alto). */
+  get aspect(): number {
+    return this.canvas.clientWidth / Math.max(1, this.canvas.clientHeight);
+  }
+
+  resize(): void {
+    this.engine.resize();
+  }
+
+  render(sandbox: Sandbox, cam: CameraState, timeSeconds: number): void {
+    const pose = cameraPose(cam);
+    this.camera.position.set(...pose.position);
+    this.camera.setTarget(new Vector3(...pose.target));
+    const b = orthoBounds(cam);
+    this.camera.orthoLeft = b.left;
+    this.camera.orthoRight = b.right;
+    this.camera.orthoTop = b.top;
+    this.camera.orthoBottom = b.bottom;
+
+    if (sandbox.state.tick !== this.lastTick) {
+      this.lastTick = sandbox.state.tick;
+      this.terrain.update(
+        this.styles.sync(sandbox.state, this.data, this.localPlayer),
+        this.styles.styles,
+      );
+    }
+    this.entities.update(sandbox, this.data, timeSeconds);
+    this.scene.render();
+  }
+
+  dispose(): void {
+    this.scene.dispose();
+    this.engine.dispose();
+  }
+}
