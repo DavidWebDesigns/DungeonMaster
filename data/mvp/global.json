@@ -5,6 +5,7 @@
     "min": 2,
     "max": 4,
     "cornersByPlayerCount": {
+      "1": [0],
       "2": [0, 2],
       "3": [0, 1, 2],
       "4": [0, 1, 2, 3]
@@ -33,7 +34,8 @@
     "claimSeconds": 1.5,
     "enemyClaimSeconds": 3,
     "enemyClaimBlockRadius": 3,
-    "reinforceSeconds": 4
+    "reinforceSeconds": 4,
+    "autoClaimRadius": 10
   },
   "connection": { "reconnectSeconds": 120, "inactivitySurrenderSeconds": 300 },
   "commands": { "maxPerSecond": 30, "maxTilesPerCommand": 64 },

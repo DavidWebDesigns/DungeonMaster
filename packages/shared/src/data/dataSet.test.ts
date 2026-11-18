@@ -170,4 +170,19 @@ describe('errores de referencias cruzadas', () => {
     (raw.global as any).players.cornersByPlayerCount['2'] = [0, 7];
     expectError(parseDataSet(raw), 'global.json', 'la esquina 7 no existe');
   });
+
+  it('rechaza un radio de reclamo automático negativo o con decimales', () => {
+    const raw = realRawData();
+    (raw.global as any).work.autoClaimRadius = -3;
+    expectError(parseDataSet(raw), 'global.json', 'work.autoClaimRadius');
+    const raw2 = realRawData();
+    (raw2.global as any).work.autoClaimRadius = 2.5;
+    expectError(parseDataSet(raw2), 'global.json', 'work.autoClaimRadius');
+  });
+
+  it('detecta una esquina inexistente en el modo de un solo jugador', () => {
+    const raw = realRawData();
+    (raw.global as any).players.cornersByPlayerCount['1'] = [9];
+    expectError(parseDataSet(raw), 'global.json', 'la esquina 9 no existe');
+  });
 });

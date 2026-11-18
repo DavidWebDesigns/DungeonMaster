@@ -45,6 +45,8 @@ export const GlobalConfig = z.strictObject({
     enemyClaimSeconds: PositiveNumber,
     enemyClaimBlockRadius: NonNegativeInt,
     reinforceSeconds: PositiveNumber,
+    /** Radio (en tiles) en que un Imp ocioso busca suelo sin dueño que reclamar por su cuenta. */
+    autoClaimRadius: PositiveInt,
   }),
   connection: z.strictObject({
     reconnectSeconds: Seconds,
