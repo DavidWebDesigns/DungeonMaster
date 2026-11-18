@@ -16,8 +16,8 @@ import type { DataSet, MatchState, Room } from '@dm/shared';
 import type { Sandbox } from '../sandbox/sandbox';
 import { playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
-
-const IMP_HEIGHT = 0.7;
+import { IMP_HEIGHT, IMP_RADIUS } from './scale';
+import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 
 function material(scene: Scene, color: RGB, emissive = 0): StandardMaterial {
   const m = new StandardMaterial(`m${color.join('')}${emissive}`, scene);
@@ -56,15 +56,26 @@ export class EntitiesView {
       if (!m) {
         const body = CreateCapsule(
           `imp${imp.id}`,
-          { height: IMP_HEIGHT, radius: 0.19 },
+          { height: IMP_HEIGHT, radius: IMP_RADIUS },
           this.scene,
         );
         body.material = material(this.scene, playerColor(imp.owner));
         body.isPickable = false;
-        const gold = CreateBox(`impGold${imp.id}`, { size: 0.2 }, this.scene);
+        // Sombra del color del jugador bajo los pies: ayuda a ver al Imp aunque sea pequeño.
+        const shadow = CreateDisc(
+          `impShadow${imp.id}`,
+          { radius: 0.2, tessellation: 16 },
+          this.scene,
+        );
+        shadow.material = material(this.scene, playerColor(imp.owner), 0.5);
+        shadow.parent = body;
+        shadow.rotation.x = Math.PI / 2;
+        shadow.position.y = -IMP_HEIGHT / 2 - 0.07;
+        shadow.isPickable = false;
+        const gold = CreateBox(`impGold${imp.id}`, { size: 0.12 }, this.scene);
         gold.material = this.goldMat;
         gold.parent = body;
-        gold.position.y = IMP_HEIGHT / 2 + 0.1;
+        gold.position.y = IMP_HEIGHT / 2 + 0.08;
         gold.isPickable = false;
         m = { body, gold };
         this.imps.set(imp.id, m);

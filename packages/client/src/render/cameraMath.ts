@@ -13,9 +13,9 @@ export const ISO = {
   /** Giro base: la cámara mira en diagonal, y cada paso de rotación suma 90°. */
   baseYawDeg: 45,
   /** Semialtura visible, en tiles: menos = más cerca. */
-  minZoom: 5,
+  minZoom: 4,
   maxZoom: 40,
-  defaultZoom: 14,
+  defaultZoom: 11,
   /** Distancia de la cámara al punto de mira; en ortográfica solo evita recortes. */
   distance: 120,
   /** Altura de un muro de tierra o roca. */
