@@ -3,11 +3,20 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Cliente de navegador (Vite + Babylon.js + Preact). Se implementa en la fase 2.",
+  "description": "Cliente de navegador (Vite + Babylon.js + Preact).",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@dm/shared": "workspace:*"
+    "@babylonjs/core": "9.37.1",
+    "@dm/shared": "workspace:*",
+    "@preact/preset-vite": "2.10.6",
+    "preact": "11.2.0",
+    "vite": "8.3.8"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   }
 }

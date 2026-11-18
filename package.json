@@ -9,7 +9,7 @@
     "node": ">=22.12.0"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json && tsc -p packages/client/tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -18,7 +18,7 @@
     "validate-data": "tsx tools/validate-data/index.ts",
     "gen-map": "tsx tools/gen-map/index.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm validate-data && pnpm test",
-    "dev": "tsx tools/lib/not-yet.ts dev 2",
+    "dev": "pnpm --filter @dm/client dev",
     "sim": "tsx tools/lib/not-yet.ts sim 4",
     "balance": "tsx tools/lib/not-yet.ts balance 4"
   },
