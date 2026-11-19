@@ -4,6 +4,7 @@ import {
   CREATURE_LOOKS,
   hpColor,
   hpFraction,
+  moodCloudOf,
   lookOf,
   MOOD_ICONS,
   moodIconOf,
@@ -46,5 +47,29 @@ describe('creatureStyle', () => {
     expect(activityLabel({ held: false, goal: 'bed', mode: 'moving' })).toBe('Va a su cama');
     expect(activityLabel({ held: false, goal: 'training', mode: 'acting' })).toBe('Entrenando');
     expect(activityLabel({ held: false, goal: 'none', mode: 'idle' })).toBe('Descansando');
+  });
+});
+
+describe('moodCloudOf', () => {
+  it('enfadada es una nube gris oscura, ancha y baja', () => {
+    const c = moodCloudOf('angry', 0);
+    expect(c.scale.x).toBeGreaterThan(c.scale.y);
+    expect(Math.max(...c.color)).toBeLessThan(0.5);
+  });
+
+  it('furiosa relampaguea: casi siempre oscura y a ratos amarillo vivo', () => {
+    const flash = moodCloudOf('furious', 0.05);
+    const dark = moodCloudOf('furious', 0.5);
+    expect(flash.color[0]).toBeGreaterThan(0.9);
+    expect(Math.max(...dark.color)).toBeLessThan(0.4);
+    // Se repite cada 0,9 s.
+    expect(moodCloudOf('furious', 0.95).color).toEqual(flash.color);
+  });
+
+  it('el resto de ánimos mantienen la bolita normal', () => {
+    expect(moodCloudOf('happy', 3)).toEqual({
+      color: MOOD_ICONS['happy']!.color,
+      scale: { x: 1, y: 1 },
+    });
   });
 });

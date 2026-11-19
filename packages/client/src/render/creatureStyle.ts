@@ -45,6 +45,29 @@ export const MOOD_ICONS: Readonly<Record<string, MoodIcon>> = {
 export const moodIconOf = (band: string): MoodIcon =>
   MOOD_ICONS[band] ?? (MOOD_ICONS['neutral'] as MoodIcon);
 
+export interface MoodCloud {
+  color: RGB;
+  /** Escala de la bolita: las nubes son anchas y bajas. */
+  scale: { x: number; y: number };
+}
+
+/**
+ * Cómo se ve la marca de ánimo sobre la cabeza. Enfadada: nube de tormenta gris oscura; furiosa: la nube relampaguea
+ * (alterna con un destello amarillo). Los demás ánimos son la bolita de siempre. `timeSeconds` es solo de dibujo.
+ */
+export function moodCloudOf(band: string, timeSeconds: number): MoodCloud {
+  const icon = moodIconOf(band);
+  if (band === 'angry') return { color: [0.35, 0.33, 0.4], scale: { x: 1.9, y: 1 } };
+  if (band === 'furious') {
+    // Destello de unos 0,15 s cada 0,9 s.
+    const flash = timeSeconds % 0.9 < 0.15;
+    return flash
+      ? { color: [1, 0.95, 0.35], scale: { x: 2.2, y: 1.2 } }
+      : { color: [0.22, 0.2, 0.28], scale: { x: 2.2, y: 1.2 } };
+  }
+  return { color: icon.color, scale: { x: 1, y: 1 } };
+}
+
 /** Fracción de vida de 0 a 1. */
 export function hpFraction(c: Pick<Creature, 'hp'>, maxHp: number): number {
   return maxHp > 0 ? Math.max(0, Math.min(1, c.hp / maxHp)) : 0;

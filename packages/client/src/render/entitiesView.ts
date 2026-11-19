@@ -19,7 +19,7 @@ import type { GameSource } from '../sandbox/source';
 import { playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
-import { hpColor, hpFraction, lookOf, moodIconOf, trapLookOf } from './creatureStyle';
+import { hpColor, hpFraction, lookOf, moodCloudOf, moodIconOf, trapLookOf } from './creatureStyle';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 
 function material(scene: Scene, color: RGB, emissive = 0): StandardMaterial {
@@ -262,7 +262,9 @@ export class EntitiesView {
       }
       const icon = moodIconOf(c.band);
       m.mood.setEnabled(icon.showOverHead);
-      m.moodMat.emissiveColor = new Color3(...icon.color);
+      const cloud = moodCloudOf(c.band, timeSeconds);
+      m.moodMat.emissiveColor = new Color3(...cloud.color);
+      m.mood.scaling.set(cloud.scale.x, cloud.scale.y, cloud.scale.x);
     }
     for (const [id, m] of this.creatures) {
       if (!alive.has(id)) {

@@ -3,6 +3,7 @@ import { applyCommand, newCreature, rulesOf, step, tileIndex, type SimEvent } fr
 import { loadGameData } from '../data/loadGameData';
 import { LOCAL_PLAYER, Sandbox } from '../sandbox/sandbox';
 import { deriveEffects, takeSnapshot, type Effect } from './effects';
+import { decay, heartHit, initialScreenFx, MAX_SHAKE_PX, shakeOffset } from './screenFx';
 import { ParticleSim, PARTICLES } from './particleSim';
 import { MIN_REPEAT_SECONDS, SOUND_RECIPES } from './sounds';
 
@@ -335,5 +336,65 @@ describe('efectos de trampas', () => {
     ]);
     expect(sounds(out)).toEqual(['build']);
     expect(bursts(out)).toHaveLength(1);
+  });
+});
+
+describe('Corazón atacado', () => {
+  const sb = new Sandbox(data, 1);
+  const fx = (events: SimEvent[]) =>
+    deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER);
+  const heartHit: SimEvent = {
+    type: 'hit',
+    attackerOwner: 2,
+    targetOwner: 1,
+    targetKind: 'heart',
+    damage: 100,
+    x: 5.5,
+    y: 5.5,
+  };
+
+  it('un golpe a mi Corazón hace temblar la pantalla y suena la alarma', () => {
+    const out = fx([heartHit]);
+    expect(out.find((e) => e.type === 'heartAlert')).toBeDefined();
+    expect(sounds(out)).toContain('alarm');
+  });
+
+  it('un golpe al Corazón de otro jugador no activa la alarma', () => {
+    const out = fx([{ ...heartHit, targetOwner: 2, attackerOwner: 1 }]);
+    expect(out.find((e) => e.type === 'heartAlert')).toBeUndefined();
+    expect(sounds(out)).not.toContain('alarm');
+  });
+
+  it('un golpe fuerte tiembla más que uno flojo, sin pasar de 1', () => {
+    const s = (damage: number) =>
+      (fx([{ ...heartHit, damage }]).find((e) => e.type === 'heartAlert') as { strength: number })
+        .strength;
+    expect(s(300)).toBeGreaterThan(s(20));
+    expect(s(99999)).toBe(1);
+  });
+});
+
+describe('screenFx', () => {
+  it('el temblor se apaga solo y el pulso rojo dura más', () => {
+    let s = heartHit(initialScreenFx(), 0.5);
+    expect(s.alert).toBe(1);
+    s = decay(s, 0.3);
+    expect(s.shake).toBeLessThan(0.5);
+    expect(s.alert).toBeGreaterThan(0.5);
+    s = decay(s, 5);
+    expect(s).toEqual({ shake: 0, alert: 0 });
+  });
+
+  it('varios golpes seguidos no pasan de temblor 1', () => {
+    let s = initialScreenFx();
+    for (let i = 0; i < 10; i++) s = heartHit(s, 0.4);
+    expect(s.shake).toBe(1);
+  });
+
+  it('el desplazamiento nunca pasa del máximo y sin temblor es cero', () => {
+    expect(shakeOffset(initialScreenFx(), () => 1)).toEqual({ x: 0, y: 0 });
+    const o = shakeOffset({ shake: 1, alert: 0 }, () => 1);
+    expect(Math.abs(o.x)).toBeLessThanOrEqual(MAX_SHAKE_PX);
+    expect(Math.abs(o.y)).toBeLessThanOrEqual(MAX_SHAKE_PX);
   });
 });

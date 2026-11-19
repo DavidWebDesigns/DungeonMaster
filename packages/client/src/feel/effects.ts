@@ -25,7 +25,8 @@ export type SoundName =
   | 'zap'
   | 'horn'
   | 'gameover'
-  | 'trap';
+  | 'trap'
+  | 'alarm';
 
 export type Effect =
   | {
@@ -39,7 +40,9 @@ export type Effect =
       up: number;
       size: number;
     }
-  | { type: 'sound'; sound: SoundName; volume: number };
+  | { type: 'sound'; sound: SoundName; volume: number }
+  /** Atacan el Corazón del jugador local: temblor, pulso rojo y alarma. `strength` de 0 a 1. */
+  | { type: 'heartAlert'; strength: number };
 
 /** Lo que hay que recordar de un tick al siguiente para detectar cambios. */
 export interface FeelSnapshot {
@@ -64,6 +67,9 @@ const PURPLE: RGB = [0.7, 0.4, 1];
 
 /** Cada cuántos ticks suelta una moneda un Imp que está minando (para no llenar la pantalla). */
 const COIN_EVERY_TICKS = 3;
+
+/** Daño de un golpe al Corazón que hace temblar la pantalla al máximo (decoración, no cambia la partida). */
+const HEART_SHAKE_DAMAGE = 400;
 
 export function deriveEffects(
   prev: FeelSnapshot,
@@ -118,6 +124,13 @@ export function deriveEffects(
     if (e.type === 'hit') {
       if (!seesAt(e.x, e.y)) continue;
       const heart = e.targetKind === 'heart';
+      if (heart && e.targetOwner === localPlayer) {
+        out.push({
+          type: 'heartAlert',
+          strength: Math.min(1, 0.15 + e.damage / HEART_SHAKE_DAMAGE),
+        });
+        out.push({ type: 'sound', sound: 'alarm', volume: 0.7 });
+      }
       burst(
         e.x,
         0.6,

@@ -10,6 +10,7 @@ import { AudioEngine } from './feel/sounds';
 import { DomInput } from './input/domInput';
 import { InputModel, type HoverUnit } from './input/inputModel';
 import { keyAction } from './input/keymap';
+import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { errorMessage } from './input/messages';
 import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
 import {
@@ -46,6 +47,8 @@ export class Game {
   fps = 0;
   readonly particles = new ParticleSim();
   readonly audio = new AudioEngine();
+  private screenFx = initialScreenFx();
+  private readonly alertEl: HTMLDivElement;
   private readonly dom: DomInput;
   private feelSnapshot: FeelSnapshot;
   private readonly hudHost: HTMLElement;
@@ -81,6 +84,9 @@ export class Game {
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block;outline:none';
     host.appendChild(canvas);
+    this.alertEl = document.createElement('div');
+    this.alertEl.className = 'heart-alert';
+    host.appendChild(this.alertEl);
     this.renderer = new Renderer(canvas, data, this.me);
 
     const base = data.map.bases.find(
@@ -219,6 +225,7 @@ export class Game {
       );
       for (const e of effects) {
         if (e.type === 'burst') this.particles.burst(e);
+        else if (e.type === 'heartAlert') this.screenFx = heartHit(this.screenFx, e.strength);
         else this.playSound(e.sound, e.volume);
       }
       for (const a of adviceFor(events, state, this.data, this.me, (id) =>
@@ -230,6 +237,16 @@ export class Game {
       this.lastFeelTick = state.tick;
     }
     this.particles.step(dtSeconds);
+    this.applyScreenFx(dtSeconds);
+  }
+
+  /** Temblor del lienzo y pulso rojo del borde (decoración: no cambia nada de la partida). */
+  private applyScreenFx(dtSeconds: number): void {
+    this.screenFx = decay(this.screenFx, dtSeconds);
+    const o = shakeOffset(this.screenFx, Math.random);
+    this.renderer.canvas.style.transform =
+      o.x === 0 && o.y === 0 ? '' : `translate(${o.x}px, ${o.y}px)`;
+    this.alertEl.style.opacity = String(this.screenFx.alert);
   }
 
   private playSound(sound: SoundName, volume: number): void {

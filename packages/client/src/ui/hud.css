@@ -325,3 +325,13 @@
   border-bottom: 1px solid #3a2d47;
   text-align: left;
 }
+
+/* Pulso rojo en el borde cuando atacan tu Corazón (opacidad la pone game.ts). */
+.heart-alert {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  box-shadow: inset 0 0 120px 30px rgba(255, 30, 30, 0.75);
+  z-index: 3;
+}
