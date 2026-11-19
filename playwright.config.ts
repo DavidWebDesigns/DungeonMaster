@@ -15,10 +15,19 @@ export default defineConfig({
       args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
     },
   },
-  webServer: {
-    command: 'pnpm dev',
-    url: 'http://localhost:5173',
-    reuseExistingServer: true,
-    timeout: 60_000,
-  },
+  webServer: [
+    {
+      command: 'pnpm dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+    {
+      // Servidor de partidas en red. Colyseus responde 404 en la raíz, así que se espera solo a que el puerto acepte conexiones.
+      command: 'pnpm --filter @dm/server start',
+      port: 2567,
+      reuseExistingServer: true,
+      timeout: 60_000,
+    },
+  ],
 });

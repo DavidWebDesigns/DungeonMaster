@@ -59,15 +59,15 @@ const COLORS = 4;
 
 /** Nombre de jugador limpio: sin espacios sobrantes ni caracteres de control, con tope de longitud. */
 export function cleanNick(raw: unknown): string {
-  // eslint-disable-next-line no-control-regex
-  const s =
-    typeof raw === 'string'
-      ? raw
-          .replace(/[\u0000-\u001f\u007f<>]/g, '')
-          .trim()
-          .slice(0, NICK_MAX)
-      : '';
-  return s;
+  if (typeof raw !== 'string') return '';
+  let out = '';
+  for (const ch of raw) {
+    const code = ch.codePointAt(0) ?? 0;
+    // Fuera caracteres de control y los símbolos de etiquetas.
+    if (code < 32 || code === 127 || ch === '<' || ch === '>') continue;
+    out += ch;
+  }
+  return out.trim().slice(0, NICK_MAX);
 }
 
 interface Slot {

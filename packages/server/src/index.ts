@@ -8,11 +8,5 @@ export {
   type OutMessage,
   type SessionOptions,
 } from './session';
-export {
-  MatchRoom,
-  configureServer,
-  generateCode,
-  normalizeCode,
-  type ServerConfig,
-} from './matchRoom';
+export { MatchRoom, configureServer, type ServerConfig } from './matchRoom';
 export { startServer } from './server';

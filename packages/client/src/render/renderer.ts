@@ -10,7 +10,7 @@ import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
 import { rulesOf, visibleMask, type DataSet } from '@dm/shared';
-import type { Sandbox } from '../sandbox/sandbox';
+import type { GameSource } from '../sandbox/source';
 import { cameraPose, orthoBounds, type CameraState } from './cameraMath';
 import { EntitiesView } from './entitiesView';
 import { OverlayView } from './overlayView';
@@ -77,7 +77,7 @@ export class Renderer {
   }
 
   render(
-    sandbox: Sandbox,
+    sandbox: GameSource,
     cam: CameraState,
     timeSeconds: number,
     preview: Preview,

@@ -22,7 +22,8 @@
     "sim": "tsx tools/sim/index.ts",
     "balance": "tsx tools/balance/index.ts",
     "e2e": "playwright test",
-    "server": "pnpm --filter @dm/server start"
+    "server": "pnpm --filter @dm/server start",
+    "perf": "vitest run --config vitest.perf.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -10,6 +10,8 @@ export interface HudProps {
   onSurrender?(): void;
   /** Pulsó "Jugar de nuevo" en la pantalla final. */
   onRestart?(): void;
+  /** Estadísticas de fin de partida (en red). */
+  endStats?: Array<{ id: number; nick: string; goldMined: number; creaturesLost: number }>;
   /** El botón de rendirse espera confirmación. */
   surrenderArmed?: boolean;
 }
@@ -33,6 +35,7 @@ export function Hud({
   onSurrender,
   onRestart,
   surrenderArmed,
+  endStats,
 }: HudProps) {
   return (
     <div class="hud">
@@ -77,6 +80,26 @@ export function Hud({
           <div class="gameover-card">
             <h1>{model.gameOver.title}</h1>
             <p>{model.gameOver.detail}</p>
+            {endStats && endStats.length > 0 && (
+              <table class="endstats">
+                <thead>
+                  <tr>
+                    <th>Jugador</th>
+                    <th>Oro minado</th>
+                    <th>Criaturas perdidas</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {endStats.map((p) => (
+                    <tr key={p.id}>
+                      <td>{p.nick}</td>
+                      <td>{p.goldMined}</td>
+                      <td>{p.creaturesLost}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
             <button class="btn" onClick={() => onRestart?.()}>
               Jugar de nuevo
             </button>

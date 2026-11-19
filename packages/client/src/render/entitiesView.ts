@@ -15,7 +15,7 @@ import type { Scene } from '@babylonjs/core/scene';
 import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
 import { Mesh as BabylonMesh } from '@babylonjs/core/Meshes/mesh';
 import { creatureMaxHp, rulesOf, type DataSet, type MatchState, type Room } from '@dm/shared';
-import type { Sandbox } from '../sandbox/sandbox';
+import type { GameSource } from '../sandbox/source';
 import { playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
@@ -65,7 +65,7 @@ export class EntitiesView {
 
   /** Coloca a los Imps y reconstruye los accesorios de las salas si cambiaron. */
   update(
-    sandbox: Sandbox,
+    sandbox: GameSource,
     data: DataSet,
     timeSeconds: number,
     handAt: { x: number; y: number } | null = null,
@@ -211,7 +211,7 @@ export class EntitiesView {
 
   /** Criaturas: cápsulas de color por tipo con barra de vida (si están heridas) e icono de ánimo. */
   private updateCreatures(
-    sandbox: Sandbox,
+    sandbox: GameSource,
     data: DataSet,
     timeSeconds: number,
     handAt: { x: number; y: number } | null,

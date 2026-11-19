@@ -5,6 +5,7 @@
  * igual que pasará con la red en la fase 5. El tiempo lo pone quien llama (`advance`), así que no
  * hay relojes ocultos y las pruebas son deterministas.
  */
+import type { GameSource } from './source';
 import {
   applyCommand,
   createBot,
@@ -35,7 +36,8 @@ export interface SandboxOptions {
   opponent?: boolean;
 }
 
-export class Sandbox {
+export class Sandbox implements GameSource {
+  readonly localPlayer = LOCAL_PLAYER;
   readonly state: MatchState;
   readonly data: DataSet;
   /** Posición de cada Imp al inicio del último tick, para interpolar el dibujo a 60 fps. */

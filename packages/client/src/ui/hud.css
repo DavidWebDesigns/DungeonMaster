@@ -313,3 +313,15 @@
   color: #b9a7c9;
   font-size: 10px;
 }
+
+.endstats {
+  margin: 0 auto 16px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.endstats th,
+.endstats td {
+  padding: 4px 12px;
+  border-bottom: 1px solid #3a2d47;
+  text-align: left;
+}

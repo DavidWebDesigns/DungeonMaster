@@ -8,7 +8,10 @@ export async function startServer(
   cfg: ServerConfig,
 ): Promise<{ server: Server; port: number }> {
   configureServer(cfg);
-  const server = new Server({ transport: new WebSocketTransport() });
+  // Latidos cada 1,5 s y 2 sin respuesta: una conexión caída se detecta en ~4 s (si no, la reconexión tarda en poder entrar).
+  const server = new Server({
+    transport: new WebSocketTransport({ pingInterval: 1500, pingMaxRetries: 2 }),
+  });
   server.define('match', MatchRoom).filterBy(['code']);
   await server.listen(port);
   const address = (

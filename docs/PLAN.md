@@ -14,7 +14,8 @@
 | Fase 2: cliente gris jugable en local | **Implementada.** Puerta 2 técnica cumplida (60 fps medidos con WebGL por software, tick de 0,02 ms). **Falta el playtest humano de sensaciones.** |
 | Fase 3: criaturas vivas | **Implementada.** Puerta 3 cubierta por pruebas. Falta jugarla (playtest humano). |
 | Fase 4: combate, victoria y bots | **Implementada.** Falta cerrar la Puerta 4: el reparto de victorias por esquina se deja para cuando esté la plantilla final de criaturas (dudas 46 y 61). Falta el playtest humano. |
-| Fases 5 y 6 | Pendientes. |
+| Fase 5: multijugador | **Implementada.** Criterios automáticos de la Puerta 5 cubiertos (rendimiento, ancho de banda y reconexión). **Falta el Playtest #1 con 3 o 4 personas reales en red.** |
+| Fase 6 | Pendiente. |
 
 ### Qué dejó hecho la fase 0
 

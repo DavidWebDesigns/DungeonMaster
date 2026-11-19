@@ -9,7 +9,8 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 - Fase 2 (cliente gris jugable en local): implementada y probada (`pnpm dev`, `pnpm e2e`). Falta el playtest humano de sensaciones para cumplir la Puerta 2.
 - Fase 3 (criaturas vivas): implementada y probada. Puerta 3 cubierta por pruebas (`sim/creatures.test.ts` y `sim/gate3.test.ts`). Falta el playtest humano de las fases 2 y 3.
 - Fase 4 (combate, victoria, niebla, bots): implementada y probada. Puerta 4 pendiente solo en el reparto por esquina (docs/DUDAS.md #46 y #61), a propósito hasta tener la plantilla final de criaturas.
-- Siguiente: playtest de las fases 2 a 4 y fase 5 (multijugador). Propón archivos y pruebas antes de escribir código.
+- Fase 5 (multijugador): implementada y probada con dos navegadores reales (lobby, partida, reconexión). Falta el Playtest #1 en red con 3 o 4 personas.
+- Siguiente: playtest de las fases 2 a 5 y fase 6 (pulido). Propón archivos y pruebas antes de escribir código.
 
 ## Reglas de arquitectura
 
@@ -49,7 +50,9 @@ pnpm format         Prettier
 pnpm validate-data  valida /data contra los esquemas
 pnpm gen-map        regenera data/mvp/maps/map-4p-01.json
 pnpm dev            cliente en local con el sandbox (fase 2); el servidor llega en la fase 5
-pnpm e2e            pruebas de navegador con Playwright (cliente en pnpm dev)
+pnpm e2e            pruebas de navegador con Playwright (arrancan solas el cliente y el servidor)
+pnpm server         servidor de partidas en red (ws://localhost:2567); cliente en red: ?mode=online
+pnpm perf           pruebas de rendimiento (tiempo real, fuera de pnpm check)
 pnpm sim            partidas headless de bots: --games N --players P --jobs K --out f.json
 pnpm balance        informe de balance (tablas de criaturas; --games N añade partidas)
 ```

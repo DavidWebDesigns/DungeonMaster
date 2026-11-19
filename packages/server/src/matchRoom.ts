@@ -6,7 +6,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Room, type Client } from '@colyseus/core';
-import { MSG, type DataSet } from '@dm/shared';
+import { MSG, generateCode, normalizeCode, type DataSet } from '@dm/shared';
 import { MatchSession, cleanNick } from './session';
 
 /** Opciones del servidor compartidas por todas las salas. */
@@ -25,23 +25,6 @@ export function configureServer(c: ServerConfig): void {
   config = c;
 }
 
-const CODE_LETTERS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-
-/** Código de sala de 6 letras (sin las que se confunden: I y O). */
-export function generateCode(length = 6, random: () => number = Math.random): string {
-  let s = '';
-  for (let i = 0; i < length; i++) s += CODE_LETTERS[Math.floor(random() * CODE_LETTERS.length)];
-  return s;
-}
-
-export const normalizeCode = (raw: unknown): string =>
-  typeof raw === 'string'
-    ? raw
-        .toUpperCase()
-        .replace(/[^A-Z]/g, '')
-        .slice(0, 6)
-    : '';
-
 export class MatchRoom extends Room {
   override maxClients = 4;
   private session!: MatchSession;
@@ -52,7 +35,7 @@ export class MatchRoom extends Room {
   override async onCreate(options: { code?: string }): Promise<void> {
     if (!config) throw new Error('El servidor no está configurado (configureServer).');
     this.cfg = config;
-    const code = normalizeCode(options.code) || generateCode();
+    const code = normalizeCode(options.code) || generateCode(Math.random);
     this.session = new MatchSession({
       code,
       data: this.cfg.data,

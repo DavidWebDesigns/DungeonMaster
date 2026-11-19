@@ -20,7 +20,9 @@ import {
   type CameraState,
 } from './render/cameraMath';
 import { Renderer } from './render/renderer';
-import { LOCAL_PLAYER, Sandbox } from './sandbox/sandbox';
+import type { GameSource } from './sandbox/source';
+import { ghostPreview } from './net/ghosts';
+import type { Command, EndedMsg } from '@dm/shared';
 import { adviceFor } from './ui/advisor';
 import { Hud } from './ui/Hud';
 import { buildHudModel, NOTICE_SECONDS, NOTICES_VISIBLE } from './ui/hudModel';
@@ -30,11 +32,16 @@ import { NoticeLog } from './ui/notices';
 const CREATURE_PICK_RADIUS = 0.09;
 
 export class Game {
-  readonly sandbox: Sandbox;
+  /** La fuente del estado: el sandbox local o la conexión con el servidor. */
+  readonly sandbox: GameSource;
+  /** Jugador local. */
+  readonly me: number;
   readonly renderer: Renderer;
   camera: CameraState;
   readonly input: InputModel;
   readonly notices: NoticeLog;
+  /** Estadísticas de fin de partida (en red). */
+  endStats: EndedMsg['stats'] | null = null;
   /** FPS medidos en el último segundo. */
   fps = 0;
   readonly particles = new ParticleSim();
@@ -61,11 +68,11 @@ export class Game {
   constructor(
     host: HTMLElement,
     readonly data: DataSet,
-    seed: number,
-    options: { versus?: boolean } = {},
+    source: GameSource,
   ) {
-    this.versus = options.versus === true;
-    this.sandbox = new Sandbox(data, seed, { opponent: this.versus });
+    this.sandbox = source;
+    this.me = source.localPlayer;
+    this.versus = source.versus;
     this.feelSnapshot = takeSnapshot(this.sandbox.state);
     this.notices = new NoticeLog({
       lifeTicks: NOTICE_SECONDS * data.global.tickRate,
@@ -74,9 +81,11 @@ export class Game {
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block;outline:none';
     host.appendChild(canvas);
-    this.renderer = new Renderer(canvas, data, LOCAL_PLAYER);
+    this.renderer = new Renderer(canvas, data, this.me);
 
-    const base = data.map.bases.find((b) => b.slot === this.sandbox.state.players[0]?.slot);
+    const base = data.map.bases.find(
+      (b) => b.slot === this.sandbox.state.players.find((p) => p.id === this.me)?.slot,
+    );
     const heart = base?.heart ?? { x: 32, y: 32, w: 3, h: 3 };
     this.heartTile = {
       x: heart.x + Math.floor(heart.w / 2),
@@ -88,7 +97,7 @@ export class Game {
       {
         state: this.sandbox.state,
         data,
-        player: LOCAL_PLAYER,
+        player: this.me,
         send: (cmd) => this.sandbox.send(cmd),
       },
       (cmd, res) => {
@@ -160,7 +169,7 @@ export class Game {
         this.sandbox,
         this.camera,
         nowMs / 1000,
-        this.input.preview(),
+        this.previewWithGhosts(),
         this.particles,
         hover ? { x: hover.x + 0.5, y: hover.y + 0.5 } : null,
         this.versus,
@@ -175,6 +184,18 @@ export class Game {
 
   stop(): void {
     this.running = false;
+  }
+
+  /** Muestra un aviso al jugador (por ejemplo, un error que devuelve el servidor). */
+  notify(text: string): void {
+    this.say(text);
+    this.playSound('error', 0.8);
+  }
+
+  /** Guarda las estadísticas de la partida terminada para la pantalla de resultados. */
+  setEndStats(msg: EndedMsg): void {
+    this.endStats = msg.stats;
+    this.hudKey = '';
   }
 
   /** Aviso del consejero en pantalla. */
@@ -193,14 +214,14 @@ export class Game {
         state,
         this.data,
         events,
-        LOCAL_PLAYER,
-        this.versus ? (x, y) => canSee(state, rules, LOCAL_PLAYER, x, y) : undefined,
+        this.me,
+        this.versus ? (x, y) => canSee(state, rules, this.me, x, y) : undefined,
       );
       for (const e of effects) {
         if (e.type === 'burst') this.particles.burst(e);
         else this.playSound(e.sound, e.volume);
       }
-      for (const a of adviceFor(events, state, this.data, LOCAL_PLAYER, (id) =>
+      for (const a of adviceFor(events, state, this.data, this.me, (id) =>
         this.creatureTypes.get(id),
       )) {
         this.say(a.text, a.key, a.cooldownTicks);
@@ -226,7 +247,7 @@ export class Game {
     const model = buildHudModel(
       state,
       this.data,
-      LOCAL_PLAYER,
+      this.me,
       this.input.tool,
       this.notices.active(state.tick),
     );
@@ -237,6 +258,7 @@ export class Game {
           this.input.setTool(tool);
           this.hudKey = '';
         },
+        endStats: this.endStats ?? undefined,
         surrenderArmed: armed,
         onSurrender: () => this.surrender(),
         onRestart: () => window.location.reload(),
@@ -247,6 +269,13 @@ export class Game {
       }),
       this.hudHost,
     );
+  }
+
+  /** Lo que se dibuja bajo el cursor; si no hay nada, los fantasmas de las órdenes en red que aún no se reflejan. */
+  private previewWithGhosts() {
+    const p = this.input.preview();
+    const ghosts = (this.sandbox as { ghosts?: readonly Command[] }).ghosts;
+    return p.kind === 'none' && ghosts && ghosts.length > 0 ? ghostPreview(ghosts) : p;
   }
 
   /** Cursor y tarjeta sobre la criatura o el Imp propio bajo el ratón: dice qué es y qué se puede hacer con él. */
@@ -295,9 +324,9 @@ export class Game {
   /** Aviso del consejero cuando la Tesorería se llena. */
   private checkTreasury(): void {
     const { state } = this.sandbox;
-    const player = state.players[0];
+    const player = state.players.find((p) => p.id === this.me);
     if (!player) return;
-    const cap = treasuryCapacity(state, rulesOf(this.data), LOCAL_PLAYER);
+    const cap = treasuryCapacity(state, rulesOf(this.data), this.me);
     const full = cap > 0 && player.gold >= cap - 0.5;
     if (full && !this.wasFull) this.say('La Tesorería está llena: gasta oro o construye otra.');
     this.wasFull = full;
@@ -320,9 +349,9 @@ export class Game {
     };
     const { state } = this.sandbox;
     for (const c of state.creatures)
-      if (c.owner === LOCAL_PLAYER && !c.held) test('creature', c.id, c.x, c.y, 0.35);
+      if (c.owner === this.me && !c.held) test('creature', c.id, c.x, c.y, 0.35);
     for (const i of state.imps)
-      if (i.owner === LOCAL_PLAYER && !i.held) test('imp', i.id, i.x, i.y, 0.3);
+      if (i.owner === this.me && !i.held) test('imp', i.id, i.x, i.y, 0.3);
     return best;
   }
 
