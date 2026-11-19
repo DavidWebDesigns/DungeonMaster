@@ -9,7 +9,7 @@ export type KeyAction =
   | { type: 'slap' };
 
 /**
- * Atajos (docs/PLAN.md 10.2): 1 a 5 construyen salas, Q lanza Crear Imp, Espacio centra en el Corazón.
+ * Atajos (docs/PLAN.md 10.2): 1 a 5 construyen salas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
  * F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
@@ -22,7 +22,14 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
   }
   switch (k) {
     case 'q':
-      return { type: 'tool', tool: { kind: 'spell', spell: 'createImp' } };
+    case 'w':
+    case 'e':
+    case 'r':
+    case 't': {
+      // Q W E R T son los cinco hechizos, en el orden de spells.json.
+      const spell = data.spells['qwert'.indexOf(k)];
+      return spell ? { type: 'tool', tool: { kind: 'spell', spell: spell.id } } : null;
+    }
     case 'f':
       return { type: 'tool', tool: { kind: 'reinforce' } };
     case 'c':

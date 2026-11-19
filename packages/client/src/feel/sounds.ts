@@ -54,6 +54,26 @@ export const SOUND_RECIPES: Readonly<Record<SoundName, readonly Layer[]>> = {
     { kind: 'tone', freq: [2093, 2093], wave: 'sine', dur: 0.35, gain: 0.1, delay: 0.12 },
   ],
   pickup: [{ kind: 'tone', freq: [500, 800], wave: 'sine', dur: 0.07, gain: 0.1 }],
+  hit: [
+    { kind: 'noise', dur: 0.07, gain: 0.16, lowpass: 1800 },
+    { kind: 'tone', freq: [260, 90], wave: 'square', dur: 0.07, gain: 0.07 },
+  ],
+  death: [
+    { kind: 'tone', freq: [300, 60], wave: 'sawtooth', dur: 0.3, gain: 0.13 },
+    { kind: 'noise', dur: 0.2, gain: 0.1, lowpass: 500 },
+  ],
+  zap: [
+    { kind: 'noise', dur: 0.25, gain: 0.2, lowpass: 5000 },
+    { kind: 'tone', freq: [1800, 200], wave: 'sawtooth', dur: 0.25, gain: 0.1 },
+  ],
+  horn: [
+    { kind: 'tone', freq: [220, 220], wave: 'sawtooth', dur: 0.4, gain: 0.12 },
+    { kind: 'tone', freq: [330, 330], wave: 'sawtooth', dur: 0.4, gain: 0.1, delay: 0.15 },
+  ],
+  gameover: [
+    { kind: 'tone', freq: [440, 330], wave: 'triangle', dur: 0.3, gain: 0.14 },
+    { kind: 'tone', freq: [330, 220], wave: 'triangle', dur: 0.5, gain: 0.14, delay: 0.25 },
+  ],
 };
 
 /** Evita que el mismo sonido suene muchas veces seguidas (por ejemplo 10 excavaciones en un tick). */

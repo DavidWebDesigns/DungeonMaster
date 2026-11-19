@@ -240,3 +240,67 @@ describe('efectos de las criaturas', () => {
     expect(fxFor(sb, [{ type: 'slapped', playerId: 2, creatureId: c.id }])).toEqual([]);
   });
 });
+
+describe('efectos de combate', () => {
+  const sb = new Sandbox(data, 1);
+  const fx = (events: SimEvent[], visible?: (x: number, y: number) => boolean) =>
+    deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER, visible);
+  const hit: SimEvent = {
+    type: 'hit',
+    attackerOwner: 2,
+    targetOwner: 1,
+    targetKind: 'creature',
+    damage: 60,
+    x: 5.5,
+    y: 5.5,
+  };
+
+  it('un golpe levanta chispas rojas y suena', () => {
+    const out = fx([hit]);
+    expect(sounds(out)).toEqual(['hit']);
+    expect(bursts(out)[0]).toMatchObject({ color: [0.95, 0.25, 0.2] });
+  });
+
+  it('un golpe al Corazón es más grande y un golpe a una sala levanta polvo', () => {
+    const heart = bursts(fx([{ ...hit, targetKind: 'heart' }]))[0] as { count: number };
+    const creature = bursts(fx([hit]))[0] as { count: number };
+    expect(heart.count).toBeGreaterThan(creature.count);
+    expect(bursts(fx([{ ...hit, targetKind: 'room' }]))[0]).toMatchObject({
+      color: [0.6, 0.55, 0.5],
+    });
+  });
+
+  it('lo que pasa fuera de la vista no se dibuja ni suena', () => {
+    expect(fx([hit], () => false)).toEqual([]);
+    expect(
+      fx([{ type: 'spellCast', playerId: 2, spell: 'lightning', x: 30, y: 30 }], () => false),
+    ).toEqual([]);
+  });
+
+  it('una sala destruida, un Rayo y una Llamada a las armas tienen su efecto y su sonido', () => {
+    expect(sounds(fx([{ type: 'tileDestroyed', tile: 100, owner: 2 }]))).toEqual(['death']);
+    const zap = fx([{ type: 'spellCast', playerId: 1, spell: 'lightning', x: 5, y: 5 }]);
+    expect(sounds(zap)).toEqual(['zap']);
+    expect(bursts(zap)[0]).toMatchObject({ color: [1, 0.95, 0.4] });
+    expect(
+      sounds(fx([{ type: 'spellCast', playerId: 1, spell: 'callToArms', x: 5, y: 5 }])),
+    ).toEqual(['horn']);
+  });
+
+  it('una criatura que muere en combate suena, pero la eliminación del jugador no', () => {
+    expect(
+      sounds(fx([{ type: 'creatureDied', playerId: 2, creatureId: 1, cause: 'combat' }])),
+    ).toEqual(['death']);
+    expect(fx([{ type: 'creatureDied', playerId: 2, creatureId: 1, cause: 'eliminated' }])).toEqual(
+      [],
+    );
+  });
+
+  it('el fin de partida suena', () => {
+    expect(
+      sounds(
+        fx([{ type: 'gameOver', result: { winners: [1], reason: 'lastStanding', tick: 10 } }]),
+      ),
+    ).toEqual(['gameover']);
+  });
+});

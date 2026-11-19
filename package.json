@@ -19,8 +19,8 @@
     "gen-map": "tsx tools/gen-map/index.ts",
     "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm validate-data && pnpm test",
     "dev": "pnpm --filter @dm/client dev",
-    "sim": "tsx tools/lib/not-yet.ts sim 4",
-    "balance": "tsx tools/lib/not-yet.ts balance 4",
+    "sim": "tsx tools/sim/index.ts",
+    "balance": "tsx tools/balance/index.ts",
     "e2e": "playwright test"
   },
   "devDependencies": {

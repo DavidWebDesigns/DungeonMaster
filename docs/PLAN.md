@@ -13,7 +13,8 @@
 | Fase 1: núcleo de la simulación | **Terminada.** Puerta 1 cumplida (`packages/shared/src/sim/gate1.test.ts`). |
 | Fase 2: cliente gris jugable en local | **Implementada.** Puerta 2 técnica cumplida (60 fps medidos con WebGL por software, tick de 0,02 ms). **Falta el playtest humano de sensaciones.** |
 | Fase 3: criaturas vivas | **Implementada.** Puerta 3 cubierta por pruebas. Falta jugarla (playtest humano). |
-| Fases 4 a 6 | Pendientes. |
+| Fase 4: combate, victoria y bots | **Implementada.** Falta cerrar la Puerta 4: el reparto de victorias por esquina se deja para cuando esté la plantilla final de criaturas (dudas 46 y 61). Falta el playtest humano. |
+| Fases 5 y 6 | Pendientes. |
 
 ### Qué dejó hecho la fase 0
 

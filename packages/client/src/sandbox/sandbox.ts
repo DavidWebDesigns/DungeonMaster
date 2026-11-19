@@ -7,9 +7,11 @@
  */
 import {
   applyCommand,
+  createBot,
   createMatch,
   hashState,
   step,
+  type Bot,
   type Command,
   type CommandResult,
   type DataSet,
@@ -28,6 +30,11 @@ export interface ImpPose {
   y: number;
 }
 
+export interface SandboxOptions {
+  /** Un bot rival (jugador 2) para jugar 1 contra 1 en local. Activa también la niebla de guerra. */
+  opponent?: boolean;
+}
+
 export class Sandbox {
   readonly state: MatchState;
   readonly data: DataSet;
@@ -36,12 +43,18 @@ export class Sandbox {
   /** Lo mismo para las criaturas. */
   readonly previousCreatures = new Map<number, ImpPose>();
   paused = false;
+  /** Hay rival: se juega 1 contra 1 y el cliente dibuja la niebla de guerra. */
+  readonly versus: boolean;
+  private readonly bot: Bot | null;
   private accumulatorMs = 0;
   private readonly tickMs: number;
 
-  constructor(data: DataSet, seed: number) {
+  constructor(data: DataSet, seed: number, options: SandboxOptions = {}) {
     this.data = data;
-    this.state = createMatch({ playerCount: 1 }, data, seed);
+    this.versus = options.opponent === true;
+    this.state = createMatch({ playerCount: this.versus ? 2 : 1 }, data, seed);
+    // El bot usa exactamente el mismo protocolo de comandos que el jugador.
+    this.bot = this.versus ? createBot(2, seed * 7919 + 2 * 104729) : null;
     this.tickMs = 1000 / data.global.tickRate;
     this.snapshot();
   }
@@ -63,6 +76,9 @@ export class Sandbox {
         break;
       }
       this.snapshot();
+      if (this.bot)
+        for (const cmd of this.bot.act(this.state, this.data))
+          applyCommand(this.state, this.data, this.bot.playerId, cmd);
       events.push(...step(this.state, this.data));
       this.accumulatorMs -= this.tickMs;
       ran++;

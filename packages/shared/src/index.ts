@@ -5,3 +5,4 @@
 export * from './schemas';
 export * from './data';
 export * from './sim';
+export * from './bot';

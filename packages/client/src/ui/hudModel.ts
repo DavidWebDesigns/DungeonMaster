@@ -41,6 +41,9 @@ export interface SpellButton {
   id: string;
   name: string;
   hotkey: string;
+  /** A qué se apunta: un tile o una criatura propia. */
+  target: 'tile' | 'creature';
+  hint: string;
   cost: number;
   affordable: boolean;
   /** Segundos que faltan para poder volver a lanzarlo (0 si está listo). */
@@ -62,6 +65,12 @@ export interface CreatureRow {
   held: boolean;
 }
 
+export interface GameOverInfo {
+  outcome: 'victory' | 'defeat' | 'draw';
+  title: string;
+  detail: string;
+}
+
 export interface HudModel {
   gold: number;
   goldCapacity: number;
@@ -74,8 +83,12 @@ export interface HudModel {
   clock: string;
   tools: ToolButton[];
   rooms: RoomButton[];
-  spell: SpellButton;
+  spells: SpellButton[];
   creatures: CreatureRow[];
+  /** Resultado de la partida si ya terminó, desde el punto de vista del jugador local. */
+  gameOver: GameOverInfo | null;
+  /** Se puede mostrar el botón de rendirse (hay rival y la partida sigue). */
+  canSurrender: boolean;
   /** Criaturas en la mano y su capacidad. */
   hand: { count: number; capacity: number };
   /** Segundos que faltan para el próximo día de pago. */
@@ -88,6 +101,36 @@ export const NOTICE_SECONDS = 5;
 export const NOTICES_VISIBLE = 3;
 
 const sameTool = (a: Tool, b: Tool) => JSON.stringify(a) === JSON.stringify(b);
+
+/** Texto de fin de partida para el jugador local. */
+export function gameOverInfo(
+  state: MatchState,
+  playerId: number,
+  tickRate: number,
+): GameOverInfo | null {
+  const r = state.result;
+  if (!r) return null;
+  const minutes = formatClock(r.tick, tickRate);
+  if (r.winners.length > 1) {
+    return {
+      outcome: 'draw',
+      title: 'Empate',
+      detail: `La partida terminó en empate a los ${minutes}.`,
+    };
+  }
+  if (r.winners[0] === playerId) {
+    const how =
+      r.reason === 'timeout'
+        ? 'Ganaste por desempate al agotarse el tiempo.'
+        : 'Eres el último Corazón en pie.';
+    return { outcome: 'victory', title: '¡Victoria!', detail: `${how} Duración: ${minutes}.` };
+  }
+  return {
+    outcome: 'defeat',
+    title: 'Derrota',
+    detail: `Tu Corazón ha caído. Duración: ${minutes}.`,
+  };
+}
 
 export function formatClock(tick: number, tickRate: number): string {
   const total = Math.floor(tick / tickRate);
@@ -161,18 +204,29 @@ export function buildHudModel(
     };
   });
 
-  const spellDef = rules.spells['createImp'];
-  const cost = createImpCost(state, rules, playerId);
-  const readyAt = player.cooldowns['createImp'] ?? 0;
-  const spell: SpellButton = {
-    id: 'createImp',
-    name: spellDef?.name ?? 'Crear Imp',
-    hotkey: 'Q',
-    cost,
-    affordable: player.mana >= cost,
-    cooldownLeft: Math.max(0, (readyAt - state.tick) / data.global.tickRate),
-    active: tool.kind === 'spell' && tool.spell === 'createImp',
+  const SPELL_KEYS = ['Q', 'W', 'E', 'R', 'T'];
+  const SPELL_HINTS: Record<string, string> = {
+    createImp: 'Crea un Imp en suelo propio. Cada Imp extra cuesta 50 más.',
+    callToArms: 'Todas tus criaturas disponibles acuden al punto marcado durante 20 s.',
+    haste: 'Una criatura propia se mueve y ataca un 50 % más rápido durante 20 s.',
+    heal: 'Cura el 40 % de la vida máxima de una criatura propia en 3 s.',
+    lightning: 'Daña con 600 a los enemigos en 1,5 tiles. No toca salas ni el Corazón.',
   };
+  const spells: SpellButton[] = data.spells.map((sp, i) => {
+    const cost = sp.effect.type === 'spawnImp' ? createImpCost(state, rules, playerId) : sp.mana;
+    const readyAt = player.cooldowns[sp.id] ?? 0;
+    return {
+      id: sp.id,
+      name: sp.name,
+      hotkey: SPELL_KEYS[i] ?? '',
+      target: sp.target === 'ownCreature' ? 'creature' : 'tile',
+      hint: SPELL_HINTS[sp.id] ?? sp.name,
+      cost,
+      affordable: player.mana >= cost,
+      cooldownLeft: Math.max(0, (readyAt - state.tick) / data.global.tickRate),
+      active: tool.kind === 'spell' && tool.spell === sp.id,
+    };
+  });
 
   const rows: CreatureRow[] = state.creatures
     .filter((c) => c.owner === playerId)
@@ -205,8 +259,10 @@ export function buildHudModel(
     clock: formatClock(state.tick, data.global.tickRate),
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
     rooms,
-    spell,
+    spells,
     creatures: rows,
+    gameOver: gameOverInfo(state, playerId, data.global.tickRate),
+    canSurrender: state.players.length > 1 && state.status === 'playing' && !player.eliminated,
     hand: { count: player.hand.length, capacity: data.global.hand.capacity },
     payday: Math.max(0, (state.nextPayTick - state.tick) / data.global.tickRate),
     notices: notices.map((n) => n.text),

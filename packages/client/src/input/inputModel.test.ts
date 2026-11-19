@@ -240,6 +240,47 @@ describe('vista previa de tiles', () => {
   });
 });
 
+describe('hechizos con el ratón', () => {
+  it('Acelerar y Curar se lanzan sobre la criatura propia bajo el cursor', () => {
+    const { input, sent, sandbox } = setup();
+    sandbox.state.players[0]!.mana = 5000;
+    const c = newCreature(sandbox.state, rulesOf(data), 1, 'goblin', 9 * 64 + 9);
+    sandbox.state.creatures.push(c);
+    input.setTool({ kind: 'spell', spell: 'haste' });
+    input.pointerMove(pt(9, 9), c.id);
+    input.pointerDown(pt(9, 9), 0, false, c.id);
+    expect(sent[0]!.cmd).toEqual({ type: 'castSpell', spell: 'haste', creature: c.id });
+    expect(sent[0]!.res.ok).toBe(true);
+    // Sin criatura debajo, el hechizo se rechaza con INVALID_TARGET.
+    input.setTool({ kind: 'spell', spell: 'heal' });
+    input.pointerDown(pt(3, 8), 0);
+    expect(sent[1]!.res).toEqual({ ok: false, error: 'INVALID_TARGET' });
+  });
+
+  it('Rayo y Llamada a las armas se lanzan sobre un tile', () => {
+    const { input, sent, sandbox } = setup();
+    sandbox.state.players[0]!.mana = 5000;
+    input.setTool({ kind: 'spell', spell: 'lightning' });
+    input.pointerDown(pt(5, 8), 0);
+    expect(sent[0]!.cmd).toEqual({ type: 'castSpell', spell: 'lightning', target: pt(5, 8) });
+    expect(sent[0]!.res.ok).toBe(true);
+    input.setTool({ kind: 'spell', spell: 'callToArms' });
+    input.pointerDown(pt(8, 4), 0);
+    expect(sent[1]!.cmd).toEqual({ type: 'castSpell', spell: 'callToArms', target: pt(8, 4) });
+    expect(sent[1]!.res.ok).toBe(true);
+  });
+
+  it('el cursor marca en rojo un Rayo fuera de la vista y en verde uno dentro', () => {
+    const { input, sandbox } = setup();
+    sandbox.state.players[0]!.mana = 5000;
+    input.setTool({ kind: 'spell', spell: 'lightning' });
+    input.pointerMove(pt(5, 8));
+    expect(input.preview()).toMatchObject({ kind: 'target', ok: true });
+    input.pointerMove(pt(40, 40));
+    expect(input.preview()).toMatchObject({ kind: 'target', ok: false });
+  });
+});
+
 describe('atajos de teclado', () => {
   it('1 a 5 eligen las 5 salas construibles en el orden del plan', () => {
     const rooms = ['lair', 'hatchery', 'treasury', 'trainingRoom', 'library'];

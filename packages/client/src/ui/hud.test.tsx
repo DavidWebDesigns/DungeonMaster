@@ -7,6 +7,7 @@ import { Hud } from './Hud';
 import { buildHudModel, formatClock } from './hudModel';
 
 const data = loadGameData();
+const imp = (m: ReturnType<typeof buildHudModel>) => m.spells.find((x) => x.id === 'createImp')!;
 const fresh = () => new Sandbox(data, 1);
 const dig = { kind: 'dig' } as const;
 
@@ -60,7 +61,7 @@ describe('buildHudModel', () => {
 
   it('el hechizo Crear Imp muestra su coste, que sube con cada Imp extra, y su enfriamiento', () => {
     const sb = fresh();
-    expect(buildHudModel(sb.state, data, 1, dig, []).spell).toMatchObject({
+    expect(imp(buildHudModel(sb.state, data, 1, dig, []))).toMatchObject({
       cost: 300,
       cooldownLeft: 0,
       affordable: true,
@@ -72,10 +73,10 @@ describe('buildHudModel', () => {
     });
     step(sb.state, data);
     const m = buildHudModel(sb.state, data, 1, dig, []);
-    expect(m.spell.cost).toBe(350);
-    expect(m.spell.cooldownLeft).toBeGreaterThan(1.5);
+    expect(imp(m).cost).toBe(350);
+    expect(imp(m).cooldownLeft).toBeGreaterThan(1.5);
     sb.state.players[0]!.mana = 10;
-    expect(buildHudModel(sb.state, data, 1, dig, []).spell.affordable).toBe(false);
+    expect(imp(buildHudModel(sb.state, data, 1, dig, [])).affordable).toBe(false);
   });
 
   it('los avisos activos pasan al HUD en el mismo orden', () => {
@@ -177,5 +178,76 @@ describe('Hud', () => {
     const out = html();
     expect(out).not.toContain('Criaturas (');
     expect(out).not.toContain('Mano ');
+  });
+});
+
+describe('hechizos y fin de partida en el HUD', () => {
+  it('lista los cinco hechizos con su tecla Q W E R T, su coste y a qué se apunta', () => {
+    const m = buildHudModel(fresh().state, data, 1, dig, []);
+    expect(m.spells.map((x) => [x.hotkey, x.id, x.cost, x.target])).toEqual([
+      ['Q', 'createImp', 300, 'tile'],
+      ['W', 'callToArms', 600, 'tile'],
+      ['E', 'haste', 300, 'creature'],
+      ['R', 'heal', 400, 'creature'],
+      ['T', 'lightning', 500, 'tile'],
+    ]);
+    expect(m.spells.every((x) => x.affordable && x.cooldownLeft === 0)).toBe(true);
+  });
+
+  it('marca el hechizo activo y los que no se pueden pagar', () => {
+    const sb = fresh();
+    sb.state.players[0]!.mana = 350;
+    const m = buildHudModel(sb.state, data, 1, { kind: 'spell', spell: 'heal' }, []);
+    expect(m.spells.find((x) => x.id === 'heal')!.active).toBe(true);
+    expect(m.spells.filter((x) => !x.affordable).map((x) => x.id)).toEqual([
+      'callToArms',
+      'heal',
+      'lightning',
+    ]);
+  });
+
+  it('con un solo jugador no hay botón de rendirse ni pantalla final', () => {
+    const m = buildHudModel(fresh().state, data, 1, dig, []);
+    expect(m.canSurrender).toBe(false);
+    expect(m.gameOver).toBeNull();
+  });
+
+  it('con rival se puede rendir; y el resultado se cuenta desde el punto de vista del jugador', () => {
+    const sb = new Sandbox(data, 1, { opponent: true });
+    expect(buildHudModel(sb.state, data, 1, dig, []).canSurrender).toBe(true);
+    sb.state.status = 'ended';
+    sb.state.result = { winners: [1], reason: 'lastStanding', tick: 6000 };
+    const win = buildHudModel(sb.state, data, 1, dig, []);
+    expect(win.gameOver).toMatchObject({ outcome: 'victory', title: '¡Victoria!' });
+    expect(win.gameOver!.detail).toContain('10:00');
+    expect(win.canSurrender).toBe(false);
+    expect(buildHudModel(sb.state, data, 2, dig, []).gameOver).toMatchObject({
+      outcome: 'defeat',
+      title: 'Derrota',
+    });
+    sb.state.result = { winners: [1, 2], reason: 'draw', tick: 100 };
+    expect(buildHudModel(sb.state, data, 1, dig, []).gameOver!.outcome).toBe('draw');
+    sb.state.result = { winners: [1], reason: 'timeout', tick: 27000 };
+    expect(buildHudModel(sb.state, data, 1, dig, []).gameOver!.detail).toContain('desempate');
+  });
+
+  it('el HUD pinta los cinco hechizos, el botón de rendirse con su confirmación y la pantalla final', () => {
+    const sb = new Sandbox(data, 1, { opponent: true });
+    const model = buildHudModel(sb.state, data, 1, dig, []);
+    const out = render(<Hud model={model} onTool={() => {}} />);
+    for (const n of ['Crear Imp', 'Llamada a las armas', 'Acelerar', 'Curar', 'Rayo'])
+      expect(out).toContain(n);
+    expect(out).toContain('Rendirse');
+    expect(render(<Hud model={model} onTool={() => {}} surrenderArmed />)).toContain(
+      '¿Seguro? Pulsa otra vez',
+    );
+    sb.state.status = 'ended';
+    sb.state.result = { winners: [2], reason: 'lastStanding', tick: 3000 };
+    const over = render(
+      <Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />,
+    );
+    expect(over).toContain('Derrota');
+    expect(over).toContain('Jugar de nuevo');
+    expect(over).not.toContain('Rendirse');
   });
 });

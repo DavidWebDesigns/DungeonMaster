@@ -104,7 +104,7 @@ export class InputModel {
     } else if (t.kind === 'sell') {
       this.dispatch({ type: 'sellRoom', tile });
     } else if (t.kind === 'spell') {
-      this.dispatch({ type: 'castSpell', spell: t.spell, target: tile });
+      this.dispatch(this.spellCommand(t.spell, tile, creatureId));
     }
   }
 
@@ -133,6 +133,14 @@ export class InputModel {
     if (first) this.dispatch(first);
     // Un pasillo largo se parte en comandos de 64 tiles; el siguiente solo es válido cuando el anterior ya se ejecutó.
     this.queue.push(...rest);
+  }
+
+  /** Orden de lanzar un hechizo: sobre una criatura propia (Acelerar, Curar) o sobre un tile. */
+  private spellCommand(spell: string, tile: Point | null, creatureId: number | null): Command {
+    const def = this.host.data.spells.find((s) => s.id === spell);
+    if (def?.target === 'ownCreature')
+      return { type: 'castSpell', spell, creature: creatureId ?? -1 };
+    return { type: 'castSpell', spell, target: tile ?? { x: -1, y: -1 } };
   }
 
   /** Abofetea a la criatura que hay bajo el cursor (tecla B). */
@@ -196,7 +204,7 @@ export class InputModel {
     const cmd: Command =
       t.kind === 'sell'
         ? { type: 'sellRoom', tile: this.hover }
-        : { type: 'castSpell', spell: (t as { spell: string }).spell, target: this.hover };
+        : this.spellCommand((t as { spell: string }).spell, this.hover, this.hoverCreature);
     return { kind: 'target', tile: this.hover, ok: previewCommand(state, data, player, cmd).ok };
   }
 }

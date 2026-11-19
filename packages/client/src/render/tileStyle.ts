@@ -33,11 +33,16 @@ const MARK: Readonly<Record<TaskKind, { color: RGB; amount: number }>> = {
   claim: { color: [1, 1, 1], amount: 0.3 },
 };
 
+/** Cuánto se oscurece un tile según la niebla de guerra. */
+export const FOG = { visible: 1, remembered: 0.5, unseen: 0.07 } as const;
+
 export function styleForTile(
   state: MatchState,
   data: DataSet,
   tile: number,
   marked: TaskKind | undefined,
+  /** 1 = a la vista; menos = en la niebla. */
+  fog = 1,
 ): TileStyle {
   const def = data.terrain[state.terrain[tile] as number];
   const base = (def && BASE[def.id]) || FALLBACK;
@@ -57,5 +62,6 @@ export function styleForTile(
     color = mix(color, playerColor(owner), def?.walkable ? 0.42 : 0.2);
   }
   if (marked) color = mix(color, MARK[marked].color, MARK[marked].amount);
+  if (fog < 1) color = [color[0] * fog, color[1] * fog, color[2] * fog];
   return { height, color };
 }

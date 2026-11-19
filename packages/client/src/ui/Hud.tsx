@@ -6,6 +6,12 @@ export interface HudProps {
   onTool(tool: Tool): void;
   /** Clic en una criatura de la lista (centra la cámara en ella). */
   onSelectCreature?(id: number): void;
+  /** Pulsó el botón de rendirse (el juego pide confirmación). */
+  onSurrender?(): void;
+  /** Pulsó "Jugar de nuevo" en la pantalla final. */
+  onRestart?(): void;
+  /** El botón de rendirse espera confirmación. */
+  surrenderArmed?: boolean;
 }
 
 const fmt = (n: number) => n.toLocaleString('es');
@@ -20,8 +26,14 @@ function Bar(props: { value: number; max: number; kind: 'gold' | 'mana'; label: 
   );
 }
 
-export function Hud({ model, onTool, onSelectCreature }: HudProps) {
-  const { spell } = model;
+export function Hud({
+  model,
+  onTool,
+  onSelectCreature,
+  onSurrender,
+  onRestart,
+  surrenderArmed,
+}: HudProps) {
   return (
     <div class="hud">
       <div class="top">
@@ -50,6 +62,27 @@ export function Hud({ model, onTool, onSelectCreature }: HudProps) {
           </div>
         )}
       </div>
+
+      {model.canSurrender && (
+        <button
+          class={`surrender${surrenderArmed ? ' armed' : ''}`}
+          onClick={() => onSurrender?.()}
+        >
+          {surrenderArmed ? '¿Seguro? Pulsa otra vez' : 'Rendirse'}
+        </button>
+      )}
+
+      {model.gameOver && (
+        <div class={`gameover ${model.gameOver.outcome}`}>
+          <div class="gameover-card">
+            <h1>{model.gameOver.title}</h1>
+            <p>{model.gameOver.detail}</p>
+            <button class="btn" onClick={() => onRestart?.()}>
+              Jugar de nuevo
+            </button>
+          </div>
+        </div>
+      )}
 
       <div class="notices">
         {model.notices.map((text, i) => (
@@ -113,17 +146,20 @@ export function Hud({ model, onTool, onSelectCreature }: HudProps) {
         </div>
 
         <div class="panel spells">
-          <button
-            class={`btn${spell.active ? ' active' : ''}${spell.affordable ? '' : ' poor'}`}
-            title="Crea un Imp nuevo en suelo propio. Cada Imp extra cuesta 50 más."
-            onClick={() => onTool({ kind: 'spell', spell: spell.id })}
-          >
-            <span class="name">{spell.name}</span>
-            <span class="cost">
-              {spell.cooldownLeft > 0 ? `${spell.cooldownLeft.toFixed(1)} s` : `${spell.cost} maná`}
-            </span>
-            <kbd>{spell.hotkey}</kbd>
-          </button>
+          {model.spells.map((sp) => (
+            <button
+              key={sp.id}
+              class={`btn${sp.active ? ' active' : ''}${sp.affordable ? '' : ' poor'}`}
+              title={sp.hint}
+              onClick={() => onTool({ kind: 'spell', spell: sp.id })}
+            >
+              <span class="name">{sp.name}</span>
+              <span class="cost">
+                {sp.cooldownLeft > 0 ? `${sp.cooldownLeft.toFixed(1)} s` : `${sp.cost} maná`}
+              </span>
+              <kbd>{sp.hotkey}</kbd>
+            </button>
+          ))}
         </div>
       </div>
 

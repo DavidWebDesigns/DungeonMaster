@@ -3,7 +3,7 @@
  * a la frecuencia de la pantalla. El cliente nunca cambia el estado por su cuenta: solo envía comandos.
  */
 import { render as renderUi } from 'preact';
-import { rulesOf, treasuryCapacity, type DataSet, type SimEvent } from '@dm/shared';
+import { canSee, rulesOf, treasuryCapacity, type DataSet, type SimEvent } from '@dm/shared';
 import { deriveEffects, takeSnapshot, type FeelSnapshot, type SoundName } from './feel/effects';
 import { ParticleSim } from './feel/particleSim';
 import { AudioEngine } from './feel/sounds';
@@ -53,12 +53,18 @@ export class Game {
   private fpsSince = 0;
   private running = false;
 
+  /** Partida contra un bot rival (con niebla de guerra). */
+  readonly versus: boolean;
+  private surrenderArmedUntil = -1;
+
   constructor(
     host: HTMLElement,
     readonly data: DataSet,
     seed: number,
+    options: { versus?: boolean } = {},
   ) {
-    this.sandbox = new Sandbox(data, seed);
+    this.versus = options.versus === true;
+    this.sandbox = new Sandbox(data, seed, { opponent: this.versus });
     this.feelSnapshot = takeSnapshot(this.sandbox.state);
     this.notices = new NoticeLog({
       lifeTicks: NOTICE_SECONDS * data.global.tickRate,
@@ -152,6 +158,7 @@ export class Game {
         this.input.preview(),
         this.particles,
         hover ? { x: hover.x + 0.5, y: hover.y + 0.5 } : null,
+        this.versus,
       );
       this.countFps(nowMs);
       requestAnimationFrame(frame);
@@ -173,7 +180,15 @@ export class Game {
     const { state } = this.sandbox;
     for (const c of state.creatures) this.creatureTypes.set(c.id, c.type);
     if (state.tick !== this.lastFeelTick) {
-      const effects = deriveEffects(this.feelSnapshot, state, this.data, events, LOCAL_PLAYER);
+      const rules = rulesOf(this.data);
+      const effects = deriveEffects(
+        this.feelSnapshot,
+        state,
+        this.data,
+        events,
+        LOCAL_PLAYER,
+        this.versus ? (x, y) => canSee(state, rules, LOCAL_PLAYER, x, y) : undefined,
+      );
       for (const e of effects) {
         if (e.type === 'burst') this.particles.burst(e);
         else this.playSound(e.sound, e.volume);
@@ -197,7 +212,8 @@ export class Game {
   private updateHud(): void {
     const { state } = this.sandbox;
     this.checkTreasury();
-    const key = `${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}`;
+    const armed = state.tick < this.surrenderArmedUntil;
+    const key = `${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
     if (key === this.hudKey) return;
     this.hudKey = key;
     const model = buildHudModel(
@@ -214,6 +230,9 @@ export class Game {
           this.input.setTool(tool);
           this.hudKey = '';
         },
+        surrenderArmed: armed,
+        onSurrender: () => this.surrender(),
+        onRestart: () => window.location.reload(),
         onSelectCreature: (id) => {
           const c = state.creatures.find((k) => k.id === id);
           if (c) this.camera = centerOn(this.camera, { x: Math.floor(c.x), y: Math.floor(c.y) });
@@ -221,6 +240,18 @@ export class Game {
       }),
       this.hudHost,
     );
+  }
+
+  /** Rendirse pide confirmación: hay que pulsar dos veces en menos de 4 segundos de juego. */
+  surrender(): void {
+    const { state } = this.sandbox;
+    if (state.tick < this.surrenderArmedUntil) {
+      this.sandbox.send({ type: 'surrender' });
+      this.surrenderArmedUntil = -1;
+    } else {
+      this.surrenderArmedUntil = state.tick + 4 * this.data.global.tickRate;
+    }
+    this.hudKey = '';
   }
 
   /** Aviso del consejero cuando la Tesorería se llena. */

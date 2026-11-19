@@ -9,7 +9,7 @@ import { DirectionalLight } from '@babylonjs/core/Lights/directionalLight';
 import { Color3, Color4 } from '@babylonjs/core/Maths/math.color';
 import { Vector3 } from '@babylonjs/core/Maths/math.vector';
 import { Scene } from '@babylonjs/core/scene';
-import type { DataSet } from '@dm/shared';
+import { rulesOf, visibleMask, type DataSet } from '@dm/shared';
 import type { Sandbox } from '../sandbox/sandbox';
 import { cameraPose, orthoBounds, type CameraState } from './cameraMath';
 import { EntitiesView } from './entitiesView';
@@ -30,6 +30,7 @@ export class Renderer {
   private readonly overlay: OverlayView;
   private readonly particles: ParticlesView;
   private lastTick = -1;
+  private visible: Uint8Array | null = null;
 
   constructor(
     readonly canvas: HTMLCanvasElement,
@@ -82,6 +83,8 @@ export class Renderer {
     preview: Preview,
     particles: ParticleSim,
     handAt: { x: number; y: number } | null = null,
+    /** Niebla de guerra activa (partida contra un rival). */
+    fog = false,
   ): void {
     const pose = cameraPose(cam);
     this.camera.position.set(...pose.position);
@@ -94,12 +97,21 @@ export class Renderer {
 
     if (sandbox.state.tick !== this.lastTick) {
       this.lastTick = sandbox.state.tick;
+      const player = sandbox.state.players.find((p) => p.id === this.localPlayer);
+      const mask =
+        fog && player
+          ? {
+              visible: visibleMask(sandbox.state, rulesOf(this.data), this.localPlayer),
+              seen: player.seen,
+            }
+          : null;
+      this.visible = mask ? mask.visible : null;
       this.terrain.update(
-        this.styles.sync(sandbox.state, this.data, this.localPlayer),
+        this.styles.sync(sandbox.state, this.data, this.localPlayer, mask),
         this.styles.styles,
       );
     }
-    this.entities.update(sandbox, this.data, timeSeconds, handAt);
+    this.entities.update(sandbox, this.data, timeSeconds, handAt, this.visible, this.localPlayer);
     this.overlay.set(preview, this.styles.styles);
     this.particles.update(particles);
     this.scene.render();

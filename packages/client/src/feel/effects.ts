@@ -19,7 +19,12 @@ export type SoundName =
   | 'slap'
   | 'levelup'
   | 'payday'
-  | 'pickup';
+  | 'pickup'
+  | 'hit'
+  | 'death'
+  | 'zap'
+  | 'horn'
+  | 'gameover';
 
 export type Effect =
   | {
@@ -65,6 +70,8 @@ export function deriveEffects(
   data: DataSet,
   events: readonly SimEvent[],
   localPlayer: number,
+  /** Si se indica, los golpes y hechizos que pasan fuera de la vista del jugador no se dibujan ni suenan. */
+  visibleAt?: (x: number, y: number) => boolean,
 ): Effect[] {
   const out: Effect[] = [];
   const burst = (
@@ -104,7 +111,57 @@ export function deriveEffects(
     }
   }
 
+  const seesAt = (x: number, y: number) => visibleAt === undefined || visibleAt(x, y);
   for (const e of events) {
+    // Combate y hechizos: se ven los de cualquiera, pero solo si ocurren dentro de la vista.
+    if (e.type === 'hit') {
+      if (!seesAt(e.x, e.y)) continue;
+      const heart = e.targetKind === 'heart';
+      burst(
+        e.x,
+        0.6,
+        e.y,
+        heart ? [1, 0.2, 0.2] : e.targetKind === 'room' ? DUST : [0.95, 0.25, 0.2],
+        heart ? 10 : 5,
+        1.4,
+        2,
+        heart ? 0.16 : 0.1,
+      );
+      out.push({ type: 'sound', sound: 'hit', volume: 0.6 });
+      continue;
+    }
+    if (e.type === 'tileDestroyed') {
+      const x = (e.tile % state.width) + 0.5;
+      const z = Math.floor(e.tile / state.width) + 0.5;
+      if (!seesAt(x, z)) continue;
+      burst(x, 0.3, z, DUST, 14, 1.8, 2.4, 0.18);
+      out.push({ type: 'sound', sound: 'death', volume: 0.8 });
+      continue;
+    }
+    if (e.type === 'spellCast') {
+      if (!seesAt(e.x, e.y)) continue;
+      if (e.spell === 'lightning') {
+        burst(e.x, 1.2, e.y, [1, 0.95, 0.4], 24, 2.2, 4, 0.14);
+        out.push({ type: 'sound', sound: 'zap', volume: 1 });
+      } else if (e.spell === 'callToArms') {
+        burst(e.x, 0.8, e.y, [0.5, 0.7, 1], 16, 1.8, 3, 0.14);
+        out.push({ type: 'sound', sound: 'horn', volume: 1 });
+      } else if (e.spell === 'haste') {
+        burst(e.x, 0.8, e.y, [0.5, 0.8, 1], 10, 1.2, 2, 0.1);
+      } else if (e.spell === 'heal') {
+        burst(e.x, 0.8, e.y, [0.4, 1, 0.5], 10, 1.2, 2.6, 0.1);
+      }
+      continue;
+    }
+    if (e.type === 'creatureDied' && e.cause !== 'starvation') {
+      if (e.cause === 'eliminated') continue;
+      out.push({ type: 'sound', sound: 'death', volume: 0.7 });
+      continue;
+    }
+    if (e.type === 'gameOver') {
+      out.push({ type: 'sound', sound: 'gameover', volume: 1 });
+      continue;
+    }
     if ('playerId' in e && e.playerId !== localPlayer) continue;
     switch (e.type) {
       case 'goldDeposited': {

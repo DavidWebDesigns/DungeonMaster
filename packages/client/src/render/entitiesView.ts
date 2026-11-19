@@ -66,9 +66,16 @@ export class EntitiesView {
     data: DataSet,
     timeSeconds: number,
     handAt: { x: number; y: number } | null = null,
+    /** Niebla de guerra: tiles que el jugador local ve ahora. Si se indica, los enemigos fuera de la vista no se dibujan. */
+    visible: Uint8Array | null = null,
+    localPlayer = 1,
   ): void {
     const { state } = sandbox;
     const alive = new Set<number>();
+    const hiddenByFog = (owner: number, x: number, y: number) =>
+      visible !== null &&
+      owner !== localPlayer &&
+      visible[Math.floor(y) * state.width + Math.floor(x)] !== 1;
     for (const imp of state.imps) {
       alive.add(imp.id);
       let m = this.imps.get(imp.id);
@@ -106,7 +113,8 @@ export class EntitiesView {
         0.1 + IMP_HEIGHT / 2,
         prev.y + (imp.y - prev.y) * a,
       );
-      m.gold.setEnabled(imp.carry > 0);
+      m.gold.setEnabled(imp.carry > 0 && !hiddenByFog(imp.owner, imp.x, imp.y));
+      m.body.setEnabled(!hiddenByFog(imp.owner, imp.x, imp.y));
     }
     for (const [id, m] of this.imps) {
       if (!alive.has(id)) {
@@ -115,7 +123,8 @@ export class EntitiesView {
       }
     }
 
-    this.updateCreatures(sandbox, data, timeSeconds, handAt);
+    this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog);
+    this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
     for (const s of this.spinning) s.rotation.y = timeSeconds * 0.8;
@@ -129,7 +138,7 @@ export class EntitiesView {
     }
   }
 
-  private makeCreature(id: number, type: string): CreatureMesh {
+  private makeCreature(id: number, type: string, owner: number): CreatureMesh {
     const look = lookOf(type);
     const body = CreateCapsule(
       `creature${id}`,
@@ -138,6 +147,17 @@ export class EntitiesView {
     );
     body.material = material(this.scene, look.color);
     body.isPickable = false;
+    // Disco del color del jugador bajo los pies: distingue a los tuyos de los del rival.
+    const ring = CreateDisc(
+      `creatureRing${id}`,
+      { radius: look.radius + 0.12, tessellation: 20 },
+      this.scene,
+    );
+    ring.material = material(this.scene, playerColor(owner), 0.6);
+    ring.parent = body;
+    ring.rotation.x = Math.PI / 2;
+    ring.position.y = -look.height / 2 - 0.07;
+    ring.isPickable = false;
     const moodMat = new StandardMaterial(`mood${id}`, this.scene);
     moodMat.disableLighting = true;
     const mood = CreateSphere(`moodIcon${id}`, { diameter: 0.22, segments: 6 }, this.scene);
@@ -172,6 +192,7 @@ export class EntitiesView {
     data: DataSet,
     timeSeconds: number,
     handAt: { x: number; y: number } | null,
+    hiddenByFog: (owner: number, x: number, y: number) => boolean,
   ): void {
     const { state } = sandbox;
     const rules = rulesOf(data);
@@ -181,7 +202,7 @@ export class EntitiesView {
       alive.add(c.id);
       let m = this.creatures.get(c.id);
       if (!m) {
-        m = this.makeCreature(c.id, c.type);
+        m = this.makeCreature(c.id, c.type, c.owner);
         this.creatures.set(c.id, m);
       }
       const a = sandbox.alpha;
@@ -200,6 +221,7 @@ export class EntitiesView {
           prev.y + (c.y - prev.y) * a,
         );
       }
+      if (!c.held && hiddenByFog(c.owner, c.x, c.y)) m.body.setEnabled(false);
       const frac = hpFraction(c, creatureMaxHp(rules, c));
       m.barBack.setEnabled(frac < 1);
       m.barFill.setEnabled(frac < 1);
@@ -219,6 +241,32 @@ export class EntitiesView {
         this.creatures.delete(id);
       }
     }
+  }
+
+  private rally: Mesh | null = null;
+
+  /** Marca en el mapa de la Llamada a las armas: un anillo azul que gira mientras dura. */
+  private updateRally(state: MatchState, localPlayer: number, timeSeconds: number): void {
+    const p = state.players.find((k) => k.id === localPlayer);
+    const tile = p && p.rallyTile >= 0 ? p.rallyTile : -1;
+    if (tile < 0) {
+      this.rally?.setEnabled(false);
+      return;
+    }
+    if (!this.rally) {
+      const ring = CreateTorus(
+        'rally',
+        { diameter: 1.1, thickness: 0.12, tessellation: 24 },
+        this.scene,
+      );
+      ring.material = material(this.scene, [0.4, 0.65, 1], 0.9);
+      ring.isPickable = false;
+      this.rally = ring;
+    }
+    this.rally.setEnabled(true);
+    this.rally.position.set((tile % state.width) + 0.5, 0.25, Math.floor(tile / state.width) + 0.5);
+    this.rally.rotation.y = timeSeconds * 2;
+    this.rally.scaling.setAll(1 + 0.1 * Math.sin(timeSeconds * 5));
   }
 
   private syncProps(state: MatchState, data: DataSet): void {
