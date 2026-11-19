@@ -8,6 +8,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@colyseus/core": "0.18.29",
+    "@colyseus/ws-transport": "0.18.5",
     "@dm/shared": "workspace:*"
   }
 }

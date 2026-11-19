@@ -1,0 +1,303 @@
+import { describe, expect, it } from 'vitest';
+import { applyCommand } from '../sim/applyCommand';
+import { playBotMatch } from '../bot/match';
+import { createMatch } from '../sim/createMatch';
+import { visibleMask } from '../sim/fog';
+import { rulesOf } from '../sim/rules';
+import { step } from '../sim/step';
+import { duel, extendTerritory, loadData, run, spawn } from '../sim/testUtils';
+import type { MatchState } from '../sim/types';
+import { Mirror } from './mirror';
+import { ClientKnowledge, computeDelta } from './view';
+
+const data = loadData();
+const rules = rulesOf(data);
+
+/** Sigue a un jugador: calcula su delta en cada llamada y se lo aplica a su espejo. */
+class Follower {
+  readonly known: ClientKnowledge;
+  readonly mirror: Mirror;
+  bytes = 0;
+  /** Último terreno visto de cada tile (la verdad en el momento en que se vio por última vez). */
+  readonly lastSeen = new Map<number, [number, number]>();
+  constructor(
+    readonly pid: number,
+    state: MatchState,
+  ) {
+    this.known = new ClientKnowledge(state.width * state.height);
+    this.mirror = new Mirror(data, pid);
+  }
+  update(state: MatchState): number {
+    const delta = computeDelta(state, data, this.pid, this.known);
+    const size = JSON.stringify(delta).length;
+    this.bytes += size;
+    this.mirror.apply(JSON.parse(JSON.stringify(delta)));
+    const vis = visibleMask(state, rules, this.pid);
+    for (let i = 0; i < vis.length; i++)
+      if (vis[i] === 1)
+        this.lastSeen.set(i, [state.terrain[i] as number, state.owner[i] as number]);
+    return size;
+  }
+}
+
+describe('vistas por jugador: lo que se ve', () => {
+  it('el primer delta es una instantánea: ves tu base y todo lo demás es desconocido', () => {
+    const state = createMatch({ playerCount: 2 }, data, 5);
+    const f = new Follower(1, state);
+    f.update(state);
+    const m = f.mirror.state;
+    const mine = state.players[0]!;
+    const base = data.map.bases.find((b) => b.slot === mine.slot)!;
+    // Un tile de tu base: terreno y dueño verdaderos.
+    const i = (base.claimed.y + 4) * 64 + base.claimed.x + 4;
+    expect(m.terrain[i]).toBe(state.terrain[i]);
+    expect(m.owner[i]).toBe(1);
+    expect(m.players[0]!.seen[i]).toBe(1);
+    // El centro del mapa nunca se ha visto: terreno desconocido (roca) y sin marcar como visto.
+    const c = 32 * 64 + 32;
+    expect(m.terrain[c]).toBe(rules.terrainIndex['solidRock']);
+    expect(m.players[0]!.seen[c]).toBe(0);
+    expect(m.imps.filter((k) => k.owner === 1)).toHaveLength(4);
+    expect(m.imps.filter((k) => k.owner === 2)).toHaveLength(0);
+    expect(m.players.map((p) => p.id)).toEqual([1, 2]);
+  });
+
+  it('del rival solo llega lo que cae dentro de la visión', () => {
+    const { state, data: d } = duel();
+    const f = new Follower(1, state);
+    const far = spawn(state, d, 2, 'troll', 40.5, 40.5);
+    const near = spawn(state, d, 2, 'goblin', 8.5, 4.5);
+    f.update(state);
+    const ids = f.mirror.state.creatures.filter((c) => c.owner === 2).map((c) => c.id);
+    expect(ids).toContain(near.id);
+    expect(ids).not.toContain(far.id);
+    // Al alejarse sale de la vista y desaparece del espejo.
+    near.x = 30.5;
+    near.y = 30.5;
+    run(state, d, 1);
+    f.update(state);
+    expect(f.mirror.state.creatures.filter((c) => c.owner === 2)).toHaveLength(0);
+  });
+
+  it('de las criaturas rivales no se envían sus necesidades ni su ánimo, y de las tuyas sí', () => {
+    const { state, data: d } = duel();
+    const f = new Follower(1, state);
+    const enemy = spawn(state, d, 2, 'goblin', 8.5, 4.5, { mood: 11, hunger: 42 });
+    const mine = spawn(state, d, 1, 'goblin', 3.5, 8.5, { mood: 77, hunger: 33 });
+    const delta = computeDelta(state, d, 1, new ClientKnowledge(64 * 64));
+    const rec = (id: number) => delta.set![`c:${id}`]!;
+    expect(rec(mine.id)).toMatchObject({ m: 77, hu: 33 });
+    expect(Object.keys(rec(enemy.id)).sort()).toEqual(['h', 'l', 'o', 't', 'x', 'y']);
+    void f;
+  });
+
+  it('el Corazón enemigo solo muestra su vida si se ve', () => {
+    const { state, data: d } = duel();
+    state.players[1]!.heartHp = 1234;
+    const f = new Follower(1, state);
+    f.update(state);
+    expect(f.mirror.state.players.find((p) => p.id === 2)!.heartHp).toBe(0);
+    expect(f.mirror.state.players.find((p) => p.id === 1)!.heartHp).toBe(8000);
+    // Una criatura propia junto a su Corazón lo deja ver.
+    const h = d.map.bases.find((b) => b.slot === state.players[1]!.slot)!.heart;
+    spawn(state, d, 1, 'goblin', h.x - 1.5, h.y + 1.5);
+    f.update(state);
+    expect(f.mirror.state.players.find((p) => p.id === 2)!.heartHp).toBe(1234);
+  });
+
+  it('las trampas y las tareas son siempre propias: el rival nunca las recibe', () => {
+    const { state, data: d } = duel();
+    extendTerritory(state, d);
+    state.players[0]!.gold = 9000;
+    applyCommand(state, d, 1, {
+      type: 'buildRoom',
+      room: 'tortureChamber',
+      rect: { x: 2, y: 11, w: 3, h: 3 },
+    });
+    step(state, d);
+    applyCommand(state, d, 1, { type: 'buildTrap', trap: 'spikeTrap', tile: { x: 8, y: 15 } });
+    applyCommand(state, d, 1, { type: 'dig', tiles: [{ x: 11, y: 4 }] });
+    step(state, d);
+    const p1 = new Follower(1, state);
+    const p2 = new Follower(2, state);
+    // Aunque el jugador 2 viera ese tile, no recibe trampas ajenas.
+    spawn(state, d, 2, 'troll', 8.5, 15.5);
+    p1.update(state);
+    p2.update(state);
+    expect(p1.mirror.state.traps).toHaveLength(1);
+    expect(p1.mirror.state.tasks.length).toBeGreaterThan(0);
+    expect(p2.mirror.state.traps).toHaveLength(0);
+    expect(p2.mirror.state.tasks).toHaveLength(0);
+    // El jugador 2 sí ve el terreno y la sala si los tiene a la vista (no hay trampa en lo que recibe).
+    expect(JSON.stringify(p2.mirror.state)).not.toContain('spikeTrap');
+  });
+
+  it('el terreno visto se recuerda tal como estaba, aunque cambie fuera de la vista', () => {
+    const { state, data: d } = duel();
+    const f = new Follower(1, state);
+    const c = spawn(state, d, 1, 'goblin', 30.5, 30.5);
+    f.update(state);
+    const tile = 30 * 64 + 33;
+    const before = f.mirror.state.terrain[tile];
+    expect(f.mirror.state.players[0]!.seen[tile]).toBe(1);
+    // La criatura se va y el tile cambia (alguien lo excava) sin que se vea.
+    c.x = 5.5;
+    c.y = 8.5;
+    run(state, d, 1);
+    state.terrain[tile] = d.terrain.findIndex((t) => t.id === 'neutralFloor');
+    f.update(state);
+    expect(f.mirror.state.terrain[tile]).toBe(before);
+    expect(f.mirror.state.players[0]!.seen[tile]).toBe(1);
+  });
+
+  it('cuando una sala enemiga se destruye fuera de la vista, el cliente no se entera (no se envía el borrado)', () => {
+    const { state, data: d } = duel();
+    const f = new Follower(1, state);
+    const h = d.map.bases.find((b) => b.slot === state.players[1]!.slot)!;
+    const spy = spawn(state, d, 1, 'goblin', h.heart.x - 1.5, h.heart.y + 1.5);
+    f.update(state);
+    const treasury = h.rooms.find((r) => r.type === 'treasury')!.rect;
+    const known = f.mirror.state.rooms.filter((r) => r.owner === 2).length;
+    expect(known).toBeGreaterThan(0);
+    spy.x = 30.5;
+    spy.y = 30.5;
+    run(state, d, 1);
+    state.rooms = state.rooms.filter((r) => !(r.owner === 2 && r.type === 'treasury'));
+    for (let y = treasury.y; y < treasury.y + treasury.h; y++)
+      for (let x = treasury.x; x < treasury.x + treasury.w; x++) state.roomAt[y * 64 + x] = 0;
+    const delta = computeDelta(state, d, 1, f.known);
+    expect(delta.del ?? []).not.toContain(expect.stringMatching(/^r:/));
+    expect(Object.keys(delta.set ?? {}).filter((k) => k.startsWith('r:'))).toEqual([]);
+  });
+});
+
+describe('vistas por jugador: coherencia', () => {
+  it('el espejo coincide con la verdad en todo lo que se ve, tick a tick, durante una partida de bots', () => {
+    const f: Follower[] = [];
+    let checked = 0;
+    playBotMatch(data, {
+      players: 2,
+      seed: 9,
+      maxTicks: 2500,
+      onEvents: (_e, state) => {
+        if (f.length === 0) for (const p of state.players) f.push(new Follower(p.id, state));
+        for (const fl of f) {
+          fl.update(state);
+          if (state.tick % 250 !== 0) continue;
+          checked++;
+          const m = fl.mirror.state;
+          const vis = visibleMask(state, rules, fl.pid);
+          // Tiles visibles: iguales a la verdad. No visibles: iguales a lo último que se vio (o desconocidos).
+          for (let i = 0; i < vis.length; i++) {
+            if (vis[i] === 1) {
+              expect(m.terrain[i]).toBe(state.terrain[i]);
+              expect(m.owner[i]).toBe(state.owner[i]);
+              expect(m.roomAt[i]).toBe(state.roomAt[i]);
+            } else {
+              const last = fl.lastSeen.get(i);
+              if (last) expect([m.terrain[i], m.owner[i]]).toEqual(last);
+              else expect(m.terrain[i]).toBe(rules.terrainIndex['solidRock']);
+            }
+          }
+          // Cosas propias: iguales; del rival: solo las visibles y existentes.
+          for (const c of state.creatures) {
+            const mine = c.owner === fl.pid;
+            const seen = vis[Math.floor(c.y) * 64 + Math.floor(c.x)] === 1;
+            const got = m.creatures.find((k) => k.id === c.id);
+            if (mine || (seen && !c.held)) {
+              expect(got, `criatura ${c.id}`).toBeDefined();
+              expect(got!.hp).toBe(Math.round(c.hp));
+              expect(Math.abs(got!.x - c.x)).toBeLessThan(0.006);
+            } else expect(got).toBeUndefined();
+          }
+          expect(m.creatures.every((k) => state.creatures.some((c) => c.id === k.id))).toBe(true);
+          for (const i of state.imps) {
+            const mine = i.owner === fl.pid;
+            const seen = vis[Math.floor(i.y) * 64 + Math.floor(i.x)] === 1;
+            expect(!!m.imps.find((k) => k.id === i.id)).toBe(mine || seen);
+          }
+          expect(m.players.find((p) => p.id === fl.pid)!.gold).toBe(
+            Math.round(state.players.find((p) => p.id === fl.pid)!.gold),
+          );
+          expect(m.tick).toBe(state.tick);
+        }
+      },
+    });
+    expect(checked).toBeGreaterThanOrEqual(18);
+  }, 300_000);
+
+  it('reconectar (conocimiento vacío) devuelve lo que se ve ahora, igual que seguir al día', () => {
+    const { state, data: d } = duel();
+    const live = new Follower(1, state);
+    spawn(state, d, 2, 'goblin', 8.5, 4.5);
+    spawn(state, d, 1, 'troll', 3.5, 8.5);
+    for (let n = 0; n < 40; n++) {
+      step(state, d);
+      live.update(state);
+    }
+    const fresh = new Follower(1, state);
+    fresh.update(state);
+    const key = (m: MatchState) =>
+      JSON.stringify([
+        m.creatures.map((c) => [c.id, c.owner, c.x, c.y, c.hp]),
+        m.imps.map((i) => [i.id, i.x, i.y]),
+      ]);
+    expect(key(fresh.mirror.state)).toBe(key(live.mirror.state));
+    const vis = visibleMask(state, rules, 1);
+    for (let i = 0; i < vis.length; i++)
+      if (vis[i] === 1) expect(fresh.mirror.state.terrain[i]).toBe(live.mirror.state.terrain[i]);
+  });
+
+  it('computeDelta no modifica el estado de la partida', () => {
+    const { state, data: d } = duel();
+    run(state, d, 30);
+    const before = JSON.stringify(state);
+    computeDelta(state, d, 1, new ClientKnowledge(64 * 64));
+    expect(JSON.stringify(state)).toBe(before);
+  });
+
+  it('un tick sin cambios cuesta muy poco (el tick y poco más)', () => {
+    const { state, data: d } = duel();
+    const f = new Follower(1, state);
+    f.update(state);
+    run(state, d, 20);
+    f.update(state);
+    const size = f.update(state);
+    expect(size).toBeLessThan(1500);
+  });
+});
+
+describe('ancho de banda', () => {
+  it('con 4 jugadores, cada cliente recibe menos de 20 KB/s de media y en su peor segundo', () => {
+    const f: Follower[] = [];
+    const perSecond = new Map<number, number[]>();
+    let secondBytes = new Map<number, number>();
+    const r = playBotMatch(data, {
+      players: 4,
+      seed: 3,
+      maxTicks: 4000,
+      onEvents: (_e, state) => {
+        if (f.length === 0) for (const p of state.players) f.push(new Follower(p.id, state));
+        for (const fl of f)
+          secondBytes.set(fl.pid, (secondBytes.get(fl.pid) ?? 0) + fl.update(state));
+        if (state.tick % 10 === 0) {
+          for (const [pid, b] of secondBytes)
+            perSecond.set(pid, [...(perSecond.get(pid) ?? []), b]);
+          secondBytes = new Map();
+        }
+      },
+    });
+    expect(r.ticks).toBe(4000);
+    for (const [pid, list] of perSecond) {
+      // El primer segundo incluye la instantánea completa; se mide aparte.
+      const steady = list.slice(2);
+      const avg = steady.reduce((a, b) => a + b, 0) / steady.length;
+      const worst = Math.max(...steady);
+      console.log(
+        `jugador ${pid}: media ${(avg / 1024).toFixed(1)} KB/s, peor segundo ${(worst / 1024).toFixed(1)} KB/s, instantánea ${(list[0]! / 1024).toFixed(1)} KB`,
+      );
+      expect(avg, `media del jugador ${pid}`).toBeLessThan(20 * 1024);
+      expect(worst, `peor segundo del jugador ${pid}`).toBeLessThan(20 * 1024);
+    }
+  }, 300_000);
+});
