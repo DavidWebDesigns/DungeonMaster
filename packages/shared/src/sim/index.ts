@@ -22,3 +22,4 @@ export { castEffect } from './spells';
 export { gainXp } from './xp';
 export * from './traps';
 export { dropImp } from './imps';
+export * from './stats';

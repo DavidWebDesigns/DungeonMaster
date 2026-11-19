@@ -139,6 +139,7 @@ test('dos navegadores: crear sala con código, unirse, lobby, partida, órdenes 
     await beto.evaluate(() => dm().sandbox.state.result),
   );
   await expect(ana.locator('.endstats')).toContainText('Beto');
+  await expect(ana.locator('.endstats th')).toHaveCount(5);
   expect(errors).toEqual([]);
 });
 

@@ -7,7 +7,10 @@ import {
   applyCommand,
   ClientKnowledge,
   computeDelta,
+  countStats,
   createMatch,
+  emptyPlayerStats,
+  newMatchStats,
   MSG,
   step,
   type AckMsg,
@@ -19,12 +22,13 @@ import {
   type EndedMsg,
   type LobbyInfo,
   type LobbyPlayer,
+  type MatchStats,
   type MatchState,
   type NickMsg,
   type Phase,
   type PlayerId,
+  type PlayerStats,
   type ReadyMsg,
-  type SimEvent,
   type StartedMsg,
 } from '@dm/shared';
 
@@ -81,8 +85,6 @@ interface Slot {
   known: ClientKnowledge | null;
   disconnectedTick: number;
   lastCommandTick: number;
-  goldMined: number;
-  creaturesLost: number;
   needsSnapshot: boolean;
 }
 
@@ -90,6 +92,8 @@ export class MatchSession {
   readonly code: string;
   phase: Phase = 'lobby';
   state: MatchState | null = null;
+  /** Estadísticas de la partida en curso, para la pantalla de resultados. */
+  private stats: MatchStats = new Map();
   private readonly data: DataSet;
   private readonly maxPlayers: number;
   private readonly countdownTicks: number;
@@ -185,8 +189,6 @@ export class MatchSession {
       known: null,
       disconnectedTick: 0,
       lastCommandTick: 0,
-      goldMined: 0,
-      creaturesLost: 0,
       needsSnapshot: false,
     });
     this.pushLobby();
@@ -330,7 +332,7 @@ export class MatchSession {
     if (this.phase !== 'playing' || !this.state) return;
     const state = this.state;
     const events = step(state, this.data);
-    this.countStats(events);
+    countStats(this.stats, events);
     this.checkNetwork(state);
 
     for (const s of this.slots) {
@@ -363,23 +365,12 @@ export class MatchSession {
     });
     this.state = createMatch({ playerCount: this.slots.length }, this.data, this.seed);
     this.phase = 'playing';
+    this.stats = newMatchStats(this.slots.map((s) => s.pid));
     for (const s of this.slots) {
       s.known = new ClientKnowledge(this.state.width * this.state.height);
       s.needsSnapshot = true;
       s.lastCommandTick = 0;
       this.say(s.clientId, MSG.started, this.startedFor(s));
-    }
-  }
-
-  private countStats(events: SimEvent[]): void {
-    for (const e of events) {
-      if (e.type === 'goldDeposited') {
-        const s = this.slots.find((k) => k.pid === e.playerId);
-        if (s) s.goldMined += e.amount;
-      } else if (e.type === 'creatureDied' && e.cause !== 'eliminated') {
-        const s = this.slots.find((k) => k.pid === e.playerId);
-        if (s) s.creaturesLost++;
-      }
     }
   }
 
@@ -424,11 +415,14 @@ export class MatchSession {
       stats: this.slots.map((s) => ({
         id: s.pid,
         nick: s.nick,
-        goldMined: Math.round(s.goldMined),
-        creaturesLost: s.creaturesLost,
+        ...roundedStats(this.stats.get(s.pid) ?? emptyPlayerStats()),
       })),
     };
     this.say('all', MSG.ended, msg);
     this.pushLobby();
   }
+}
+
+function roundedStats(s: PlayerStats) {
+  return { ...s, goldMined: Math.round(s.goldMined), heartDamage: Math.round(s.heartDamage) };
 }

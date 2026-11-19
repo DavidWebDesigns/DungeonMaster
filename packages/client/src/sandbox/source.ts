@@ -2,7 +2,7 @@
  * De dónde sale el estado de la partida: el sandbox (simulación local) o la red (servidor autoritativo).
  * El juego, el dibujo y el HUD solo conocen esta interfaz: leen `state`, mandan comandos con `send` y avanzan con `advance`.
  */
-import type { Command, CommandResult, DataSet, MatchState, SimEvent } from '@dm/shared';
+import type { Command, CommandResult, DataSet, MatchState, MatchStats, SimEvent } from '@dm/shared';
 
 export interface UnitPose {
   x: number;
@@ -21,6 +21,8 @@ export interface GameSource {
   readonly previousCreatures: Map<number, UnitPose>;
   /** Cuánto del tick siguiente ha transcurrido (0 a 1). */
   readonly alpha: number;
+  /** Estadísticas de la partida (solo las partidas locales las llevan; en red llegan con el fin de partida). */
+  readonly stats?: MatchStats;
   paused: boolean;
   /** Multiplicador del paso del tiempo. Solo las partidas locales lo tienen: en red no se puede acelerar. */
   speed?: number;

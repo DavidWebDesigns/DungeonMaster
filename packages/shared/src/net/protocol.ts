@@ -4,6 +4,7 @@
  * filtrados por lo que ese jugador puede ver.
  */
 import type { Command, ErrorCode, MatchResult, PlayerId } from '../sim/types';
+import type { PlayerStats } from '../sim/stats';
 import type { Delta } from './view';
 
 export const MSG = {
@@ -80,7 +81,7 @@ export type AckMsg =
 export interface EndedMsg {
   result: MatchResult;
   /** Estadísticas simples para la pantalla de resultados. */
-  stats: Array<{ id: PlayerId; nick: string; goldMined: number; creaturesLost: number }>;
+  stats: Array<{ id: PlayerId; nick: string } & PlayerStats>;
 }
 
 export interface ErrorMsg {

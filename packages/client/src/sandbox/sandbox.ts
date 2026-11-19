@@ -8,6 +8,9 @@
 import type { GameSource } from './source';
 import {
   applyCommand,
+  countStats,
+  newMatchStats,
+  type MatchStats,
   botOptionsFor,
   createBot,
   createMatch,
@@ -54,6 +57,8 @@ export class Sandbox implements GameSource {
   readonly versus: boolean;
   /** Rivales controlados por bots (ids 2, 3...). */
   readonly bots: Bot[];
+  /** Estadísticas de la partida para la pantalla de fin. */
+  readonly stats: MatchStats;
   /** Multiplicador del paso del tiempo (1, 2, 4...). Solo existe en local. */
   speed = 1;
   private accumulatorMs = 0;
@@ -73,6 +78,7 @@ export class Sandbox implements GameSource {
     this.bots = [];
     for (let id = 2; id <= 1 + rivals; id++)
       this.bots.push(createBot(id, seed * 7919 + id * 104729, botOptions));
+    this.stats = newMatchStats(this.state.players.map((p) => p.id));
     this.tickMs = 1000 / data.global.tickRate;
     this.snapshot();
   }
@@ -97,7 +103,9 @@ export class Sandbox implements GameSource {
       for (const bot of this.bots)
         for (const cmd of bot.act(this.state, this.data))
           applyCommand(this.state, this.data, bot.playerId, cmd);
-      events.push(...step(this.state, this.data));
+      const tickEvents = step(this.state, this.data);
+      countStats(this.stats, tickEvents);
+      events.push(...tickEvents);
       this.accumulatorMs -= this.tickMs;
       ran++;
     }

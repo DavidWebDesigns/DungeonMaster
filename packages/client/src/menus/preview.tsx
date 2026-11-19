@@ -29,8 +29,24 @@ export function showMenusPreview(host: HTMLElement, data: DataSet): void {
         reason="El Corazón rival cayó"
         minutes={18}
         rows={[
-          { id: 1, nick: 'Tú', winner: true, goldMined: 14200, creaturesLost: 3 },
-          { id: 2, nick: 'Bot 1', winner: false, goldMined: 9800, creaturesLost: 11 },
+          {
+            id: 1,
+            nick: 'Tú',
+            winner: true,
+            goldMined: 14200,
+            creaturesLost: 3,
+            creaturesAttracted: 9,
+            heartDamage: 4000,
+          },
+          {
+            id: 2,
+            nick: 'Bot 1',
+            winner: false,
+            goldMined: 9800,
+            creaturesLost: 11,
+            creaturesAttracted: 9,
+            heartDamage: 4000,
+          },
         ]}
         onAgain={noop}
         onMenu={noop}

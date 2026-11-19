@@ -9,6 +9,7 @@ import { ParticleSim } from './feel/particleSim';
 import { AudioEngine } from './feel/sounds';
 import { DomInput } from './input/domInput';
 import { InputModel, type HoverUnit } from './input/inputModel';
+import { localStatsRows, type EndStatsRow } from './ui/endStats';
 import { keyAction } from './input/keymap';
 import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { errorMessage } from './input/messages';
@@ -204,6 +205,15 @@ export class Game {
     this.hudKey = '';
   }
 
+  /** Filas de la pantalla de fin: las del servidor en red, o las del sandbox en local. */
+  private endStatsRows(): EndStatsRow[] | undefined {
+    if (this.endStats) return this.endStats;
+    const stats = this.sandbox.stats;
+    return stats && this.sandbox.state.status !== 'playing'
+      ? localStatsRows(stats, this.me)
+      : undefined;
+  }
+
   /** Aviso del consejero en pantalla. */
   private say(text: string, key = text, cooldownTicks = 0): void {
     this.notices.add(text, this.sandbox.state.tick, key, cooldownTicks);
@@ -275,7 +285,7 @@ export class Game {
           this.input.setTool(tool);
           this.hudKey = '';
         },
-        endStats: this.endStats ?? undefined,
+        endStats: this.endStatsRows(),
         surrenderArmed: armed,
         onSurrender: () => this.surrender(),
         onRestart: () => window.location.reload(),

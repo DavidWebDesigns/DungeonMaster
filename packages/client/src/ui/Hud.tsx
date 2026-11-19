@@ -1,4 +1,5 @@
 import type { Tool } from '../input/inputModel';
+import type { EndStatsRow } from './endStats';
 import type { HudModel } from './hudModel';
 
 export interface HudProps {
@@ -11,7 +12,7 @@ export interface HudProps {
   /** Pulsó "Jugar de nuevo" en la pantalla final. */
   onRestart?(): void;
   /** Estadísticas de fin de partida (en red). */
-  endStats?: Array<{ id: number; nick: string; goldMined: number; creaturesLost: number }>;
+  endStats?: EndStatsRow[];
   /** El botón de rendirse espera confirmación. */
   surrenderArmed?: boolean;
 }
@@ -86,7 +87,9 @@ export function Hud({
                   <tr>
                     <th>Jugador</th>
                     <th>Oro minado</th>
-                    <th>Criaturas perdidas</th>
+                    <th>Atraídas</th>
+                    <th>Perdidas</th>
+                    <th>Daño al Corazón</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -94,7 +97,9 @@ export function Hud({
                     <tr key={p.id}>
                       <td>{p.nick}</td>
                       <td>{p.goldMined}</td>
+                      <td>{p.creaturesAttracted}</td>
                       <td>{p.creaturesLost}</td>
+                      <td>{p.heartDamage}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -47,8 +47,24 @@ describe('maqueta de menús (desactivada)', () => {
         reason="x"
         minutes={5}
         rows={[
-          { id: 1, nick: 'Ana', winner: true, goldMined: 100, creaturesLost: 2 },
-          { id: 2, nick: 'Bot', winner: false, goldMined: 50, creaturesLost: 7 },
+          {
+            id: 1,
+            nick: 'Ana',
+            winner: true,
+            goldMined: 100,
+            creaturesLost: 2,
+            creaturesAttracted: 9,
+            heartDamage: 4000,
+          },
+          {
+            id: 2,
+            nick: 'Bot',
+            winner: false,
+            goldMined: 50,
+            creaturesLost: 7,
+            creaturesAttracted: 9,
+            heartDamage: 4000,
+          },
         ]}
         onAgain={noop}
         onMenu={noop}

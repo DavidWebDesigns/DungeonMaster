@@ -101,6 +101,8 @@ export interface ResultsRow {
   winner: boolean;
   goldMined: number;
   creaturesLost: number;
+  creaturesAttracted: number;
+  heartDamage: number;
 }
 
 export interface ResultsProps {
@@ -125,7 +127,9 @@ export function Results({ title, reason, rows, minutes, onAgain, onMenu }: Resul
             <tr>
               <th>Jugador</th>
               <th>Oro minado</th>
-              <th>Criaturas perdidas</th>
+              <th>Atraídas</th>
+              <th>Perdidas</th>
+              <th>Daño al Corazón</th>
             </tr>
           </thead>
           <tbody>
@@ -136,7 +140,9 @@ export function Results({ title, reason, rows, minutes, onAgain, onMenu }: Resul
                   {r.winner ? ' 👑' : ''}
                 </td>
                 <td>{r.goldMined}</td>
+                <td>{r.creaturesAttracted}</td>
                 <td>{r.creaturesLost}</td>
+                <td>{r.heartDamage}</td>
               </tr>
             ))}
           </tbody>

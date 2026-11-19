@@ -83,6 +83,10 @@ test('rendirse pide confirmación y termina la partida con la pantalla de derrot
     reason: 'lastStanding',
   });
   await expect(page.locator('.gameover .btn')).toContainText('Jugar de nuevo');
+  // Estadísticas de la partida local: "Tú" y el bot, con las cinco columnas.
+  await expect(page.locator('.endstats tbody tr')).toHaveCount(2);
+  await expect(page.locator('.endstats')).toContainText('Tú');
+  await expect(page.locator('.endstats th')).toHaveCount(5);
 });
 
 test('si el Corazón rival cae, sale la pantalla de victoria', async ({ page }) => {
