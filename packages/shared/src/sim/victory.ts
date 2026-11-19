@@ -37,6 +37,7 @@ export function eliminatePlayer(
   state.imps = state.imps.filter((i) => i.owner !== player.id);
   state.tasks = state.tasks.filter((t) => t.owner !== player.id);
   state.rooms = state.rooms.filter((r) => r.owner !== player.id);
+  state.traps = state.traps.filter((t) => t.owner !== player.id);
   const neutral = rules.neutralTerrain;
   for (let i = 0; i < state.owner.length; i++) {
     if (state.owner[i] !== player.id) continue;

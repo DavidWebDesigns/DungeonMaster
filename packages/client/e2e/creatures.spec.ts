@@ -10,7 +10,7 @@ interface Hook {
       terrain: number[];
       owner: number[];
       mapVersion: number;
-      players: Array<{ gold: number; hand: number[] }>;
+      players: Array<{ gold: number; hand: Array<{ kind: string; id: number }> }>;
       creatures: Array<{
         id: number;
         type: string;

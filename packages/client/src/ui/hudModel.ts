@@ -37,6 +37,19 @@ export interface RoomButton {
   active: boolean;
 }
 
+export interface TrapButton {
+  id: string;
+  name: string;
+  hotkey: string;
+  cost: number;
+  /** Nombre de la sala que hay que tener construida para colocarla. */
+  requires: string;
+  /** El jugador ya tiene esa sala. */
+  available: boolean;
+  affordable: boolean;
+  active: boolean;
+}
+
 export interface SpellButton {
   id: string;
   name: string;
@@ -83,6 +96,7 @@ export interface HudModel {
   clock: string;
   tools: ToolButton[];
   rooms: RoomButton[];
+  traps: TrapButton[];
   spells: SpellButton[];
   creatures: CreatureRow[];
   /** Resultado de la partida si ya terminó, desde el punto de vista del jugador local. */
@@ -204,6 +218,17 @@ export function buildHudModel(
     };
   });
 
+  const traps: TrapButton[] = data.traps.map((t, i) => ({
+    id: t.id,
+    name: t.name,
+    hotkey: String(buildable.length + 1 + i),
+    cost: t.goldCost,
+    requires: data.rooms.find((r) => r.id === t.requiresRoom)?.name ?? t.requiresRoom,
+    available: state.rooms.some((r) => r.owner === playerId && r.type === t.requiresRoom),
+    affordable: player.gold >= t.goldCost,
+    active: tool.kind === 'trap' && tool.trap === t.id,
+  }));
+
   const SPELL_KEYS = ['Q', 'W', 'E', 'R', 'T'];
   const SPELL_HINTS: Record<string, string> = {
     createImp: 'Crea un Imp en suelo propio. Cada Imp extra cuesta 50 más.',
@@ -259,6 +284,7 @@ export function buildHudModel(
     clock: formatClock(state.tick, data.global.tickRate),
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
     rooms,
+    traps,
     spells,
     creatures: rows,
     gameOver: gameOverInfo(state, playerId, data.global.tickRate),

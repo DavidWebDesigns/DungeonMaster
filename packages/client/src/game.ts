@@ -8,7 +8,7 @@ import { deriveEffects, takeSnapshot, type FeelSnapshot, type SoundName } from '
 import { ParticleSim } from './feel/particleSim';
 import { AudioEngine } from './feel/sounds';
 import { DomInput } from './input/domInput';
-import { InputModel } from './input/inputModel';
+import { InputModel, type HoverUnit } from './input/inputModel';
 import { keyAction } from './input/keymap';
 import { errorMessage } from './input/messages';
 import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
@@ -105,12 +105,12 @@ export class Game {
     this.dom = new DomInput(canvas, {
       pick: (nx, ny) =>
         pickTile(this.camera, nx, ny, (t) => (this.renderer.tileHeight(t.x, t.y) ?? 0) > 0.9, map),
-      creatureAt: (nx, ny) => this.creatureAt(nx, ny),
-      move: (t, creature) => this.input.pointerMove(t, creature),
-      down: (t, button, shift, creature) => {
+      unitAt: (nx, ny) => this.unitAt(nx, ny),
+      move: (t, unit) => this.input.pointerMove(t, unit),
+      down: (t, button, shift, unit) => {
         this.audio.unlock();
         this.playSound('click', 1);
-        this.input.pointerDown(t, button, shift, creature);
+        this.input.pointerDown(t, button, shift, unit);
       },
       up: (t) => this.input.pointerUp(t),
       wheel: (dy) => (this.camera = applyWheel(this.camera, dy)),
@@ -164,7 +164,7 @@ export class Game {
         this.particles,
         hover ? { x: hover.x + 0.5, y: hover.y + 0.5 } : null,
         this.versus,
-        this.input.hoverCreature,
+        this.input.hoverUnit,
       );
       this.updateHover();
       this.countFps(nowMs);
@@ -249,29 +249,31 @@ export class Game {
     );
   }
 
-  /** Cursor y tarjeta sobre la criatura propia que hay bajo el ratón: dice qué es y qué se puede hacer con ella. */
+  /** Cursor y tarjeta sobre la criatura o el Imp propio bajo el ratón: dice qué es y qué se puede hacer con él. */
   private updateHover(): void {
     const canvas = this.renderer.canvas;
     const { state } = this.sandbox;
     const hand = this.input.handSize;
-    const id = this.input.hoverCreature;
-    const c = id !== null ? state.creatures.find((k) => k.id === id) : undefined;
-    canvas.style.cursor = hand > 0 ? 'copy' : c ? 'grab' : 'default';
+    const u = this.input.hoverUnit;
+    const c = u?.kind === 'creature' ? state.creatures.find((k) => k.id === u.id) : undefined;
+    const imp = u?.kind === 'imp' ? state.imps.find((k) => k.id === u.id) : undefined;
+    canvas.style.cursor = hand > 0 ? 'copy' : c || imp ? 'grab' : 'default';
     const mouse = this.dom.cameraInput().mouse;
-    if (!c || !mouse) {
+    if ((!c && !imp) || !mouse) {
       this.hoverCard.style.display = 'none';
       return;
     }
     const rules = rulesOf(this.data);
-    const name = rules.creatureDefs[c.type]?.name ?? c.type;
-    const band = rules.bands.find((b) => b.id === c.band)?.name ?? '';
-    const spellTarget = this.input.tool.kind === 'spell';
-    const action = spellTarget
-      ? 'Clic: lanzar el hechizo'
-      : hand >= this.data.global.hand.capacity
-        ? 'Mano llena'
-        : 'Clic: recoger';
-    this.hoverCard.textContent = `${name} nv ${c.level} · ${band} · ${action} · B: bofetada`;
+    const spellTarget = this.input.tool.kind === 'spell' && !!c;
+    const full = hand >= this.data.global.hand.capacity;
+    const action = spellTarget ? 'Clic: lanzar el hechizo' : full ? 'Mano llena' : 'Clic: recoger';
+    if (c) {
+      const name = rules.creatureDefs[c.type]?.name ?? c.type;
+      const band = rules.bands.find((b) => b.id === c.band)?.name ?? '';
+      this.hoverCard.textContent = `${name} nv ${c.level} · ${band} · ${action} · B: bofetada`;
+    } else {
+      this.hoverCard.textContent = `Imp · ${action} · al soltarlo va a la tarea marcada más cercana`;
+    }
     const r = canvas.getBoundingClientRect();
     this.hoverCard.style.display = 'block';
     this.hoverCard.style.left = `${r.left + mouse.x * r.width + 14}px`;
@@ -301,19 +303,26 @@ export class Game {
     this.wasFull = full;
   }
 
-  /** Criatura propia (no recogida) que se ve bajo un punto de la pantalla, la más cercana. */
-  private creatureAt(nx: number, ny: number): number | null {
-    let best: number | null = null;
+  /** Criatura o Imp propio (no recogido) que se ve bajo un punto de la pantalla, el más cercano; a igual distancia, la criatura. */
+  private unitAt(nx: number, ny: number): HoverUnit | null {
+    let best: HoverUnit | null = null;
     let bestD = CREATURE_PICK_RADIUS;
-    for (const c of this.sandbox.state.creatures) {
-      if (c.owner !== LOCAL_PLAYER || c.held) continue;
-      const s = worldToScreen(this.camera, c.x, 0.35, c.y);
+    const test = (kind: HoverUnit['kind'], id: number, x: number, y: number, height: number) => {
+      const s = worldToScreen(this.camera, x, height, y);
       const d = Math.hypot((nx - s.nx) * this.camera.aspect, ny - s.ny);
-      if (d < bestD) {
-        bestD = d;
-        best = c.id;
+      // Los Imps están casi siempre donde se arrastra para excavar: se les pide más precisión que a las criaturas
+      // para no recoger uno sin querer al empezar a marcar una pared.
+      const reach = kind === 'imp' ? d * 1.35 : d;
+      if (reach < bestD) {
+        bestD = reach;
+        best = { kind, id };
       }
-    }
+    };
+    const { state } = this.sandbox;
+    for (const c of state.creatures)
+      if (c.owner === LOCAL_PLAYER && !c.held) test('creature', c.id, c.x, c.y, 0.35);
+    for (const i of state.imps)
+      if (i.owner === LOCAL_PLAYER && !i.held) test('imp', i.id, i.x, i.y, 0.3);
     return best;
   }
 
@@ -331,6 +340,15 @@ export class Game {
     if (!c) return null;
     const r = this.renderer.canvas.getBoundingClientRect();
     const s = worldToScreen(this.camera, c.x, 0.35, c.y);
+    return { x: r.left + ((s.nx + 1) / 2) * r.width, y: r.top + ((1 - s.ny) / 2) * r.height };
+  }
+
+  /** Posición en píxeles de la ventana de un Imp (para pruebas de navegador). */
+  impToScreen(id: number): { x: number; y: number } | null {
+    const i = this.sandbox.state.imps.find((k) => k.id === id);
+    if (!i) return null;
+    const r = this.renderer.canvas.getBoundingClientRect();
+    const s = worldToScreen(this.camera, i.x, 0.3, i.y);
     return { x: r.left + ((s.nx + 1) / 2) * r.width, y: r.top + ((1 - s.ny) / 2) * r.height };
   }
 

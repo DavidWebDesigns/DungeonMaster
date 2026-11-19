@@ -74,4 +74,48 @@ describe('el consejero', () => {
       'Una criatura ha abandonado tu mazmorra.',
     );
   });
+
+  it('avisa de que una trampa propia quedó lista y de que atrapó a alguien, con su nombre', () => {
+    const ready = advise([
+      { type: 'trapBuilt', playerId: 1, trapId: 3, trap: 'spikeTrap', tile: 5 },
+    ]);
+    expect(ready[0]!.text).toBe('Trampa de pinchos lista y armada.');
+    const hit = advise([{ type: 'trapTriggered', playerId: 1, trap: 'blastTrap', x: 1, y: 1 }]);
+    expect(hit[0]!.text).toBe('¡Tu trampa explosiva ha atrapado a un intruso!');
+    expect(advise([{ type: 'trapTriggered', playerId: 2, trap: 'blastTrap', x: 1, y: 1 }])).toEqual(
+      [],
+    );
+  });
+
+  it('da la bienvenida al Verdugo y a la Torturadora con su nombre', () => {
+    expect(
+      advise([{ type: 'creatureArrived', playerId: 1, creatureId: 9, creature: 'executioner' }])[0]!
+        .text,
+    ).toBe('Ha llegado un Verdugo a tu mazmorra.');
+    expect(
+      advise([{ type: 'creatureArrived', playerId: 1, creatureId: 9, creature: 'torturer' }])[0]!
+        .text,
+    ).toBe('Ha llegado una Torturadora a tu mazmorra.');
+  });
+
+  it('concuerda el género en los avisos de ánimo y de pago (Torturadora = femenino)', () => {
+    const tor = (id: number) => (id === 7 ? 'torturer' : id === 1 ? 'goblin' : undefined);
+    const f = (events: Parameters<typeof adviceFor>[0]) =>
+      adviceFor(events, sb.state, data, 1, tor);
+    expect(f([{ type: 'moodBand', playerId: 1, creatureId: 7, band: 'unhappy' }])[0]!.text).toBe(
+      'Una Torturadora está descontenta.',
+    );
+    expect(f([{ type: 'moodBand', playerId: 1, creatureId: 7, band: 'furious' }])[0]!.text).toBe(
+      '¡Una Torturadora está furiosa! Se marchará si no la calmas.',
+    );
+    expect(f([{ type: 'moodBand', playerId: 1, creatureId: 1, band: 'angry' }])[0]!.text).toBe(
+      '¡Un Goblin está enfadado! Se acerca al Portal.',
+    );
+    expect(f([{ type: 'paid', playerId: 1, creatureId: 7, amount: 0, ok: false }])[0]!.text).toBe(
+      'Sin oro para pagar a una Torturadora: se enfadará.',
+    );
+    expect(f([{ type: 'creatureLeft', playerId: 1, creatureId: 7 }])[0]!.text).toBe(
+      'Una Torturadora ha abandonado tu mazmorra.',
+    );
+  });
 });

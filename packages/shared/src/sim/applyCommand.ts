@@ -4,6 +4,8 @@ import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
 import { stopCreature } from './behavior';
 import { findAssaultTarget } from './combat';
+import { dropImp, resetImp } from './imps';
+import { checkBuildTrap, placeTrapNow, sellTrapNow, trapAt } from './traps';
 import { isVisible } from './fog';
 import { castEffect } from './spells';
 import { eliminatePlayer } from './victory';
@@ -139,7 +141,8 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
         for (let x = r.x; x < r.x + r.w; x++) {
           const i = tileIndex(state, x, y);
           const buildable = rules.terrain[state.terrain[i] as number]?.buildable === true;
-          if (!buildable || state.owner[i] !== pid || state.roomAt[i] !== 0)
+          // Suelo propio libre: sin otra sala ni trampa encima.
+          if (!buildable || state.owner[i] !== pid || state.roomAt[i] !== 0 || trapAt(state, i))
             return fail('INVALID_TARGET');
           tiles.push(i);
         }
@@ -193,11 +196,29 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
     }
     case 'pickUp': {
       if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
-      const c = state.creatures.find((k) => k.id === cmd.id);
-      if (!c || c.held) return fail('INVALID_TARGET');
-      if (c.owner !== pid) return fail('NOT_OWNER');
+      const unit =
+        cmd.kind === 'imp'
+          ? state.imps.find((k) => k.id === cmd.id)
+          : state.creatures.find((k) => k.id === cmd.id);
+      if (!unit || unit.held) return fail('INVALID_TARGET');
+      if (unit.owner !== pid) return fail('NOT_OWNER');
       if (player.hand.length >= rules.data.global.hand.capacity) return fail('LIMIT_REACHED');
       return { ok: true, tiles: [] };
+    }
+    case 'buildTrap': {
+      if (typeof cmd.trap !== 'string' || !isPoint(cmd.tile)) return fail('INVALID_COMMAND');
+      if (!inBounds(state, cmd.tile.x, cmd.tile.y)) return fail('INVALID_TARGET');
+      const tile = tileIndex(state, cmd.tile.x, cmd.tile.y);
+      const res = checkBuildTrap(state, rules, player, cmd.trap, tile);
+      return res.ok ? { ok: true, tiles: [tile], cost: res.cost } : fail(res.error);
+    }
+    case 'sellTrap': {
+      if (!isPoint(cmd.tile)) return fail('INVALID_COMMAND');
+      if (!inBounds(state, cmd.tile.x, cmd.tile.y)) return fail('INVALID_TARGET');
+      const tile = tileIndex(state, cmd.tile.x, cmd.tile.y);
+      const trap = trapAt(state, tile);
+      if (!trap) return fail('INVALID_TARGET');
+      return trap.owner === pid ? { ok: true, tiles: [tile] } : fail('NOT_OWNER');
     }
     case 'drop': {
       if (!isPoint(cmd.tile)) return fail('INVALID_COMMAND');
@@ -261,18 +282,32 @@ function execute(
       break;
     }
     case 'pickUp': {
+      if (cmd.kind === 'imp') {
+        const imp = state.imps.find((k) => k.id === cmd.id);
+        if (!imp) break;
+        resetImp(state, imp);
+        imp.held = true;
+        player.hand.push({ kind: 'imp', id: imp.id });
+        break;
+      }
       const c = state.creatures.find((k) => k.id === cmd.id);
       if (!c) break;
       stopCreature(c);
       c.assaultKind = 'none';
       c.held = true;
-      player.hand.push(c.id);
+      player.hand.push({ kind: 'creature', id: c.id });
       break;
     }
     case 'drop': {
-      const id = player.hand.pop();
-      const c = state.creatures.find((k) => k.id === id);
+      const item = player.hand.pop();
       const tile = v.tiles[0] as number;
+      if (!item) break;
+      if (item.kind === 'imp') {
+        const imp = state.imps.find((k) => k.id === item.id);
+        if (imp) dropImp(state, rules, imp, tile);
+        break;
+      }
+      const c = state.creatures.find((k) => k.id === item.id);
       if (!c) break;
       c.held = false;
       c.x = (tile % state.width) + 0.5;
@@ -283,6 +318,14 @@ function execute(
       const target = findAssaultTarget(state, rules, player.id, tile);
       c.assaultKind = target ? target.kind : 'none';
       c.assaultId = target ? target.id : 0;
+      break;
+    }
+    case 'buildTrap':
+      placeTrapNow(state, rules, player, cmd.trap, v.tiles[0] as number, events);
+      break;
+    case 'sellTrap': {
+      const trap = trapAt(state, v.tiles[0] as number);
+      if (trap) sellTrapNow(state, rules, player, trap, events);
       break;
     }
     case 'slap': {

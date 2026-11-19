@@ -60,7 +60,7 @@ export function assignTasks(state: MatchState, rules: Rules): void {
     if (player.eliminated) continue;
     const capacity = treasuryCapacity(state, rules, player.id);
     for (const imp of state.imps) {
-      if (imp.owner !== player.id || imp.mode !== 'idle') continue;
+      if (imp.owner !== player.id || imp.mode !== 'idle' || imp.held) continue;
 
       if (imp.carry > 0 && capacity > 0 && imp.haulBlockedVersion !== state.mapVersion) {
         startHaul(imp);
@@ -131,7 +131,7 @@ function computePath(state: MatchState, rules: Rules, imp: Imp): boolean {
     if (goals.size === 0) return false;
     isGoal = (i) => goals.has(i);
     // Los destinos están a 1 tile (recto) del tile de la tarea, salvo reclamar, que es el propio tile.
-    const slack = task.kind === 'claim' ? 0 : straightCost;
+    const slack = task.kind === 'claim' || task.kind === 'buildTrap' ? 0 : straightCost;
     heuristic = (i) => Math.max(0, octile(state, i, task.tile, straightCost, diagonalCost) - slack);
   }
 
@@ -243,6 +243,7 @@ export function updateImps(
   budgets: Map<PlayerId, number>,
 ): void {
   for (const imp of state.imps) {
+    if (imp.held) continue;
     // ¿Sigue siendo válida su tarea?
     if (imp.goal === 'task') {
       const task = getTask(state, imp.taskId);
@@ -285,4 +286,44 @@ export function updateImps(
       else work(state, rules, imp, task, events);
     }
   }
+}
+
+/**
+ * Suelta un Imp de la mano en un tile: va a la tarea marcada más cercana a ese tile (excavar, minar, reclamar,
+ * reforzar o construir una trampa), sin importar su prioridad habitual. Si lleva oro, primero lo entrega, y si no hay
+ * tareas, sigue su vida normal desde ahí (por ejemplo reclamando suelo cercano sin dueño).
+ */
+export function dropImp(state: MatchState, rules: Rules, imp: Imp, tile: number): void {
+  imp.held = false;
+  imp.x = (tile % state.width) + 0.5;
+  imp.y = Math.floor(tile / state.width) + 0.5;
+  resetImp(state, imp);
+  if (imp.carry > 0) return;
+  const player = state.players.find((p) => p.id === imp.owner);
+  if (!player) return;
+  const { straightCost, diagonalCost } = rules.data.global.pathfinding;
+  const hasRoom = goldRoom(state, rules, player) > EPS;
+  let best: Task | undefined;
+  let bestKey: [number, number, number] | undefined;
+  for (const t of state.tasks) {
+    if (t.owner !== imp.owner || t.reservedBy !== 0 || t.blockedVersion === state.mapVersion)
+      continue;
+    if (isMining(state, rules, t) && !hasRoom) continue;
+    if (workTiles(state, rules, t).length === 0) continue;
+    const key: [number, number, number] = [
+      octile(state, tile, t.tile, straightCost, diagonalCost),
+      taskPriority(t),
+      t.id,
+    ];
+    if (
+      !bestKey ||
+      key[0] < bestKey[0] ||
+      (key[0] === bestKey[0] &&
+        (key[1] < bestKey[1] || (key[1] === bestKey[1] && key[2] < bestKey[2])))
+    ) {
+      best = t;
+      bestKey = key;
+    }
+  }
+  if (best) startTask(imp, best);
 }

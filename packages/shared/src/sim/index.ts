@@ -20,3 +20,5 @@ export * from './combat';
 export * from './victory';
 export { castEffect } from './spells';
 export { gainXp } from './xp';
+export * from './traps';
+export { dropImp } from './imps';

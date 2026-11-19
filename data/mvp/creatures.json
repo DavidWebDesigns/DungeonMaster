@@ -15,7 +15,12 @@
       "wage": 0,
       "lairTiles": 0
     },
-    "needs": { "eats": false, "sleeps": true, "paid": false, "hasMood": false },
+    "needs": {
+      "eats": false,
+      "sleeps": true,
+      "paid": false,
+      "hasMood": false
+    },
     "attraction": null,
     "enemies": [],
     "flags": ["worker", "sleepsOnAnyOwnTile"]
@@ -36,8 +41,20 @@
       "wage": 100,
       "lairTiles": 1
     },
-    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
-    "attraction": { "requires": [{ "room": "lair" }], "attractWeight": 4 },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "lair"
+        }
+      ],
+      "attractWeight": 4
+    },
     "enemies": [],
     "flags": []
   },
@@ -57,8 +74,20 @@
       "wage": 150,
       "lairTiles": 1
     },
-    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
-    "attraction": { "requires": [{ "room": "trainingRoom" }], "attractWeight": 3 },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "trainingRoom"
+        }
+      ],
+      "attractWeight": 3
+    },
     "enemies": [],
     "flags": []
   },
@@ -78,8 +107,20 @@
       "wage": 200,
       "lairTiles": 1
     },
-    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
-    "attraction": { "requires": [{ "room": "library" }], "attractWeight": 3 },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "library"
+        }
+      ],
+      "attractWeight": 3
+    },
     "enemies": [],
     "flags": ["ranged"]
   },
@@ -99,10 +140,89 @@
       "wage": 300,
       "lairTiles": 2
     },
-    "needs": { "eats": true, "sleeps": true, "paid": true, "hasMood": true },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
     "attraction": {
-      "requires": [{ "room": "hatchery" }, { "room": "trainingRoom" }],
+      "requires": [
+        {
+          "room": "hatchery"
+        },
+        {
+          "room": "trainingRoom"
+        }
+      ],
       "attractWeight": 2
+    },
+    "enemies": [],
+    "flags": []
+  },
+  {
+    "id": "executioner",
+    "name": "Verdugo",
+    "modelId": "creature_executioner",
+    "tier": "common",
+    "jobClass": "fighter",
+    "fightStyle": "blocker",
+    "base": {
+      "hp": 3000,
+      "damage": 140,
+      "attackInterval": 1.8,
+      "range": 1,
+      "speed": 1.4,
+      "wage": 250,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "tortureChamber"
+        }
+      ],
+      "attractWeight": 2
+    },
+    "enemies": [],
+    "flags": []
+  },
+  {
+    "id": "torturer",
+    "name": "Torturadora",
+    "modelId": "creature_torturer",
+    "gender": "f",
+    "tier": "common",
+    "jobClass": "fighter",
+    "fightStyle": "flanker",
+    "base": {
+      "hp": 1200,
+      "damage": 70,
+      "attackInterval": 1.2,
+      "range": 1,
+      "speed": 2.0,
+      "wage": 120,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "tortureChamber"
+        }
+      ],
+      "attractWeight": 3
     },
     "enemies": [],
     "flags": []

@@ -9,7 +9,8 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 /** Quita una criatura del juego (se fue o murió): suelta su cama y su lugar en la mano. */
 export function removeCreature(state: MatchState, id: number): void {
   state.creatures = state.creatures.filter((c) => c.id !== id);
-  for (const p of state.players) p.hand = p.hand.filter((h) => h !== id);
+  for (const p of state.players)
+    p.hand = p.hand.filter((h) => !(h.kind === 'creature' && h.id === id));
 }
 
 /**

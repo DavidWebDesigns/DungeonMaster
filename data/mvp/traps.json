@@ -1,0 +1,36 @@
+[
+  {
+    "id": "spikeTrap",
+    "name": "Trampa de pinchos",
+    "modelId": "trap_spike",
+    "goldCost": 150,
+    "buildSeconds": 6,
+    "requiresRoom": "tortureChamber",
+    "triggerRadius": 1.0,
+    "cooldownSeconds": 6,
+    "consumable": false,
+    "sellRefund": 0.5,
+    "effect": {
+      "type": "areaDamage",
+      "damage": 350,
+      "radius": 0.8
+    }
+  },
+  {
+    "id": "blastTrap",
+    "name": "Trampa explosiva",
+    "modelId": "trap_blast",
+    "goldCost": 400,
+    "buildSeconds": 10,
+    "requiresRoom": "tortureChamber",
+    "triggerRadius": 1.2,
+    "cooldownSeconds": 0,
+    "consumable": true,
+    "sellRefund": 0.5,
+    "effect": {
+      "type": "areaDamage",
+      "damage": 900,
+      "radius": 2.0
+    }
+  }
+]

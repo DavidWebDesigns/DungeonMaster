@@ -282,15 +282,23 @@ describe('hechizos con el ratón', () => {
 });
 
 describe('atajos de teclado', () => {
-  it('1 a 5 eligen las 5 salas construibles en el orden del plan', () => {
-    const rooms = ['lair', 'hatchery', 'treasury', 'trainingRoom', 'library'];
+  it('1 a 6 eligen las salas construibles y 7 y 8 las trampas, en el orden de los datos', () => {
+    const rooms = ['lair', 'hatchery', 'treasury', 'trainingRoom', 'library', 'tortureChamber'];
     rooms.forEach((room, i) => {
       expect(keyAction(String(i + 1), data)).toEqual({
         type: 'tool',
         tool: { kind: 'build', room },
       });
     });
-    expect(keyAction('6', data)).toBeNull();
+    expect(keyAction('7', data)).toEqual({
+      type: 'tool',
+      tool: { kind: 'trap', trap: 'spikeTrap' },
+    });
+    expect(keyAction('8', data)).toEqual({
+      type: 'tool',
+      tool: { kind: 'trap', trap: 'blastTrap' },
+    });
+    expect(keyAction('9', data)).toBeNull();
   });
 
   it('el resto de atajos', () => {
@@ -430,5 +438,81 @@ describe('la mano', () => {
 
   it('el atajo B es la bofetada', () => {
     expect(keyAction('b', data)).toEqual({ type: 'slap' });
+  });
+});
+
+describe('trampas e Imps con el ratón', () => {
+  function withTorture() {
+    const ctx = setup();
+    const { sandbox } = ctx;
+    const claimed = data.terrain.findIndex((t) => t.id === 'claimedFloor');
+    for (let y = 11; y < 20; y++)
+      for (let x = 2; x < 11; x++) {
+        sandbox.state.terrain[y * 64 + x] = claimed;
+        sandbox.state.owner[y * 64 + x] = 1;
+      }
+    sandbox.state.mapVersion++;
+    sandbox.state.players[0]!.gold = 9000;
+    ctx.input.setTool({ kind: 'build', room: 'tortureChamber' });
+    ctx.input.pointerDown(pt(2, 11), 0);
+    ctx.input.pointerUp(pt(2, 11));
+    sandbox.advance(100);
+    ctx.sent.length = 0;
+    return ctx;
+  }
+
+  it('sin Cámara de tortura la trampa se rechaza con REQUIRES_ROOM', () => {
+    const { input, sent } = setup();
+    input.setTool({ kind: 'trap', trap: 'spikeTrap' });
+    input.pointerDown(pt(3, 8), 0);
+    expect(sent[0]!.res).toEqual({ ok: false, error: 'REQUIRES_ROOM' });
+  });
+
+  it('con la Cámara, un clic coloca la trampa y el fantasma lo anuncia en verde o rojo', () => {
+    const { input, sent, sandbox } = withTorture();
+    input.setTool({ kind: 'trap', trap: 'spikeTrap' });
+    input.pointerMove(pt(8, 15));
+    expect(input.preview()).toEqual({ kind: 'target', tile: pt(8, 15), ok: true });
+    input.pointerMove(pt(11, 4));
+    expect(input.preview()).toMatchObject({ kind: 'target', ok: false });
+    input.pointerDown(pt(8, 15), 0);
+    expect(sent[0]!.cmd).toEqual({ type: 'buildTrap', trap: 'spikeTrap', tile: pt(8, 15) });
+    expect(sent[0]!.res.ok).toBe(true);
+    sandbox.advance(100);
+    expect(sandbox.state.traps).toHaveLength(1);
+  });
+
+  it('con la herramienta de vender, un clic sobre una trampa propia la desmonta', () => {
+    const { input, sent, sandbox } = withTorture();
+    input.setTool({ kind: 'trap', trap: 'spikeTrap' });
+    input.pointerDown(pt(8, 15), 0);
+    sandbox.advance(100);
+    sent.length = 0;
+    input.setTool({ kind: 'sell' });
+    input.pointerDown(pt(8, 15), 0);
+    expect(sent[0]!.cmd).toEqual({ type: 'sellTrap', tile: pt(8, 15) });
+    sandbox.advance(100);
+    expect(sandbox.state.traps).toHaveLength(0);
+  });
+
+  it('un clic sobre un Imp propio lo recoge y el clic derecho lo suelta en el tile del cursor', () => {
+    const { input, sent, sandbox } = setup();
+    const imp = sandbox.state.imps[0]!;
+    input.pointerDown(pt(6, 3), 0, false, { kind: 'imp', id: imp.id });
+    expect(sent[0]!.cmd).toEqual({ type: 'pickUp', id: imp.id, kind: 'imp' });
+    sandbox.advance(100);
+    expect(imp.held).toBe(true);
+    expect(input.handSize).toBe(1);
+    input.pointerDown(pt(4, 9), 2);
+    sandbox.advance(100);
+    expect(imp.held).toBe(false);
+    expect([Math.floor(imp.x), Math.floor(imp.y)]).toEqual([4, 9]);
+  });
+
+  it('B solo abofetea a criaturas, no a Imps', () => {
+    const { input, sent, sandbox } = setup();
+    input.pointerMove(pt(6, 3), { kind: 'imp', id: sandbox.state.imps[0]!.id });
+    input.slapHovered();
+    expect(sent).toHaveLength(0);
   });
 });

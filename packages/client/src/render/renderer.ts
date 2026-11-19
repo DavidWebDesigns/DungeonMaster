@@ -86,7 +86,7 @@ export class Renderer {
     /** Niebla de guerra activa (partida contra un rival). */
     fog = false,
     /** Criatura propia bajo el cursor: se dibuja resaltada. */
-    hoverCreature: number | null = null,
+    hoverUnit: { kind: 'creature' | 'imp'; id: number } | null = null,
   ): void {
     const pose = cameraPose(cam);
     this.camera.position.set(...pose.position);
@@ -120,7 +120,7 @@ export class Renderer {
       handAt,
       this.visible,
       this.localPlayer,
-      hoverCreature,
+      hoverUnit,
     );
     this.overlay.set(preview, this.styles.styles);
     this.particles.update(particles);

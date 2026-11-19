@@ -9,6 +9,7 @@ import {
   RoomsFile,
   SpellsFile,
   TerrainFile,
+  TrapsFile,
 } from '../schemas';
 import { validateDataSet } from './validateDataSet';
 import { DATA_FILE_NAMES, mapFileName } from './files';
@@ -22,6 +23,7 @@ export interface DataSet {
   rooms: RoomsFile;
   creatures: CreaturesFile;
   spells: SpellsFile;
+  traps: TrapsFile;
   progression: ProgressionConfig;
   mood: MoodConfig;
   economy: EconomyConfig;
@@ -49,6 +51,7 @@ const SCHEMAS: Record<DataKey, z.ZodType> = {
   rooms: RoomsFile,
   creatures: CreaturesFile,
   spells: SpellsFile,
+  traps: TrapsFile,
   progression: ProgressionConfig,
   mood: MoodConfig,
   economy: EconomyConfig,

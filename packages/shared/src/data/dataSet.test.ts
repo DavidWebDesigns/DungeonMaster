@@ -34,8 +34,11 @@ describe('datos reales de /data/mvp', () => {
       'troll',
       'warlock',
       'bileDemon',
+      'executioner',
+      'torturer',
     ]);
     expect(result.data.spells).toHaveLength(5);
+    expect(result.data.traps.map((t) => t.id)).toEqual(['spikeTrap', 'blastTrap']);
   });
 
   it('contienen las cifras clave del plan (sección 6)', () => {
@@ -214,5 +217,32 @@ describe('errores de referencias cruzadas', () => {
     const raw = realRawData();
     (raw.global as any).combat.structureReach = 0;
     expectError(parseDataSet(raw), 'global.json', 'combat.structureReach');
+  });
+
+  it('detecta una trampa que exige una sala inexistente o no construible', () => {
+    const raw = realRawData();
+    (raw.traps as any)[0].requiresRoom = 'inventada';
+    expectError(parseDataSet(raw), 'traps.json', '[0].requiresRoom');
+    const raw2 = realRawData();
+    (raw2.traps as any)[0].requiresRoom = 'heart';
+    expectError(parseDataSet(raw2), 'traps.json', 'no se puede construir');
+  });
+
+  it('detecta ids de trampa repetidos, un radio de disparo diminuto y un daño no positivo', () => {
+    const raw = realRawData();
+    (raw.traps as any)[1].id = (raw.traps as any)[0].id;
+    expectError(parseDataSet(raw), 'traps.json', 'id repetido');
+    const raw2 = realRawData();
+    (raw2.traps as any)[0].triggerRadius = 0.2;
+    expectError(parseDataSet(raw2), 'traps.json', '[0].triggerRadius');
+    const raw3 = realRawData();
+    (raw3.traps as any)[0].effect.damage = 0;
+    expectError(parseDataSet(raw3), 'traps.json', '[0].effect.damage');
+  });
+
+  it('exige la Cámara de tortura entre las salas obligatorias y que las criaturas que atrae existan', () => {
+    const raw = realRawData();
+    raw.rooms = (raw.rooms as any[]).filter((r) => r.id !== 'tortureChamber');
+    expectError(parseDataSet(raw), 'rooms.json', 'falta la sala obligatoria "tortureChamber"');
   });
 });

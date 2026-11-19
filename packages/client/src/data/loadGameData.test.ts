@@ -6,7 +6,7 @@ describe('loadGameData', () => {
     const data = loadGameData();
     expect(data.map.width).toBe(64);
     expect(data.global.tickRate).toBe(10);
-    expect(data.rooms.filter((r) => r.buildable)).toHaveLength(5);
+    expect(data.rooms.filter((r) => r.buildable)).toHaveLength(6);
   });
 
   it('falla con un mensaje que dice qué archivo está roto', () => {

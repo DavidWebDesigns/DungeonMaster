@@ -12,9 +12,6 @@ export interface Advice {
   cooldownTicks: number;
 }
 
-/** Artículo según el nombre: la reserva "criatura" es femenina; los tipos del juego son masculinos. */
-const article = (name: string) => (name === 'criatura' ? `una ${name}` : `un ${name}`);
-
 export function adviceFor(
   events: readonly SimEvent[],
   state: MatchState,
@@ -24,9 +21,17 @@ export function adviceFor(
   typeOf: (creatureId: number) => string | undefined,
 ): Advice[] {
   const rate = data.global.tickRate;
-  const nameOfType = (type: string | undefined) =>
-    data.creatures.find((c) => c.id === type)?.name ?? 'criatura';
+  const defOf = (type: string | undefined) => data.creatures.find((c) => c.id === type);
+  const nameOfType = (type: string | undefined) => defOf(type)?.name ?? 'criatura';
   const nameOf = (id: number) => nameOfType(typeOf(id));
+  // Género gramatical: un tipo desconocido es "una criatura"; el resto, el que digan los datos (masculino por defecto).
+  const femOfType = (type: string | undefined) =>
+    defOf(type) ? defOf(type)?.gender === 'f' : true;
+  const femOf = (id: number) => femOfType(typeOf(id));
+  const un = (type: string | undefined) => `${femOfType(type) ? 'una' : 'un'} ${nameOfType(type)}`;
+  const unOf = (id: number) => un(typeOf(id));
+  /** Adjetivo con la terminación del género: "descontent" + o/a. */
+  const adj = (id: number, stem: string) => `${stem}${femOf(id) ? 'a' : 'o'}`;
   const out: Advice[] = [];
 
   for (const e of events) {
@@ -34,7 +39,7 @@ export function adviceFor(
     switch (e.type) {
       case 'creatureArrived':
         out.push({
-          text: `Ha llegado ${article(nameOfType(e.creature))} a tu mazmorra.`,
+          text: `Ha llegado ${un(e.creature)} a tu mazmorra.`,
           key: `arrived${e.creatureId}`,
           cooldownTicks: 0,
         });
@@ -59,7 +64,7 @@ export function adviceFor(
       case 'paid':
         if (!e.ok)
           out.push({
-            text: `Sin oro para pagar a ${article(nameOf(e.creatureId))}: se enfadará.`,
+            text: `Sin oro para pagar a ${unOf(e.creatureId)}: se enfadará.`,
             key: `unpaid${e.creatureId}`,
             cooldownTicks: 600,
           });
@@ -67,19 +72,19 @@ export function adviceFor(
       case 'moodBand':
         if (e.band === 'unhappy')
           out.push({
-            text: `${cap(article(nameOf(e.creatureId)))} está descontento.`,
+            text: `${cap(unOf(e.creatureId))} está ${adj(e.creatureId, 'descontent')}.`,
             key: `unhappy${e.creatureId}`,
             cooldownTicks: 900,
           });
         else if (e.band === 'angry')
           out.push({
-            text: `¡${cap(article(nameOf(e.creatureId)))} está enfadado! Se acerca al Portal.`,
+            text: `¡${cap(unOf(e.creatureId))} está ${adj(e.creatureId, 'enfadad')}! Se acerca al Portal.`,
             key: `angry${e.creatureId}`,
             cooldownTicks: 900,
           });
         else if (e.band === 'furious')
           out.push({
-            text: `¡${cap(article(nameOf(e.creatureId)))} está furioso! Se marchará si no lo calmas.`,
+            text: `¡${cap(unOf(e.creatureId))} está ${adj(e.creatureId, 'furios')}! Se marchará si no ${femOf(e.creatureId) ? 'la' : 'lo'} calmas.`,
             key: `furious${e.creatureId}`,
             cooldownTicks: 900,
           });
@@ -91,16 +96,30 @@ export function adviceFor(
           cooldownTicks: 0,
         });
         break;
+      case 'trapBuilt':
+        out.push({
+          text: `${data.traps.find((t) => t.id === e.trap)?.name ?? 'Trampa'} lista y armada.`,
+          key: `trapbuilt${e.trapId}`,
+          cooldownTicks: 0,
+        });
+        break;
+      case 'trapTriggered':
+        out.push({
+          text: `¡Tu ${data.traps.find((t) => t.id === e.trap)?.name?.toLowerCase() ?? 'trampa'} ha atrapado a un intruso!`,
+          key: `traptrig${e.trap}`,
+          cooldownTicks: 100,
+        });
+        break;
       case 'creatureLeft':
         out.push({
-          text: `${cap(article(nameOf(e.creatureId)))} ha abandonado tu mazmorra.`,
+          text: `${cap(unOf(e.creatureId))} ha abandonado tu mazmorra.`,
           key: `left${e.creatureId}`,
           cooldownTicks: 0,
         });
         break;
       case 'creatureDied':
         out.push({
-          text: `${cap(article(nameOf(e.creatureId)))} ha muerto de hambre.`,
+          text: `${cap(unOf(e.creatureId))} ha ${femOf(e.creatureId) ? 'muerto' : 'muerto'} de hambre.`,
           key: `died${e.creatureId}`,
           cooldownTicks: 0,
         });
@@ -114,3 +133,8 @@ export function adviceFor(
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** Criaturas que el consejero no puede nombrar (siempre vacío si los datos están completos). */
+export function advisorKnowsCreatures(data: DataSet): string[] {
+  return data.creatures.filter((c) => c.name.trim() === '').map((c) => c.id);
+}

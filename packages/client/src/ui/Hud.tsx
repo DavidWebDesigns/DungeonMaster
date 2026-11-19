@@ -145,6 +145,25 @@ export function Hud({
           ))}
         </div>
 
+        <div class="panel traps">
+          {model.traps.map((t) => (
+            <button
+              key={t.id}
+              class={`btn${t.active ? ' active' : ''}${t.available ? '' : ' locked'}${t.affordable ? '' : ' poor'}`}
+              title={
+                t.available
+                  ? `${t.name}: la construyen los Imps y se dispara sola contra los enemigos. Invisible para el rival.`
+                  : `Requiere: ${t.requires}`
+              }
+              onClick={() => onTool({ kind: 'trap', trap: t.id })}
+            >
+              <span class="name">{t.name}</span>
+              <span class="cost">{t.available ? t.cost : `🔒 ${t.requires}`}</span>
+              <kbd>{t.hotkey}</kbd>
+            </button>
+          ))}
+        </div>
+
         <div class="panel spells">
           {model.spells.map((sp) => (
             <button

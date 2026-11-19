@@ -32,6 +32,8 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 
 ## Reglas de contenido
 
+- Para añadir criaturas, salas, trampas o hechizos sigue `docs/CONTENIDO.md`: casi todo es datos y la prueba `content.test.ts` avisa de lo que falte.
+
 - No uses nombres, textos ni assets de juegos comerciales existentes. El juego se llama Dungeon Master (nombre de trabajo).
 - Los modelos 3D se referencian por modelId en assets/assetManifest.json. Si falta un modelo, usa un placeholder por rol.
 - El mapa se edita en tools/gen-map/generate.ts y se regenera con `pnpm gen-map`; no edites el JSON del mapa a mano.

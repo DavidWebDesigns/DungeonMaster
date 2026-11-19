@@ -201,7 +201,7 @@ describe('combate completo', () => {
   it('la criatura muerta suelta su cama y su lugar en la mano', () => {
     const { state, data, a } = fight('goblin', 'troll', 1);
     a.beds = [11 * 64 + 2];
-    state.players[0]!.hand = [a.id];
+    state.players[0]!.hand = [{ kind: 'creature', id: a.id }];
     a.held = false;
     a.hp = 0;
     run(state, data, 1);

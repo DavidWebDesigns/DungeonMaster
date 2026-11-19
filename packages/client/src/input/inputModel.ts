@@ -27,7 +27,18 @@ export type Tool =
   | { kind: 'cancelDig' }
   | { kind: 'build'; room: string }
   | { kind: 'sell' }
+  | { kind: 'trap'; trap: string }
   | { kind: 'spell'; spell: string };
+
+/** Una criatura o un Imp propios bajo el cursor. */
+export interface HoverUnit {
+  kind: 'creature' | 'imp';
+  id: number;
+}
+
+/** Acepta un número suelto como criatura (así se usaba antes de poder recoger Imps). */
+const asUnit = (u: number | HoverUnit | null): HoverUnit | null =>
+  u === null ? null : typeof u === 'number' ? { kind: 'creature', id: u } : u;
 
 export type Preview =
   | { kind: 'none' }
@@ -49,8 +60,13 @@ const TILE_TOOLS = new Set(['dig', 'claim', 'reinforce', 'cancelDig']);
 export class InputModel {
   tool: Tool = { kind: 'dig' };
   hover: Point | null = null;
-  /** Criatura propia bajo el cursor (la calcula el dibujo, que sabe dónde se ven). */
-  hoverCreature: number | null = null;
+  /** Criatura o Imp propio bajo el cursor (lo calcula el dibujo, que sabe dónde se ven). */
+  hoverUnit: HoverUnit | null = null;
+
+  /** Id de la criatura bajo el cursor, si es una criatura (los Imps no cuentan). */
+  get hoverCreature(): number | null {
+    return this.hoverUnit?.kind === 'creature' ? this.hoverUnit.id : null;
+  }
   private drag: { start: Point; cancelMode: boolean } | null = null;
   private queue: Command[] = [];
   private lastSentTick = -1;
@@ -69,9 +85,9 @@ export class InputModel {
     this.drag = null;
   }
 
-  pointerMove(tile: Point | null, creatureId: number | null = null): void {
+  pointerMove(tile: Point | null, unit: number | HoverUnit | null = null): void {
     this.hover = tile;
-    this.hoverCreature = creatureId;
+    this.hoverUnit = asUnit(unit);
   }
 
   /** Criaturas que lleva el jugador en la mano. */
@@ -83,8 +99,9 @@ export class InputModel {
     tile: Point | null,
     button: 0 | 2,
     shift = false,
-    creatureId: number | null = null,
+    unitArg: number | HoverUnit | null = null,
   ): void {
+    const unit = asUnit(unitArg);
     if (button === 2) {
       // Clic derecho: con criaturas en la mano las suelta todas en el tile bajo el cursor; si no, cancela el arrastre o vuelve a excavar.
       if (this.handSize > 0 && tile) {
@@ -96,8 +113,12 @@ export class InputModel {
     }
     // Un clic sobre una criatura propia la recoge con cualquier herramienta, salvo los hechizos
     // (Acelerar y Curar apuntan a una criatura; los demás, a un tile).
-    if (creatureId !== null && this.tool.kind !== 'spell') {
-      this.dispatch({ type: 'pickUp', id: creatureId });
+    if (unit !== null && this.tool.kind !== 'spell') {
+      this.dispatch(
+        unit.kind === 'imp'
+          ? { type: 'pickUp', id: unit.id, kind: 'imp' }
+          : { type: 'pickUp', id: unit.id },
+      );
       return;
     }
     if (!tile) return;
@@ -105,9 +126,14 @@ export class InputModel {
     if (TILE_TOOLS.has(t.kind) || t.kind === 'build') {
       this.drag = { start: tile, cancelMode: shift && t.kind === 'dig' };
     } else if (t.kind === 'sell') {
-      this.dispatch({ type: 'sellRoom', tile });
+      // Con una trampa propia en el tile, se desmonta la trampa; si no, se vende la sala.
+      const i = tile.y * this.host.state.width + tile.x;
+      const trap = this.host.state.traps.find((k) => k.tile === i && k.owner === this.host.player);
+      this.dispatch(trap ? { type: 'sellTrap', tile } : { type: 'sellRoom', tile });
+    } else if (t.kind === 'trap') {
+      this.dispatch({ type: 'buildTrap', trap: t.trap, tile });
     } else if (t.kind === 'spell') {
-      this.dispatch(this.spellCommand(t.spell, tile, creatureId));
+      this.dispatch(this.spellCommand(t.spell, tile, unit?.kind === 'creature' ? unit.id : null));
     }
   }
 
@@ -148,7 +174,8 @@ export class InputModel {
 
   /** Abofetea a la criatura que hay bajo el cursor (tecla B). */
   slapHovered(): void {
-    if (this.hoverCreature !== null) this.dispatch({ type: 'slap', id: this.hoverCreature });
+    const id = this.hoverCreature;
+    if (id !== null) this.dispatch({ type: 'slap', id });
   }
 
   /** Llamar una vez por frame: envía el siguiente trozo pendiente en cuanto avanza el tick. */
@@ -204,10 +231,16 @@ export class InputModel {
     }
 
     if (!this.hover) return { kind: 'none' };
-    const cmd: Command =
-      t.kind === 'sell'
-        ? { type: 'sellRoom', tile: this.hover }
-        : this.spellCommand((t as { spell: string }).spell, this.hover, this.hoverCreature);
+    let cmd: Command;
+    if (t.kind === 'sell') {
+      const i = this.hover.y * state.width + this.hover.x;
+      const trap = state.traps.find((k) => k.tile === i && k.owner === player);
+      cmd = trap ? { type: 'sellTrap', tile: this.hover } : { type: 'sellRoom', tile: this.hover };
+    } else if (t.kind === 'trap') {
+      cmd = { type: 'buildTrap', trap: t.trap, tile: this.hover };
+    } else {
+      cmd = this.spellCommand((t as { spell: string }).spell, this.hover, this.hoverCreature);
+    }
     return { kind: 'target', tile: this.hover, ok: previewCommand(state, data, player, cmd).ok };
   }
 }

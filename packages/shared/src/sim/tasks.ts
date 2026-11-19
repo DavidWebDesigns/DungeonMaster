@@ -5,8 +5,17 @@ import type { Imp, MatchState, PlayerId, SimEvent, Task, TaskKind } from './type
 
 /** Prioridad de cada tipo de tarea (menor = antes). Sección 6.13: minar/excavar > reclamar > reforzar > reclamar cerca. */
 export function taskPriority(task: Task): number {
-  if (task.auto) return 3;
-  return task.kind === 'dig' ? 0 : task.kind === 'claim' ? 1 : 2;
+  if (task.auto) return 4;
+  switch (task.kind) {
+    case 'dig':
+      return 0;
+    case 'claim':
+      return 1;
+    case 'buildTrap':
+      return 2;
+    case 'reinforce':
+      return 3;
+  }
 }
 
 export function getTask(state: MatchState, id: number): Task | undefined {
@@ -106,6 +115,12 @@ export function isTaskValid(state: MatchState, rules: Rules, task: Task): boolea
       return canClaim(state, rules, task.tile, task.owner);
     case 'reinforce':
       return canReinforce(state, rules, task.tile, task.owner);
+    case 'buildTrap':
+      // La trampa sigue en pie sin terminar y el suelo sigue siendo del dueño.
+      return (
+        state.traps.some((t) => t.tile === task.tile && t.owner === task.owner && !t.built) &&
+        isOwnGround(state, rules, task.tile, task.owner)
+      );
   }
 }
 
@@ -127,12 +142,16 @@ export function taskSeconds(state: MatchState, rules: Rules, task: Task): number
       return state.owner[task.tile] === 0 ? w.claimSeconds : w.enemyClaimSeconds;
     case 'reinforce':
       return w.reinforceSeconds;
+    case 'buildTrap': {
+      const trap = state.traps.find((t) => t.tile === task.tile && t.owner === task.owner);
+      return rules.data.traps.find((d) => d.id === trap?.type)?.buildSeconds ?? 0;
+    }
   }
 }
 
 /** Tiles desde los que se puede trabajar la tarea: el propio tile (reclamar) o sus vecinos caminables. */
 export function workTiles(state: MatchState, rules: Rules, task: Task): number[] {
-  if (task.kind === 'claim') return [task.tile];
+  if (task.kind === 'claim' || task.kind === 'buildTrap') return [task.tile];
   return neighbors4(state, task.tile).filter((n) => rules.walkable[state.terrain[n] as number]);
 }
 
@@ -144,6 +163,22 @@ export function completeTask(
   events: SimEvent[],
 ): void {
   const i = task.tile;
+  if (task.kind === 'buildTrap') {
+    // Una trampa terminada no cambia el terreno ni las rutas: solo queda armada.
+    const trap = state.traps.find((t) => t.tile === i && t.owner === task.owner);
+    if (trap) {
+      trap.built = true;
+      events.push({
+        type: 'trapBuilt',
+        playerId: task.owner,
+        trapId: trap.id,
+        trap: trap.type,
+        tile: i,
+      });
+    }
+    removeTask(state, task.id);
+    return;
+  }
   const def = rules.terrain[state.terrain[i] as number];
   const becomes = (id: string | undefined) =>
     id === undefined ? undefined : rules.terrainIndex[id];
@@ -155,6 +190,8 @@ export function completeTask(
       state.goldLeft[i] = 0;
     } else if (task.kind === 'claim') {
       if (state.owner[i] !== 0) removeRoomTile(state, rules, i);
+      // Quien reclama un suelo enemigo se queda sin las trampas que había en él.
+      state.traps = state.traps.filter((tr) => tr.tile !== i);
       const t = becomes(def.becomesOnClaim);
       if (t !== undefined) state.terrain[i] = t;
       state.owner[i] = task.owner;

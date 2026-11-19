@@ -24,7 +24,8 @@ export type SoundName =
   | 'death'
   | 'zap'
   | 'horn'
-  | 'gameover';
+  | 'gameover'
+  | 'trap';
 
 export type Effect =
   | {
@@ -156,6 +157,30 @@ export function deriveEffects(
     if (e.type === 'creatureDied' && e.cause !== 'starvation') {
       if (e.cause === 'eliminated') continue;
       out.push({ type: 'sound', sound: 'death', volume: 0.7 });
+      continue;
+    }
+    if (e.type === 'trapTriggered') {
+      if (!seesAt(e.x, e.y)) continue;
+      const blast = e.trap === 'blastTrap';
+      burst(
+        e.x,
+        0.5,
+        e.y,
+        blast ? [1, 0.55, 0.2] : [0.85, 0.85, 0.9],
+        blast ? 26 : 12,
+        blast ? 2.6 : 1.8,
+        3.2,
+        blast ? 0.18 : 0.12,
+      );
+      out.push({ type: 'sound', sound: 'trap', volume: 1 });
+      continue;
+    }
+    if (e.type === 'trapBuilt') {
+      if (e.playerId !== localPlayer) continue;
+      const x = (e.tile % state.width) + 0.5;
+      const z = Math.floor(e.tile / state.width) + 0.5;
+      burst(x, 0.3, z, DUST, 6, 1.2, 1.5, 0.12);
+      out.push({ type: 'sound', sound: 'build', volume: 0.6 });
       continue;
     }
     if (e.type === 'gameOver') {

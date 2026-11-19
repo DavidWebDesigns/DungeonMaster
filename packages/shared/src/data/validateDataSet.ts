@@ -16,6 +16,7 @@ const REQUIRED_ROOM_FIELDS: Record<string, readonly string[]> = {
     'tilesPerTrainee',
   ],
   library: [],
+  tortureChamber: [],
 };
 
 /** Terrenos que la simulación usa por id. */
@@ -195,6 +196,17 @@ export function validateDataSet(d: DataSet): DataError[] {
       err(F.spells, `[${i}].manaPerExtraImp`, 'el hechizo de crear Imp necesita manaPerExtraImp');
     if (s.mana > g.mana.max)
       err(F.spells, `[${i}].mana`, `cuesta más maná (${s.mana}) que el máximo (${g.mana.max})`);
+  });
+
+  // ---------- traps ----------
+  for (const id of duplicates(d.traps.map((t) => t.id))) err(F.traps, '', `id repetido: "${id}"`);
+  d.traps.forEach((t, i) => {
+    const room = d.rooms.find((r) => r.id === t.requiresRoom);
+    if (!room) err(F.traps, `[${i}].requiresRoom`, `la sala "${t.requiresRoom}" no existe`);
+    else if (!room.buildable)
+      err(F.traps, `[${i}].requiresRoom`, `la sala "${t.requiresRoom}" no se puede construir`);
+    if (t.triggerRadius < 0.5)
+      err(F.traps, `[${i}].triggerRadius`, 'debe ser al menos 0,5 tiles (la mitad de un tile)');
   });
 
   // ---------- progression ----------

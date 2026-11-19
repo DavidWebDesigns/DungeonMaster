@@ -3,6 +3,12 @@ import type { Point } from '../schemas';
 
 export type PlayerId = number;
 
+/** Algo que el jugador lleva en la mano. */
+export interface HandItem {
+  kind: 'creature' | 'imp';
+  id: number;
+}
+
 export interface PlayerState {
   id: PlayerId;
   /** Esquina del mapa que ocupa (índice en map.bases). */
@@ -16,8 +22,8 @@ export interface PlayerState {
   /** Límite de comandos por segundo. */
   rateSecond: number;
   rateCount: number;
-  /** Criaturas que lleva en la mano (ids, en orden de recogida). */
-  hand: number[];
+  /** Criaturas e Imps que lleva en la mano, en orden de recogida. */
+  hand: HandItem[];
   /** Tick a partir del cual se puede volver a abofetear. */
   slapReadyTick: number;
   /** Punto de Llamada a las armas (tile) y hasta qué tick vale; -1 si no hay. */
@@ -27,7 +33,7 @@ export interface PlayerState {
   seen: number[];
 }
 
-export type TaskKind = 'dig' | 'claim' | 'reinforce';
+export type TaskKind = 'dig' | 'claim' | 'reinforce' | 'buildTrap';
 
 export interface Task {
   id: number;
@@ -66,6 +72,8 @@ export interface Imp {
   /** Versión de mapa en que no se encontró nada que reclamar por su cuenta. */
   autoBlockedVersion: number;
   hp: number;
+  /** Está en la mano del jugador. */
+  held: boolean;
   /** Criatura que lo atacó la última vez (0 = nadie) y cuándo. */
   attackedBy: number;
   attackedTick: number;
@@ -173,6 +181,17 @@ export interface MatchResult {
   tick: number;
 }
 
+/** Una trampa colocada en un tile propio. La construyen los Imps; hasta entonces no se dispara. */
+export interface Trap {
+  id: number;
+  type: string;
+  owner: PlayerId;
+  tile: number;
+  built: boolean;
+  /** Tick a partir del cual puede volver a dispararse. */
+  readyAt: number;
+}
+
 export interface QueuedCommand {
   playerId: PlayerId;
   cmd: Command;
@@ -206,6 +225,8 @@ export interface MatchState {
   creatures: Creature[];
   tasks: Task[];
   rooms: Room[];
+  traps: Trap[];
+  nextTrapId: number;
   nextImpId: number;
   nextCreatureId: number;
   /** Tick del próximo día de pago. */
@@ -233,7 +254,9 @@ export type Command =
   | { type: 'sellRoom'; tile: Point }
   | { type: 'castSpell'; spell: string; target?: Point; creature?: number }
   | { type: 'surrender' }
-  | { type: 'pickUp'; id: number }
+  | { type: 'pickUp'; id: number; kind?: 'creature' | 'imp' }
+  | { type: 'buildTrap'; trap: string; tile: Point }
+  | { type: 'sellTrap'; tile: Point }
   | { type: 'drop'; tile: Point }
   | { type: 'slap'; id: number };
 
@@ -247,6 +270,8 @@ export type ErrorCode =
   | 'RATE_LIMIT'
   /** Se alcanzó un máximo (Imps). [PROPUESTO] */
   | 'LIMIT_REACHED'
+  /** Falta construir la sala que pide esa trampa. [PROPUESTO] */
+  | 'REQUIRES_ROOM'
   /** Comando mal formado o no disponible todavía. [PROPUESTO] */
   | 'INVALID_COMMAND';
 
@@ -276,6 +301,10 @@ export type SimEvent =
       cause: 'starvation' | 'combat' | 'spell' | 'eliminated';
     }
   | { type: 'impDied'; playerId: PlayerId; impId: number }
+  | { type: 'trapPlaced'; playerId: PlayerId; trapId: number; trap: string; tile: number }
+  | { type: 'trapBuilt'; playerId: PlayerId; trapId: number; trap: string; tile: number }
+  | { type: 'trapTriggered'; playerId: PlayerId; trap: string; x: number; y: number }
+  | { type: 'trapSold'; playerId: PlayerId; trap: string; tile: number }
   | {
       type: 'hit';
       attackerOwner: PlayerId;

@@ -142,7 +142,7 @@ export function enemiesNear(state: MatchState, c: Creature, radius: number): Ene
       out.push({ kind: 'creature', id: o.id, owner: o.owner, x: o.x, y: o.y, dist });
   }
   for (const i of state.imps) {
-    if (i.owner === c.owner || i.hp <= 0 || !ownerAlive(state, i.owner)) continue;
+    if (i.owner === c.owner || i.held || i.hp <= 0 || !ownerAlive(state, i.owner)) continue;
     const dist = Math.hypot(i.x - c.x, i.y - c.y);
     if (dist <= radius) out.push({ kind: 'imp', id: i.id, owner: i.owner, x: i.x, y: i.y, dist });
   }
@@ -229,7 +229,9 @@ export function assaultValid(state: MatchState, rules: Rules, c: Creature): bool
   if (c.assaultKind === 'none') return false;
   if (c.assaultKind === 'structure') return attackableTile(state, rules, c.owner, c.assaultId);
   const u = findUnit(state, c.assaultKind, c.assaultId);
-  return !!u && u.hp > 0 && u.owner !== c.owner && ownerAlive(state, u.owner);
+  return (
+    !!u && !('held' in u && u.held) && u.hp > 0 && u.owner !== c.owner && ownerAlive(state, u.owner)
+  );
 }
 
 /**
@@ -268,7 +270,8 @@ export function findAssaultTarget(
     consider('creature', o.id, o.x, o.y);
   }
   for (const i of state.imps) {
-    if (i.owner === owner || i.hp <= 0 || !ownerAlive(state, i.owner) || !seen(i.x, i.y)) continue;
+    if (i.owner === owner || i.held || i.hp <= 0 || !ownerAlive(state, i.owner) || !seen(i.x, i.y))
+      continue;
     consider('imp', i.id, i.x, i.y);
   }
   for (let t = 0; t < state.owner.length; t++) {
@@ -418,7 +421,7 @@ export function areaDamage(
     });
   }
   for (const i of state.imps) {
-    if (i.owner === caster || !ownerAlive(state, i.owner)) continue;
+    if (i.owner === caster || i.held || !ownerAlive(state, i.owner)) continue;
     if (Math.hypot(i.x - x, i.y - y) > radius) continue;
     i.hp -= damage;
     i.attackedBy = 0;

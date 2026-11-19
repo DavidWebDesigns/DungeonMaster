@@ -17,6 +17,8 @@ export const CREATURE_LOOKS: Readonly<Record<string, CreatureLook>> = {
   troll: { color: [0.55, 0.55, 0.62], radius: 0.26, height: 0.9 },
   warlock: { color: [0.55, 0.4, 0.9], radius: 0.18, height: 0.8 },
   bileDemon: { color: [0.62, 0.7, 0.2], radius: 0.36, height: 1.05 },
+  executioner: { color: [0.25, 0.22, 0.28], radius: 0.3, height: 0.95 },
+  torturer: { color: [0.8, 0.35, 0.55], radius: 0.18, height: 0.7 },
 };
 
 const FALLBACK: CreatureLook = { color: [0.9, 0.9, 0.9], radius: 0.2, height: 0.6 };
@@ -75,3 +77,17 @@ export function activityLabel(c: Pick<Creature, 'held' | 'goal' | 'mode'>): stri
       return 'Descansando';
   }
 }
+
+/** Aspecto de cada trampa (placeholder: una figura pequeña sobre el tile). */
+export interface TrapLook {
+  color: RGB;
+  shape: 'spikes' | 'barrel';
+}
+
+export const TRAP_LOOKS: Readonly<Record<string, TrapLook>> = {
+  spikeTrap: { color: [0.75, 0.75, 0.8], shape: 'spikes' },
+  blastTrap: { color: [0.85, 0.3, 0.15], shape: 'barrel' },
+};
+
+export const trapLookOf = (id: string): TrapLook =>
+  TRAP_LOOKS[id] ?? { color: [0.9, 0.9, 0.2], shape: 'spikes' };

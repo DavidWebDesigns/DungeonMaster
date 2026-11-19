@@ -32,7 +32,7 @@ describe('buildHudModel', () => {
     expect(buildHudModel(sb.state, data, 1, dig, []).goldFull).toBe(true);
   });
 
-  it('lista las 5 salas con tecla, coste mínimo y si alcanza el oro', () => {
+  it('lista las 6 salas con tecla, coste mínimo y si alcanza el oro', () => {
     const sb = fresh();
     const m = buildHudModel(sb.state, data, 1, dig, []);
     expect(m.rooms.map((r) => [r.hotkey, r.id, r.minCost])).toEqual([
@@ -41,6 +41,7 @@ describe('buildHudModel', () => {
       ['3', 'treasury', 900],
       ['4', 'trainingRoom', 2250],
       ['5', 'library', 2250],
+      ['6', 'tortureChamber', 3600],
     ]);
     expect(m.rooms.every((r) => r.affordable)).toBe(true);
     sb.state.players[0]!.gold = 1000;
@@ -115,7 +116,10 @@ describe('buildHudModel', () => {
     expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(120);
     sb.state.tick = 300;
     expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(90);
-    sb.state.players[0]!.hand = [1, 2];
+    sb.state.players[0]!.hand = [
+      { kind: 'creature', id: 1 },
+      { kind: 'imp', id: 1 },
+    ];
     expect(buildHudModel(sb.state, data, 1, dig, []).hand).toEqual({ count: 2, capacity: 10 });
   });
 
@@ -158,14 +162,14 @@ describe('Hud', () => {
   it('marca la Tesorería llena y las salas que no se pueden pagar', () => {
     expect(html((m) => (m.goldFull = true))).toContain('LLENA');
     const poor = html((m) => m.rooms.forEach((r) => (r.affordable = false)));
-    expect(poor.match(/btn poor/g)?.length).toBe(5);
+    expect(poor.match(/btn poor/g)?.length).toBe(6);
   });
 
   it('pinta la lista de criaturas con su actividad y el contador de pago y de la mano', () => {
     const sb = fresh();
     const c = newCreature(sb.state, rulesOf(data), 1, 'troll', 9 * 64 + 9);
     sb.state.creatures.push(c);
-    sb.state.players[0]!.hand = [c.id];
+    sb.state.players[0]!.hand = [{ kind: 'creature', id: c.id }];
     const out = render(<Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />);
     expect(out).toContain('Criaturas (1)');
     expect(out).toContain('Troll');
@@ -249,5 +253,45 @@ describe('hechizos y fin de partida en el HUD', () => {
     expect(over).toContain('Derrota');
     expect(over).toContain('Jugar de nuevo');
     expect(over).not.toContain('Rendirse');
+  });
+});
+
+describe('trampas en el HUD', () => {
+  it('lista las trampas con su tecla (después de las salas), coste y sala que piden', () => {
+    const sb = fresh();
+    const m = buildHudModel(sb.state, data, 1, dig, []);
+    expect(m.traps.map((t) => [t.hotkey, t.id, t.cost, t.requires, t.available])).toEqual([
+      ['7', 'spikeTrap', 150, 'Cámara de tortura', false],
+      ['8', 'blastTrap', 400, 'Cámara de tortura', false],
+    ]);
+  });
+
+  it('quedan disponibles al construir la Cámara de tortura y marcan la activa y las que no se pueden pagar', () => {
+    const sb = fresh();
+    sb.state.rooms.push({
+      id: 99,
+      type: 'tortureChamber',
+      owner: 1,
+      tiles: [],
+      timer: 0,
+      stock: 0,
+    });
+    sb.state.players[0]!.gold = 200;
+    const m = buildHudModel(sb.state, data, 1, { kind: 'trap', trap: 'blastTrap' }, []);
+    expect(m.traps.every((t) => t.available)).toBe(true);
+    expect(m.traps.find((t) => t.id === 'spikeTrap')!.affordable).toBe(true);
+    expect(m.traps.find((t) => t.id === 'blastTrap')).toMatchObject({
+      affordable: false,
+      active: true,
+    });
+  });
+
+  it('el HUD pinta las trampas y marca como bloqueadas las que aún no se pueden usar', () => {
+    const sb = fresh();
+    const out = render(<Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />);
+    expect(out).toContain('Trampa de pinchos');
+    expect(out).toContain('Trampa explosiva');
+    expect(out).toContain('btn locked');
+    expect(out).toContain('Cámara de tortura');
   });
 });

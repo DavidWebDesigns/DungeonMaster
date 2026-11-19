@@ -304,3 +304,36 @@ describe('efectos de combate', () => {
     ).toEqual(['gameover']);
   });
 });
+
+describe('efectos de trampas', () => {
+  const sb = new Sandbox(data, 1);
+  const fx = (events: SimEvent[], visible?: (x: number, y: number) => boolean) =>
+    deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER, visible);
+
+  it('una trampa que se dispara suena y levanta chispas; la explosiva es mayor y naranja', () => {
+    const spike = fx([{ type: 'trapTriggered', playerId: 1, trap: 'spikeTrap', x: 8.5, y: 15.5 }]);
+    const blast = fx([{ type: 'trapTriggered', playerId: 1, trap: 'blastTrap', x: 8.5, y: 15.5 }]);
+    expect(sounds(spike)).toEqual(['trap']);
+    expect((bursts(blast)[0] as { count: number }).count).toBeGreaterThan(
+      (bursts(spike)[0] as { count: number }).count,
+    );
+    expect(bursts(blast)[0]).toMatchObject({ color: [1, 0.55, 0.2] });
+  });
+
+  it('no se ve lo que pasa fuera de la vista, y una trampa construida por el rival no suena', () => {
+    expect(
+      fx([{ type: 'trapTriggered', playerId: 2, trap: 'spikeTrap', x: 40, y: 40 }], () => false),
+    ).toEqual([]);
+    expect(
+      fx([{ type: 'trapBuilt', playerId: 2, trapId: 1, trap: 'spikeTrap', tile: 100 }]),
+    ).toEqual([]);
+  });
+
+  it('terminar tu trampa levanta polvo y suena a obra', () => {
+    const out = fx([
+      { type: 'trapBuilt', playerId: 1, trapId: 1, trap: 'spikeTrap', tile: 15 * 64 + 8 },
+    ]);
+    expect(sounds(out)).toEqual(['build']);
+    expect(bursts(out)).toHaveLength(1);
+  });
+});

@@ -8,6 +8,7 @@ import { updateCombat, processDeaths } from './combat';
 import { updateSeen } from './fog';
 import { tickPortals } from './portal';
 import { tickSpells } from './spells';
+import { updateTraps } from './traps';
 import { tickVictory } from './victory';
 import { assignTasks, updateImps } from './imps';
 import { rulesOf } from './rules';
@@ -39,6 +40,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
   updateImps(state, rules, events, budgets);
   updateCreatures(state, rules, events, budgets);
   updateCombat(state, rules, events);
+  updateTraps(state, rules, events);
   tickSpells(state, rules);
   processDeaths(state, rules, events);
   tickVictory(state, rules, events);

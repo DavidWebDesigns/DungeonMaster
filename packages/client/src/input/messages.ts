@@ -11,6 +11,7 @@ const MESSAGES: Readonly<Record<ErrorCode, string>> = {
   RATE_LIMIT: 'Vas demasiado rápido.',
   LIMIT_REACHED: 'Has alcanzado el máximo.',
   INVALID_COMMAND: 'Esa orden no es válida.',
+  REQUIRES_ROOM: 'Te falta construir la sala que pide esta trampa (la Cámara de tortura).',
 };
 
 export function errorMessage(code: ErrorCode): string {

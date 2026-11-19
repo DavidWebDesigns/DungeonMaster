@@ -8,13 +8,14 @@ import terrain from '../../../../data/mvp/terrain.json';
 import rooms from '../../../../data/mvp/rooms.json';
 import creatures from '../../../../data/mvp/creatures.json';
 import spells from '../../../../data/mvp/spells.json';
+import traps from '../../../../data/mvp/traps.json';
 import progression from '../../../../data/mvp/progression.json';
 import mood from '../../../../data/mvp/mood.json';
 import economy from '../../../../data/mvp/economy.json';
 import map from '../../../../data/mvp/maps/map-4p-01.json';
 
 export function rawGameData(): RawDataFiles {
-  return { global, terrain, rooms, creatures, spells, progression, mood, economy, map };
+  return { global, terrain, rooms, creatures, spells, traps, progression, mood, economy, map };
 }
 
 export function loadGameData(raw: RawDataFiles = rawGameData()): DataSet {

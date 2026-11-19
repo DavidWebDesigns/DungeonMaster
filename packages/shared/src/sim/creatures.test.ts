@@ -496,7 +496,7 @@ describe('la mano', () => {
     expect(applyCommand(state, data, 1, { type: 'pickUp', id: c.id }).ok).toBe(true);
     step(state, data);
     expect(c.held).toBe(true);
-    expect(state.players[0]!.hand).toEqual([c.id]);
+    expect(state.players[0]!.hand).toEqual([{ kind: 'creature', id: c.id }]);
     const { x, y } = c;
     run(state, data, 100);
     expect([c.x, c.y]).toEqual([x, y]);
@@ -599,7 +599,7 @@ describe('la mano', () => {
     const c = list[0]!;
     applyCommand(state, data, 1, { type: 'pickUp', id: c.id });
     step(state, data);
-    expect(state.players[0]!.hand).toEqual([c.id]);
+    expect(state.players[0]!.hand).toEqual([{ kind: 'creature', id: c.id }]);
     removeCreature(state, c.id);
     expect(state.players[0]!.hand).toEqual([]);
     expect(state.creatures).toHaveLength(0);

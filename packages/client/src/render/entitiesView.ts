@@ -19,7 +19,7 @@ import type { Sandbox } from '../sandbox/sandbox';
 import { playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
-import { hpColor, hpFraction, lookOf, moodIconOf } from './creatureStyle';
+import { hpColor, hpFraction, lookOf, moodIconOf, trapLookOf } from './creatureStyle';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 
 function material(scene: Scene, color: RGB, emissive = 0): StandardMaterial {
@@ -72,10 +72,14 @@ export class EntitiesView {
     /** Niebla de guerra: tiles que el jugador local ve ahora. Si se indica, los enemigos fuera de la vista no se dibujan. */
     visible: Uint8Array | null = null,
     localPlayer = 1,
-    hoverCreature: number | null = null,
+    hoverUnit: { kind: 'creature' | 'imp'; id: number } | null = null,
   ): void {
     const { state } = sandbox;
     const alive = new Set<number>();
+    // Posición de cada cosa en la mano: cuelgan en fila junto al cursor, en el orden en que se recogieron.
+    const handIndex = new Map<string, number>();
+    const me = state.players.find((p) => p.id === localPlayer);
+    me?.hand.forEach((h, n) => handIndex.set(`${h.kind}:${h.id}`, n));
     const hiddenByFog = (owner: number, x: number, y: number) =>
       visible !== null &&
       owner !== localPlayer &&
@@ -112,13 +116,27 @@ export class EntitiesView {
       }
       const prev = sandbox.previous.get(imp.id) ?? imp;
       const a = sandbox.alpha;
-      m.body.position.set(
-        prev.x + (imp.x - prev.x) * a,
-        0.1 + IMP_HEIGHT / 2,
-        prev.y + (imp.y - prev.y) * a,
-      );
-      m.gold.setEnabled(imp.carry > 0 && !hiddenByFog(imp.owner, imp.x, imp.y));
-      m.body.setEnabled(!hiddenByFog(imp.owner, imp.x, imp.y));
+      if (imp.held) {
+        // En la mano: cuelga junto al cursor y se balancea.
+        const n = handIndex.get(`imp:${imp.id}`) ?? 0;
+        const at = handAt ?? { x: imp.x, y: imp.y };
+        m.body.position.set(at.x + n * 0.25, 1.5 + 0.1 * Math.sin(timeSeconds * 6 + n), at.y);
+        m.body.setEnabled(handAt !== null);
+        m.gold.setEnabled(imp.carry > 0 && handAt !== null);
+      } else {
+        m.body.position.set(
+          prev.x + (imp.x - prev.x) * a,
+          0.1 + IMP_HEIGHT / 2,
+          prev.y + (imp.y - prev.y) * a,
+        );
+        m.gold.setEnabled(imp.carry > 0 && !hiddenByFog(imp.owner, imp.x, imp.y));
+        m.body.setEnabled(!hiddenByFog(imp.owner, imp.x, imp.y));
+      }
+      // Bajo el cursor: más grande y brillante (los Imps son pequeños: se agrandan más).
+      const impHovered = hoverUnit?.kind === 'imp' && hoverUnit.id === imp.id && !imp.held;
+      m.body.scaling.setAll(impHovered ? 1.7 : 1);
+      const impMat = m.body.material as StandardMaterial | null;
+      if (impMat) impMat.emissiveColor = impHovered ? HOVER_GLOW : NO_GLOW;
     }
     for (const [id, m] of this.imps) {
       if (!alive.has(id)) {
@@ -127,7 +145,8 @@ export class EntitiesView {
       }
     }
 
-    this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog, hoverCreature);
+    this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog, hoverUnit, handIndex);
+    this.updateTraps(state, localPlayer);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
@@ -197,12 +216,12 @@ export class EntitiesView {
     timeSeconds: number,
     handAt: { x: number; y: number } | null,
     hiddenByFog: (owner: number, x: number, y: number) => boolean,
-    hoverCreature: number | null,
+    hoverUnit: { kind: 'creature' | 'imp'; id: number } | null,
+    handIndex: Map<string, number>,
   ): void {
     const { state } = sandbox;
     const rules = rulesOf(data);
     const alive = new Set<number>();
-    let held = 0;
     for (const c of state.creatures) {
       alive.add(c.id);
       let m = this.creatures.get(c.id);
@@ -216,8 +235,8 @@ export class EntitiesView {
         // En la mano: cuelga junto al cursor y se balancea.
         const at = handAt ?? { x: c.x, y: c.y };
         m.body.setEnabled(handAt !== null);
+        const held = handIndex.get(`creature:${c.id}`) ?? 0;
         m.body.position.set(at.x + held * 0.25, 1.5 + 0.1 * Math.sin(timeSeconds * 6 + held), at.y);
-        held++;
       } else {
         m.body.setEnabled(true);
         m.body.position.set(
@@ -228,7 +247,7 @@ export class EntitiesView {
       }
       if (!c.held && hiddenByFog(c.owner, c.x, c.y)) m.body.setEnabled(false);
       // Bajo el cursor: más grande y brillante, para que se vea que se puede recoger.
-      const hovered = c.id === hoverCreature && !c.held;
+      const hovered = hoverUnit?.kind === 'creature' && hoverUnit.id === c.id && !c.held;
       m.body.scaling.setAll(hovered ? 1.3 : 1);
       const bodyMat = m.body.material as StandardMaterial | null;
       if (bodyMat) bodyMat.emissiveColor = hovered ? HOVER_GLOW : NO_GLOW;
@@ -249,6 +268,54 @@ export class EntitiesView {
       if (!alive.has(id)) {
         m.body.dispose();
         this.creatures.delete(id);
+      }
+    }
+  }
+
+  private readonly trapMeshes = new Map<number, { mesh: Mesh; built: boolean }>();
+
+  /**
+   * Trampas: solo se dibujan las del jugador local (las del rival son invisibles). Una trampa sin terminar se ve
+   * pequeña y translúcida; una armada, entera.
+   */
+  private updateTraps(state: MatchState, localPlayer: number): void {
+    const alive = new Set<number>();
+    for (const t of state.traps) {
+      if (t.owner !== localPlayer) continue;
+      alive.add(t.id);
+      let entry = this.trapMeshes.get(t.id);
+      if (!entry) {
+        const look = trapLookOf(t.type);
+        const mesh =
+          look.shape === 'barrel'
+            ? CreateCylinder(`trap${t.id}`, { diameter: 0.5, height: 0.45 }, this.scene)
+            : CreateCylinder(
+                `trap${t.id}`,
+                { diameterTop: 0, diameterBottom: 0.5, height: 0.5, tessellation: 4 },
+                this.scene,
+              );
+        const mat = material(this.scene, look.color);
+        mesh.material = mat;
+        mesh.isPickable = false;
+        entry = { mesh, built: !t.built };
+        this.trapMeshes.set(t.id, entry);
+      }
+      if (entry.built !== t.built) {
+        entry.built = t.built;
+        const mat = entry.mesh.material as StandardMaterial;
+        mat.alpha = t.built ? 1 : 0.4;
+        entry.mesh.scaling.setAll(t.built ? 1 : 0.6);
+      }
+      entry.mesh.position.set(
+        (t.tile % state.width) + 0.5,
+        0.35,
+        Math.floor(t.tile / state.width) + 0.5,
+      );
+    }
+    for (const [id, e] of this.trapMeshes) {
+      if (!alive.has(id)) {
+        e.mesh.dispose();
+        this.trapMeshes.delete(id);
       }
     }
   }
@@ -366,6 +433,23 @@ export class EntitiesView {
           );
           m.material = material(this.scene, [0.75, 0.45, 0.3]);
           m.position.set(x, 0.6, z);
+        }
+        break;
+      case 'tortureChamber':
+        // Potros: una tabla con un travesaño por tile.
+        for (const t of room.tiles) {
+          const [x, z] = tileXY(t);
+          const rack = add(
+            CreateBox(`rack${room.id}_${t}`, { width: 0.8, height: 0.12, depth: 0.45 }, this.scene),
+          );
+          rack.material = material(this.scene, [0.35, 0.2, 0.15]);
+          rack.position.set(x, 0.3, z);
+          const bar = add(
+            CreateCylinder(`rackbar${room.id}_${t}`, { diameter: 0.1, height: 0.9 }, this.scene),
+          );
+          bar.material = material(this.scene, [0.6, 0.6, 0.65]);
+          bar.rotation.z = Math.PI / 2;
+          bar.position.set(x, 0.42, z);
         }
         break;
       case 'library':

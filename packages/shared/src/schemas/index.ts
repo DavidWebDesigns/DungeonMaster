@@ -8,3 +8,4 @@ export * from './progression';
 export * from './mood';
 export * from './economy';
 export * from './map';
+export * from './traps';

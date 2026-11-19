@@ -3,6 +3,7 @@
  * Lo único que hace es traducir eventos del navegador; la lógica está en InputModel, keymap y cameraController.
  */
 import type { CameraInput } from '../render/cameraController';
+import type { HoverUnit } from './inputModel';
 
 /** Posición del puntero en la pantalla normalizada a [-1, 1] con y hacia arriba. */
 export function toNdc(
@@ -26,14 +27,14 @@ const KEY_GROUPS = {
 export interface DomHandlers {
   /** Qué tile hay bajo la posición normalizada (o null si ninguno). */
   pick(nx: number, ny: number): { x: number; y: number } | null;
-  /** Id de la criatura propia que se ve bajo ese punto de la pantalla, si hay. */
-  creatureAt(nx: number, ny: number): number | null;
-  move(tile: { x: number; y: number } | null, creatureId: number | null): void;
+  /** Criatura o Imp propio que se ve bajo ese punto de la pantalla, si hay. */
+  unitAt(nx: number, ny: number): HoverUnit | null;
+  move(tile: { x: number; y: number } | null, unit: HoverUnit | null): void;
   down(
     tile: { x: number; y: number } | null,
     button: 0 | 2,
     shift: boolean,
-    creatureId: number | null,
+    unit: HoverUnit | null,
   ): void;
   up(tile: { x: number; y: number } | null): void;
   key(key: string): void;
@@ -62,7 +63,7 @@ export class DomInput {
         const r = canvas.getBoundingClientRect();
         this.mouse = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
         const n = toNdc(e.clientX, e.clientY, r);
-        h.move(tileAt(e), h.creatureAt(n.nx, n.ny));
+        h.move(tileAt(e), h.unitAt(n.nx, n.ny));
       },
       opts,
     );
@@ -80,7 +81,7 @@ export class DomInput {
         if (e.button !== 0 && e.button !== 2) return;
         canvas.setPointerCapture(e.pointerId);
         const n = toNdc(e.clientX, e.clientY, canvas.getBoundingClientRect());
-        h.down(tileAt(e), e.button, e.shiftKey, h.creatureAt(n.nx, n.ny));
+        h.down(tileAt(e), e.button, e.shiftKey, h.unitAt(n.nx, n.ny));
       },
       opts,
     );

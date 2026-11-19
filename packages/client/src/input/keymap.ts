@@ -9,7 +9,7 @@ export type KeyAction =
   | { type: 'slap' };
 
 /**
- * Atajos (docs/PLAN.md 10.2): 1 a 5 construyen salas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
+ * Atajos (docs/PLAN.md 10.2): 1 a 6 construyen salas y las teclas siguientes (7 y 8) colocan trampas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
  * F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
@@ -17,8 +17,12 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
   const buildable = data.rooms.filter((r) => r.buildable);
   const k = key.length === 1 ? key.toLowerCase() : key;
   if (/^[1-9]$/.test(k)) {
-    const room = buildable[Number(k) - 1];
-    return room ? { type: 'tool', tool: { kind: 'build', room: room.id } } : null;
+    // Primero las salas construibles y a continuación las trampas, en el orden de los datos.
+    const n = Number(k) - 1;
+    const room = buildable[n];
+    if (room) return { type: 'tool', tool: { kind: 'build', room: room.id } };
+    const trap = data.traps[n - buildable.length];
+    return trap ? { type: 'tool', tool: { kind: 'trap', trap: trap.id } } : null;
   }
   switch (k) {
     case 'q':

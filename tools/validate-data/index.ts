@@ -19,6 +19,6 @@ const d = result.data;
 console.log(`✓ Datos válidos en ${dir}`);
 console.log(
   `  ${d.terrain.length} terrenos · ${d.rooms.length} salas · ${d.creatures.length} criaturas · ` +
-    `${d.spells.length} hechizos · ${d.mood.bands.length} bandas de ánimo · mapa ${d.map.id} ` +
+    `${d.spells.length} hechizos · ${d.traps.length} trampas · ${d.mood.bands.length} bandas de ánimo · mapa ${d.map.id} ` +
     `(${d.map.width}×${d.map.height}, ${d.map.bases.length} bases)`,
 );

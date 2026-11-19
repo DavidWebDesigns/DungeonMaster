@@ -3,6 +3,9 @@ import { Id, NonNegativeInt, PositiveInt, PositiveNumber } from './common';
 
 export const JobClass = z.enum(['worker', 'scout', 'fighter', 'thinker']);
 export const FightStyle = z.enum(['blitzer', 'blocker', 'flanker', 'support', 'none']);
+/** Género gramatical del nombre, para que el consejero hable bien ("un Verdugo", "una Torturadora"). */
+export const Gender = z.enum(['m', 'f']);
+
 export const Tier = z.enum(['common', 'elite', 'unique']);
 
 /** Una entrada de creatures.json (secciones 6.8 y 7.1 del plan). */
@@ -10,6 +13,8 @@ export const CreatureDef = z.strictObject({
   id: Id,
   name: z.string().min(1),
   modelId: z.string().min(1),
+  /** Si no se indica, masculino. */
+  gender: Gender.optional(),
   tier: Tier,
   jobClass: JobClass,
   fightStyle: FightStyle,
