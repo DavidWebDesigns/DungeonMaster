@@ -10,3 +10,4 @@ export * from './economy';
 export * from './map';
 export * from './traps';
 export * from './pve';
+export * from './assets';

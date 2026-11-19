@@ -26,3 +26,5 @@ jobs:
         run: pnpm validate-data
       - name: Pruebas
         run: pnpm test
+      - name: Compilar el cliente
+        run: pnpm --filter @dm/client build

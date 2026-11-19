@@ -24,9 +24,8 @@ const TOKEN_KEY = 'dm.reconnect';
 
 /** Dirección del servidor: la de VITE_SERVER_URL o el mismo equipo en el puerto 2567. */
 export function serverUrl(): string {
-  const env = (import.meta as unknown as { env?: Record<string, string | undefined> }).env?.[
-    'VITE_SERVER_URL'
-  ];
+  // Vite solo sustituye esta forma literal al compilar (no sirve acceder a `import.meta.env` con un cast).
+  const env = import.meta.env.VITE_SERVER_URL;
   if (env) return env;
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   return `${proto}://${location.hostname}:2567`;
