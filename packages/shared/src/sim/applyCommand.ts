@@ -3,6 +3,7 @@ import { createImpCost, getPlayer, impCount } from './economy';
 import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
 import { stopCreature } from './behavior';
+import { findAssaultTarget } from './combat';
 import { isVisible } from './fog';
 import { castEffect } from './spells';
 import { eliminatePlayer } from './victory';
@@ -263,6 +264,7 @@ function execute(
       const c = state.creatures.find((k) => k.id === cmd.id);
       if (!c) break;
       stopCreature(c);
+      c.assaultKind = 'none';
       c.held = true;
       player.hand.push(c.id);
       break;
@@ -277,6 +279,10 @@ function execute(
       c.y = Math.floor(tile / state.width) + 0.5;
       stopCreature(c);
       c.blocked = {};
+      // Suelta = asalto: va al enemigo visible más cercano al punto donde cayó (si lo hay).
+      const target = findAssaultTarget(state, rules, player.id, tile);
+      c.assaultKind = target ? target.kind : 'none';
+      c.assaultId = target ? target.id : 0;
       break;
     }
     case 'slap': {

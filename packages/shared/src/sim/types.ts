@@ -152,6 +152,9 @@ export interface Creature {
   targetId: number;
   /** Tick a partir del cual puede volver a golpear. */
   attackReadyTick: number;
+  /** Objetivo de asalto: al soltarla con la mano va al enemigo visible más cercano al punto de suelta. */
+  assaultKind: 'none' | 'creature' | 'imp' | 'structure';
+  assaultId: number;
   /** Acelerada hasta este tick. */
   hasteUntil: number;
   /** Curación en marcha: ticks que quedan y cuánta vida por tick. */

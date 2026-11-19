@@ -31,6 +31,9 @@ function material(scene: Scene, color: RGB, emissive = 0): StandardMaterial {
   return m;
 }
 
+const HOVER_GLOW = new Color3(0.4, 0.4, 0.3);
+const NO_GLOW = new Color3(0, 0, 0);
+
 interface ImpMesh {
   body: Mesh;
   gold: Mesh;
@@ -69,6 +72,7 @@ export class EntitiesView {
     /** Niebla de guerra: tiles que el jugador local ve ahora. Si se indica, los enemigos fuera de la vista no se dibujan. */
     visible: Uint8Array | null = null,
     localPlayer = 1,
+    hoverCreature: number | null = null,
   ): void {
     const { state } = sandbox;
     const alive = new Set<number>();
@@ -123,7 +127,7 @@ export class EntitiesView {
       }
     }
 
-    this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog);
+    this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog, hoverCreature);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
@@ -193,6 +197,7 @@ export class EntitiesView {
     timeSeconds: number,
     handAt: { x: number; y: number } | null,
     hiddenByFog: (owner: number, x: number, y: number) => boolean,
+    hoverCreature: number | null,
   ): void {
     const { state } = sandbox;
     const rules = rulesOf(data);
@@ -222,6 +227,11 @@ export class EntitiesView {
         );
       }
       if (!c.held && hiddenByFog(c.owner, c.x, c.y)) m.body.setEnabled(false);
+      // Bajo el cursor: más grande y brillante, para que se vea que se puede recoger.
+      const hovered = c.id === hoverCreature && !c.held;
+      m.body.scaling.setAll(hovered ? 1.3 : 1);
+      const bodyMat = m.body.material as StandardMaterial | null;
+      if (bodyMat) bodyMat.emissiveColor = hovered ? HOVER_GLOW : NO_GLOW;
       const frac = hpFraction(c, creatureMaxHp(rules, c));
       m.barBack.setEnabled(frac < 1);
       m.barFill.setEnabled(frac < 1);

@@ -285,3 +285,18 @@
   margin: 0 0 18px;
   opacity: 0.85;
 }
+
+.hovercard {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+  padding: 4px 9px;
+  background: rgba(20, 14, 26, 0.95);
+  color: #efe3cf;
+  border: 1px solid #f0c84a;
+  border-radius: 6px;
+  font:
+    600 12px system-ui,
+    sans-serif;
+  white-space: nowrap;
+}

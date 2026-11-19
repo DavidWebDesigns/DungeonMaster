@@ -86,14 +86,17 @@ export class InputModel {
     creatureId: number | null = null,
   ): void {
     if (button === 2) {
-      // Clic derecho: con criaturas en la mano las suelta; si no, cancela el arrastre o vuelve a excavar.
-      if (this.handSize > 0 && tile) this.dispatch({ type: 'drop', tile });
-      else if (this.drag) this.drag = null;
+      // Clic derecho: con criaturas en la mano las suelta todas en el tile bajo el cursor; si no, cancela el arrastre o vuelve a excavar.
+      if (this.handSize > 0 && tile) {
+        for (let n = this.handSize; n > 0; n--)
+          this.dispatch({ type: 'drop', tile }, n < this.handSize);
+      } else if (this.drag) this.drag = null;
       else this.setTool({ kind: 'dig' });
       return;
     }
-    // Un clic sobre una criatura propia la recoge (salvo con las herramientas de construir, vender o lanzar hechizos).
-    if (creatureId !== null && TILE_TOOLS.has(this.tool.kind)) {
+    // Un clic sobre una criatura propia la recoge con cualquier herramienta, salvo los hechizos
+    // (Acelerar y Curar apuntan a una criatura; los demás, a un tile).
+    if (creatureId !== null && this.tool.kind !== 'spell') {
       this.dispatch({ type: 'pickUp', id: creatureId });
       return;
     }

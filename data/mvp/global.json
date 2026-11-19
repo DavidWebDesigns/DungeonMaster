@@ -39,7 +39,7 @@
   },
   "connection": { "reconnectSeconds": 120, "inactivitySurrenderSeconds": 300 },
   "commands": { "maxPerSecond": 30, "maxTilesPerCommand": 64 },
-  "hand": { "capacity": 8 },
+  "hand": { "capacity": 10 },
   "slap": { "cooldownSeconds": 1, "workSpeedBonus": 0.25, "durationSeconds": 10 },
   "vision": { "creatureRadius": 6, "heartRadius": 8, "ownTileRadius": 2 },
   "pathfinding": { "maxPerTickPerPlayer": 8, "straightCost": 1, "diagonalCost": 1.41 },

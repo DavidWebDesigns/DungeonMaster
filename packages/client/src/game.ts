@@ -27,7 +27,7 @@ import { buildHudModel, NOTICE_SECONDS, NOTICES_VISIBLE } from './ui/hudModel';
 import { NoticeLog } from './ui/notices';
 
 /** Radio (en alturas de pantalla) dentro del cual un clic coge a una criatura. */
-const CREATURE_PICK_RADIUS = 0.07;
+const CREATURE_PICK_RADIUS = 0.09;
 
 export class Game {
   readonly sandbox: Sandbox;
@@ -42,6 +42,7 @@ export class Game {
   private readonly dom: DomInput;
   private feelSnapshot: FeelSnapshot;
   private readonly hudHost: HTMLElement;
+  private readonly hoverCard: HTMLElement;
   private hudKey = '';
   private wasFull = false;
   private lastFeelTick = -1;
@@ -118,6 +119,10 @@ export class Game {
 
     this.hudHost = document.createElement('div');
     host.appendChild(this.hudHost);
+    this.hoverCard = document.createElement('div');
+    this.hoverCard.className = 'hovercard';
+    this.hoverCard.style.display = 'none';
+    host.appendChild(this.hoverCard);
     window.addEventListener('resize', () => this.renderer.resize());
   }
 
@@ -159,7 +164,9 @@ export class Game {
         this.particles,
         hover ? { x: hover.x + 0.5, y: hover.y + 0.5 } : null,
         this.versus,
+        this.input.hoverCreature,
       );
+      this.updateHover();
       this.countFps(nowMs);
       requestAnimationFrame(frame);
     };
@@ -240,6 +247,35 @@ export class Game {
       }),
       this.hudHost,
     );
+  }
+
+  /** Cursor y tarjeta sobre la criatura propia que hay bajo el ratón: dice qué es y qué se puede hacer con ella. */
+  private updateHover(): void {
+    const canvas = this.renderer.canvas;
+    const { state } = this.sandbox;
+    const hand = this.input.handSize;
+    const id = this.input.hoverCreature;
+    const c = id !== null ? state.creatures.find((k) => k.id === id) : undefined;
+    canvas.style.cursor = hand > 0 ? 'copy' : c ? 'grab' : 'default';
+    const mouse = this.dom.cameraInput().mouse;
+    if (!c || !mouse) {
+      this.hoverCard.style.display = 'none';
+      return;
+    }
+    const rules = rulesOf(this.data);
+    const name = rules.creatureDefs[c.type]?.name ?? c.type;
+    const band = rules.bands.find((b) => b.id === c.band)?.name ?? '';
+    const spellTarget = this.input.tool.kind === 'spell';
+    const action = spellTarget
+      ? 'Clic: lanzar el hechizo'
+      : hand >= this.data.global.hand.capacity
+        ? 'Mano llena'
+        : 'Clic: recoger';
+    this.hoverCard.textContent = `${name} nv ${c.level} · ${band} · ${action} · B: bofetada`;
+    const r = canvas.getBoundingClientRect();
+    this.hoverCard.style.display = 'block';
+    this.hoverCard.style.left = `${r.left + mouse.x * r.width + 14}px`;
+    this.hoverCard.style.top = `${r.top + mouse.y * r.height + 14}px`;
   }
 
   /** Rendirse pide confirmación: hay que pulsar dos veces en menos de 4 segundos de juego. */

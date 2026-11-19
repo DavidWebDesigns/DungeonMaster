@@ -502,12 +502,12 @@ describe('la mano', () => {
     expect([c.x, c.y]).toEqual([x, y]);
   });
 
-  it('lleva hasta 8 y la novena da LIMIT_REACHED', () => {
-    const { state, data, list } = withCreatures(9);
-    for (let i = 0; i < 8; i++)
+  it('lleva hasta 10 y la undécima da LIMIT_REACHED', () => {
+    const { state, data, list } = withCreatures(11);
+    for (let i = 0; i < 10; i++)
       expect(applyCommand(state, data, 1, { type: 'pickUp', id: list[i]!.id }).ok).toBe(true);
     step(state, data);
-    expect(applyCommand(state, data, 1, { type: 'pickUp', id: list[8]!.id })).toEqual({
+    expect(applyCommand(state, data, 1, { type: 'pickUp', id: list[10]!.id })).toEqual({
       ok: false,
       error: 'LIMIT_REACHED',
     });

@@ -55,6 +55,8 @@ export function newCreature(
     targetKind: 'none',
     targetId: 0,
     attackReadyTick: 0,
+    assaultKind: 'none',
+    assaultId: 0,
     hasteUntil: 0,
     healTicksLeft: 0,
     healPerTick: 0,

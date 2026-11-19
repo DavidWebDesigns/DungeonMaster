@@ -3,6 +3,7 @@
  * y muertes. Todo el azar sale del generador de la partida.
  */
 import { creatureMaxHp, moodBandOf, scaledStat } from './creatureStats';
+import { computeVisible } from './fog';
 import { resetImp } from './imps';
 import { tileIndex } from './grid';
 import { removeCreature } from './needs';
@@ -219,6 +220,60 @@ export function nearestStructure(
         best = t;
       }
     }
+  }
+  return best;
+}
+
+/** ¿Sigue siendo válido un objetivo de asalto (existe, es enemigo y su dueño sigue en juego)? */
+export function assaultValid(state: MatchState, rules: Rules, c: Creature): boolean {
+  if (c.assaultKind === 'none') return false;
+  if (c.assaultKind === 'structure') return attackableTile(state, rules, c.owner, c.assaultId);
+  const u = findUnit(state, c.assaultKind, c.assaultId);
+  return !!u && u.hp > 0 && u.owner !== c.owner && ownerAlive(state, u.owner);
+}
+
+/**
+ * Objetivo enemigo que el jugador VE más cercano a un tile (criaturas, Imps, salas y Corazón, en ese orden de
+ * desempate). Se usa al soltar criaturas con la mano: se lanzan a por él, esté o no dentro del radio normal de combate.
+ * Mira solo lo visible, así que no revela nada que el jugador no sepa.
+ */
+export function findAssaultTarget(
+  state: MatchState,
+  rules: Rules,
+  owner: PlayerId,
+  tile: number,
+): { kind: 'creature' | 'imp' | 'structure'; id: number } | null {
+  const vis = computeVisible(state, rules, owner);
+  const px = (tile % state.width) + 0.5;
+  const py = Math.floor(tile / state.width) + 0.5;
+  const seen = (x: number, y: number) => vis[Math.floor(y) * state.width + Math.floor(x)] === 1;
+  let best: { kind: 'creature' | 'imp' | 'structure'; id: number } | null = null;
+  let bestD = Infinity;
+  const rank = { creature: 0, imp: 1, structure: 2 } as const;
+  const consider = (kind: 'creature' | 'imp' | 'structure', id: number, x: number, y: number) => {
+    const d = Math.hypot(x - px, y - py);
+    if (
+      d < bestD - 1e-9 ||
+      (Math.abs(d - bestD) <= 1e-9 &&
+        best &&
+        (rank[kind] < rank[best.kind] || (kind === best.kind && id < best.id)))
+    ) {
+      bestD = d;
+      best = { kind, id };
+    }
+  };
+  for (const o of state.creatures) {
+    if (o.owner === owner || o.held || o.hp <= 0 || !ownerAlive(state, o.owner) || !seen(o.x, o.y))
+      continue;
+    consider('creature', o.id, o.x, o.y);
+  }
+  for (const i of state.imps) {
+    if (i.owner === owner || i.hp <= 0 || !ownerAlive(state, i.owner) || !seen(i.x, i.y)) continue;
+    consider('imp', i.id, i.x, i.y);
+  }
+  for (let t = 0; t < state.owner.length; t++) {
+    if (vis[t] !== 1 || !attackableTile(state, rules, owner, t)) continue;
+    consider('structure', t, (t % state.width) + 0.5, Math.floor(t / state.width) + 0.5);
   }
   return best;
 }

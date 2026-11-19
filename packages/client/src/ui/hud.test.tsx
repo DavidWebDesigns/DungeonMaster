@@ -116,7 +116,7 @@ describe('buildHudModel', () => {
     sb.state.tick = 300;
     expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(90);
     sb.state.players[0]!.hand = [1, 2];
-    expect(buildHudModel(sb.state, data, 1, dig, []).hand).toEqual({ count: 2, capacity: 8 });
+    expect(buildHudModel(sb.state, data, 1, dig, []).hand).toEqual({ count: 2, capacity: 10 });
   });
 
   it('el reloj da minutos y segundos de juego', () => {
@@ -171,7 +171,7 @@ describe('Hud', () => {
     expect(out).toContain('Troll');
     expect(out).toContain('Descansando');
     expect(out).toContain('Pago 120 s');
-    expect(out).toContain('Mano 1/8');
+    expect(out).toContain('Mano 1/10');
   });
 
   it('sin criaturas no hay panel de criaturas ni contador de mano', () => {

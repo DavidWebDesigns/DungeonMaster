@@ -346,12 +346,29 @@ describe('la mano', () => {
     expect(input.handSize).toBe(1);
   });
 
-  it('con la herramienta de construir, un clic sobre una criatura no la recoge', () => {
+  it('un clic sobre una criatura propia la recoge con cualquier herramienta, también la de construir', () => {
     const { input, sent, c } = withCreature();
-    input.setTool({ kind: 'build', room: 'lair' });
-    input.pointerDown(pt(6, 2), 0, false, c.id);
-    input.pointerUp(pt(6, 2));
-    expect(sent.every((s) => s.cmd.type !== 'pickUp')).toBe(true);
+    for (const tool of [
+      { kind: 'build', room: 'lair' },
+      { kind: 'claim' },
+      { kind: 'reinforce' },
+      { kind: 'sell' },
+    ] as const) {
+      sent.length = 0;
+      input.setTool(tool);
+      input.pointerDown(pt(9, 9), 0, false, c.id);
+      expect(sent[0]!.cmd, tool.kind).toEqual({ type: 'pickUp', id: c.id });
+      input.pointerUp(pt(9, 9));
+      c.held = false;
+      input.pointerDown(pt(9, 9), 2); // sin nada en la mano solo cancela
+    }
+  });
+
+  it('con un hechizo activo el clic no recoge: lanza el hechizo', () => {
+    const { input, sent, c } = withCreature();
+    input.setTool({ kind: 'spell', spell: 'haste' });
+    input.pointerDown(pt(9, 9), 0, false, c.id);
+    expect(sent[0]!.cmd.type).toBe('castSpell');
   });
 
   it('el clic derecho con criaturas en la mano las suelta donde está el cursor', () => {
@@ -368,6 +385,24 @@ describe('la mano', () => {
     input.setTool({ kind: 'claim' });
     input.pointerDown(pt(3, 8), 2);
     expect(input.tool).toEqual({ kind: 'dig' });
+  });
+
+  it('el clic derecho suelta todas las criaturas de la mano en el tile bajo el cursor', () => {
+    const { input, sent, sandbox } = withCreature();
+    const crew = [0, 1, 2].map(() => {
+      const k = newCreature(sandbox.state, rulesOf(data), 1, 'goblin', 9 * 64 + 9);
+      sandbox.state.creatures.push(k);
+      return k;
+    });
+    for (const k of crew) input.pointerDown(pt(9, 9), 0, false, k.id);
+    sandbox.advance(100);
+    expect(input.handSize).toBe(3);
+    sent.length = 0;
+    input.pointerDown(pt(3, 8), 2);
+    expect(sent.map((s) => s.cmd.type)).toEqual(['drop', 'drop', 'drop']);
+    sandbox.advance(100);
+    expect(input.handSize).toBe(0);
+    expect(crew.every((k) => !k.held && Math.floor(k.x) === 3 && Math.floor(k.y) === 8)).toBe(true);
   });
 
   it('con la mano llena el cursor muestra si se puede soltar ahí', () => {

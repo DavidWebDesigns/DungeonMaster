@@ -5,6 +5,7 @@
  * sin enemigos a la vista golpea la sala o el Corazón que tenga cerca (asedio).
  */
 import {
+  assaultValid,
   attackReach,
   chooseTarget,
   findUnit,
@@ -111,6 +112,16 @@ function decide(state: MatchState, rules: Rules, c: Creature): Desire {
     ) {
       return { goal: 'flee', room: 0 };
     }
+  }
+
+  // Asalto ordenado con la mano: va a por el objetivo marcado aunque esté lejos del radio de combate.
+  if (c.assaultKind !== 'none') {
+    const goal: CreatureGoal = c.assaultKind === 'structure' ? 'siege' : 'combat';
+    if (assaultValid(state, rules, c) && !blocked(goal)) {
+      return { goal, room: 0, targetKind: c.assaultKind, targetId: c.assaultId };
+    }
+    c.assaultKind = 'none';
+    c.assaultId = 0;
   }
 
   // 3. Combatir: enemigo a la vista (o que la ataca).

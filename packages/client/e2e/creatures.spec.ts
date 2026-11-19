@@ -100,7 +100,7 @@ test('se recoge una criatura con el ratón, aparece en la mano y se suelta con c
   await page.mouse.click(at!.x, at!.y);
   await advance(page, 1);
   expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(1);
-  await expect(page.locator('.chip.hand')).toContainText('Mano 1/8');
+  await expect(page.locator('.chip.hand')).toContainText('Mano 1/10');
 
   const target = await page.evaluate(() => dm().tileToScreen(3, 6));
   await page.mouse.move(target.x, target.y);
@@ -144,4 +144,58 @@ test('el panel de criaturas centra la cámara al hacer clic en una', async ({ pa
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(String(e)));
   expect(errors).toEqual([]);
+});
+
+test('hover resalta la criatura, muestra su tarjeta y se recoge aunque esté activa la herramienta de construir', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await page.keyboard.press('1'); // vuelve a modo construir: antes esto impedía recoger
+  await advance(page, 31);
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 3.5;
+    c.y = 9.5;
+  });
+  const id = await page.evaluate(() => dm().sandbox.state.creatures[0]!.id);
+  const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
+  await page.mouse.move(at!.x, at!.y);
+  await page.waitForTimeout(200);
+  await expect(page.locator('.hovercard')).toBeVisible();
+  await expect(page.locator('.hovercard')).toContainText('Clic: recoger');
+  expect(
+    await page.evaluate(() => (document.querySelector('canvas') as HTMLCanvasElement).style.cursor),
+  ).toBe('grab');
+  await page.mouse.click(at!.x, at!.y);
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(1);
+  await expect(page.locator('.chip.hand')).toContainText('Mano 1/10');
+});
+
+test('se llevan varias criaturas y el clic derecho las suelta todas en el tile del cursor', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await advance(page, 95); // llegan 3 criaturas
+  const n = await page.evaluate(() => dm().sandbox.state.creatures.length);
+  expect(n).toBeGreaterThanOrEqual(3);
+  const ids = await page.evaluate(() => dm().sandbox.state.creatures.map((c) => c.id));
+  for (const id of ids.slice(0, 3)) {
+    await page.evaluate((i) => {
+      const c = dm().sandbox.state.creatures.find((k) => k.id === i)!;
+      c.x = 3.5;
+      c.y = 9.5;
+    }, id);
+    const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
+    await page.mouse.click(at!.x, at!.y);
+    await advance(page, 1);
+  }
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(3);
+  await expect(page.locator('.chip.hand')).toContainText('Mano 3/10');
+  const target = await page.evaluate(() => dm().tileToScreen(3, 6));
+  await page.mouse.move(target.x, target.y);
+  await page.mouse.click(target.x, target.y, { button: 'right' });
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
+  await expect(page.locator('.chip.hand')).toHaveCount(0);
 });
