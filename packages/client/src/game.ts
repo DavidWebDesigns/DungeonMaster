@@ -390,6 +390,24 @@ export class Game {
     else if (action.type === 'cancel') this.input.setTool({ kind: 'dig' });
     else if (action.type === 'center') this.camera = centerOn(this.camera, this.heartTile);
     else if (action.type === 'slap') this.input.slapHovered();
+    else if (action.type === 'pause') this.togglePause();
+    else if (action.type === 'speed') this.changeSpeed(action.step);
+  }
+
+  /** Pausa y velocidad existen solo en partidas locales: en red las manda el servidor. */
+  private togglePause(): void {
+    if (this.sandbox.speed === undefined) return;
+    this.sandbox.paused = !this.sandbox.paused;
+    this.say(this.sandbox.paused ? 'Partida en pausa (P para seguir).' : 'Partida reanudada.');
+  }
+
+  private changeSpeed(step: 1 | -1): void {
+    const src = this.sandbox;
+    if (src.speed === undefined) return;
+    const speeds = this.data.pve.speeds;
+    const at = Math.max(0, speeds.indexOf(src.speed));
+    src.speed = speeds[Math.min(speeds.length - 1, Math.max(0, at + step))] ?? 1;
+    this.say(`Velocidad ×${src.speed}.`);
   }
 
   private countFps(nowMs: number): void {

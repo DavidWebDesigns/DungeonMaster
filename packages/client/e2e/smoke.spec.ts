@@ -46,7 +46,7 @@ test('sesión completa: excavar, minar, construir las 5 salas y mantener el rend
     (window as unknown as { dm: () => unknown }).dm = () =>
       (window as unknown as { __dm: unknown }).__dm;
   });
-  await page.goto('/');
+  await page.goto('/?mode=solo');
   await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
 
   // 1. Excavar hasta la veta (14,4) y minarla.

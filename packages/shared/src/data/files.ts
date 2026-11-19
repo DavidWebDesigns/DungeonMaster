@@ -8,6 +8,7 @@ export const DATA_FILE_NAMES: Record<Exclude<DataKey, 'map'>, string> = {
   creatures: 'creatures.json',
   spells: 'spells.json',
   traps: 'traps.json',
+  pve: 'pve.json',
   progression: 'progression.json',
   mood: 'mood.json',
   economy: 'economy.json',

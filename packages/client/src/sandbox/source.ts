@@ -22,6 +22,8 @@ export interface GameSource {
   /** Cuánto del tick siguiente ha transcurrido (0 a 1). */
   readonly alpha: number;
   paused: boolean;
+  /** Multiplicador del paso del tiempo. Solo las partidas locales lo tienen: en red no se puede acelerar. */
+  speed?: number;
   /** Valida y manda un comando. Devuelve enseguida si se acepta o por qué no (en red, el servidor lo confirma después). */
   send(cmd: Command): CommandResult;
   /** Avanza el reloj; devuelve los eventos que han ocurrido desde la última llamada. */

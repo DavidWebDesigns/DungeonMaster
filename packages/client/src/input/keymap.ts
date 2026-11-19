@@ -6,11 +6,13 @@ export type KeyAction =
   | { type: 'rotate'; step: 1 | -1 }
   | { type: 'center' }
   | { type: 'cancel' }
-  | { type: 'slap' };
+  | { type: 'slap' }
+  | { type: 'pause' }
+  | { type: 'speed'; step: 1 | -1 };
 
 /**
  * Atajos (docs/PLAN.md 10.2): 1 a 6 construyen salas y las teclas siguientes (7 y 8) colocan trampas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
- * F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
+ * P pausa y [ ] cambian la velocidad (solo en partidas locales). F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
 export function keyAction(key: string, data: DataSet): KeyAction | null {
@@ -52,6 +54,13 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
       return { type: 'rotate', step: 1 };
     case ' ':
       return { type: 'center' };
+    // Solo en partidas locales (PvE): pausa y velocidad. En red el juego las ignora.
+    case 'p':
+      return { type: 'pause' };
+    case ']':
+      return { type: 'speed', step: 1 };
+    case '[':
+      return { type: 'speed', step: -1 };
     default:
       return null;
   }

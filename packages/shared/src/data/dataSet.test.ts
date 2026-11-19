@@ -219,6 +219,24 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw), 'global.json', 'combat.structureReach');
   });
 
+  it('rechaza un pve.json con dificultad por defecto inexistente, repetida o demasiados rivales', () => {
+    const raw = realRawData();
+    (raw.pve as any).defaultDifficulty = 'imposible';
+    expectError(parseDataSet(raw), 'pve.json', 'defaultDifficulty');
+    const raw2 = realRawData();
+    (raw2.pve as any).difficulties[1].id = (raw2.pve as any).difficulties[0].id;
+    expectError(parseDataSet(raw2), 'pve.json', 'dificultad repetida');
+    const raw3 = realRawData();
+    (raw3.pve as any).defaultRivals = 4;
+    expectError(parseDataSet(raw3), 'pve.json', 'defaultRivals');
+    const raw4 = realRawData();
+    (raw4.pve as any).speeds = [2, 4];
+    expectError(parseDataSet(raw4), 'pve.json', 'speeds');
+    const raw5 = realRawData();
+    (raw5.pve as any).difficulties[0].bot.targetImps = 0;
+    expectError(parseDataSet(raw5), 'pve.json', 'difficulties[0].bot.targetImps');
+  });
+
   it('detecta una trampa que exige una sala inexistente o no construible', () => {
     const raw = realRawData();
     (raw.traps as any)[0].requiresRoom = 'inventada';

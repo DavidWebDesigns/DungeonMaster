@@ -1,0 +1,22 @@
+{
+  "defaultRivals": 3,
+  "defaultDifficulty": "normal",
+  "speeds": [1, 2, 4],
+  "difficulties": [
+    {
+      "id": "easy",
+      "name": "Fácil",
+      "bot": { "targetImps": 5, "attackArmy": 12, "attackAfterSeconds": 2400 }
+    },
+    {
+      "id": "normal",
+      "name": "Normal",
+      "bot": { "targetImps": 7, "attackArmy": 8, "attackAfterSeconds": 1500 }
+    },
+    {
+      "id": "hard",
+      "name": "Difícil",
+      "bot": { "targetImps": 9, "attackArmy": 6, "attackAfterSeconds": 900 }
+    }
+  ]
+}

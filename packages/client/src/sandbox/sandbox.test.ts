@@ -101,3 +101,41 @@ describe('Sandbox', () => {
     expect(events.some((e) => e.type === 'tileChanged')).toBe(true);
   });
 });
+
+describe('Sandbox en modo PvE', () => {
+  it('con 3 rivales crea 4 jugadores, 3 bots y activa la niebla', () => {
+    const sb = new Sandbox(data, 1, { rivals: 3 });
+    expect(sb.state.players).toHaveLength(4);
+    expect(sb.bots.map((b) => b.playerId)).toEqual([2, 3, 4]);
+    expect(sb.versus).toBe(true);
+  });
+
+  it('el número de rivales se limita a lo que cabe en el mapa y 0 es solitario', () => {
+    expect(new Sandbox(data, 1, { rivals: 9 }).state.players).toHaveLength(4);
+    const solo = new Sandbox(data, 1, { rivals: 0 });
+    expect(solo.state.players).toHaveLength(1);
+    expect(solo.versus).toBe(false);
+  });
+
+  it('la velocidad multiplica el paso del tiempo', () => {
+    const a = new Sandbox(data, 1, { rivals: 1 });
+    const b = new Sandbox(data, 1, { rivals: 1 });
+    b.speed = 4;
+    // Fotogramas de 50 ms, como el bucle de dibujo.
+    for (let i = 0; i < 40; i++) {
+      a.advance(50);
+      b.advance(50);
+    }
+    expect(b.state.tick).toBeGreaterThan(a.state.tick * 3);
+  });
+
+  it('misma semilla y misma dificultad dan la misma partida', () => {
+    const run = () => {
+      const sb = new Sandbox(data, 5, { rivals: 3, difficulty: 'hard' });
+      sb.speed = 4;
+      for (let i = 0; i < 400; i++) sb.advance(50);
+      return sb.hash();
+    };
+    expect(run()).toBe(run());
+  });
+});

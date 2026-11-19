@@ -198,6 +198,15 @@ export function validateDataSet(d: DataSet): DataError[] {
       err(F.spells, `[${i}].mana`, `cuesta más maná (${s.mana}) que el máximo (${g.mana.max})`);
   });
 
+  // ---------- pve ----------
+  for (const id of duplicates(d.pve.difficulties.map((x) => x.id)))
+    err(F.pve, '', `dificultad repetida: "${id}"`);
+  if (!d.pve.difficulties.some((x) => x.id === d.pve.defaultDifficulty))
+    err(F.pve, 'defaultDifficulty', `la dificultad "${d.pve.defaultDifficulty}" no existe`);
+  if (d.pve.defaultRivals > d.global.players.max - 1)
+    err(F.pve, 'defaultRivals', `no caben tantos rivales (máximo ${d.global.players.max - 1})`);
+  if (!d.pve.speeds.includes(1)) err(F.pve, 'speeds', 'debe incluir la velocidad normal (1)');
+
   // ---------- traps ----------
   for (const id of duplicates(d.traps.map((t) => t.id))) err(F.traps, '', `id repetido: "${id}"`);
   d.traps.forEach((t, i) => {

@@ -6,6 +6,7 @@ import {
   MapFile,
   MoodConfig,
   ProgressionConfig,
+  PveConfig,
   RoomsFile,
   SpellsFile,
   TerrainFile,
@@ -24,6 +25,7 @@ export interface DataSet {
   creatures: CreaturesFile;
   spells: SpellsFile;
   traps: TrapsFile;
+  pve: PveConfig;
   progression: ProgressionConfig;
   mood: MoodConfig;
   economy: EconomyConfig;
@@ -52,6 +54,7 @@ const SCHEMAS: Record<DataKey, z.ZodType> = {
   creatures: CreaturesFile,
   spells: SpellsFile,
   traps: TrapsFile,
+  pve: PveConfig,
   progression: ProgressionConfig,
   mood: MoodConfig,
   economy: EconomyConfig,

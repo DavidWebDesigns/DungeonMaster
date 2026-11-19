@@ -63,7 +63,7 @@ async function drag(page: Page, from: [number, number], to: [number, number]) {
 }
 
 test.beforeEach(async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/?mode=solo');
   await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
   await hook(page);
   await page.waitForTimeout(300);

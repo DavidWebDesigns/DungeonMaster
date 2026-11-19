@@ -8,6 +8,7 @@
 import type { GameSource } from './source';
 import {
   applyCommand,
+  botOptionsFor,
   createBot,
   createMatch,
   hashState,
@@ -34,6 +35,10 @@ export interface ImpPose {
 export interface SandboxOptions {
   /** Un bot rival (jugador 2) para jugar 1 contra 1 en local. Activa también la niebla de guerra. */
   opponent?: boolean;
+  /** Modo PvE: cuántos bots rivales (0 a 3). Si se da, manda sobre `opponent`. */
+  rivals?: number;
+  /** Dificultad de los bots (id de pve.json). Por defecto, la de pve.defaultDifficulty. */
+  difficulty?: string;
 }
 
 export class Sandbox implements GameSource {
@@ -47,16 +52,27 @@ export class Sandbox implements GameSource {
   paused = false;
   /** Hay rival: se juega 1 contra 1 y el cliente dibuja la niebla de guerra. */
   readonly versus: boolean;
-  private readonly bot: Bot | null;
+  /** Rivales controlados por bots (ids 2, 3...). */
+  readonly bots: Bot[];
+  /** Multiplicador del paso del tiempo (1, 2, 4...). Solo existe en local. */
+  speed = 1;
   private accumulatorMs = 0;
   private readonly tickMs: number;
 
   constructor(data: DataSet, seed: number, options: SandboxOptions = {}) {
     this.data = data;
-    this.versus = options.opponent === true;
-    this.state = createMatch({ playerCount: this.versus ? 2 : 1 }, data, seed);
-    // El bot usa exactamente el mismo protocolo de comandos que el jugador.
-    this.bot = this.versus ? createBot(2, seed * 7919 + 2 * 104729) : null;
+    const maxRivals = data.global.players.max - 1;
+    const rivals = Math.max(0, Math.min(maxRivals, options.rivals ?? (options.opponent ? 1 : 0)));
+    this.versus = rivals > 0;
+    this.state = createMatch({ playerCount: 1 + rivals }, data, seed);
+    // Los bots usan exactamente el mismo protocolo de comandos que el jugador.
+    const botOptions =
+      options.rivals !== undefined
+        ? (botOptionsFor(data, options.difficulty ?? data.pve.defaultDifficulty) ?? {})
+        : {};
+    this.bots = [];
+    for (let id = 2; id <= 1 + rivals; id++)
+      this.bots.push(createBot(id, seed * 7919 + id * 104729, botOptions));
     this.tickMs = 1000 / data.global.tickRate;
     this.snapshot();
   }
@@ -69,7 +85,7 @@ export class Sandbox implements GameSource {
   /** Avanza el reloj `elapsedMs` milisegundos y ejecuta los ticks que toquen. Devuelve sus eventos. */
   advance(elapsedMs: number): SimEvent[] {
     if (this.paused || !(elapsedMs > 0)) return [];
-    this.accumulatorMs += elapsedMs;
+    this.accumulatorMs += elapsedMs * this.speed;
     const events: SimEvent[] = [];
     let ran = 0;
     while (this.accumulatorMs >= this.tickMs) {
@@ -78,9 +94,9 @@ export class Sandbox implements GameSource {
         break;
       }
       this.snapshot();
-      if (this.bot)
-        for (const cmd of this.bot.act(this.state, this.data))
-          applyCommand(this.state, this.data, this.bot.playerId, cmd);
+      for (const bot of this.bots)
+        for (const cmd of bot.act(this.state, this.data))
+          applyCommand(this.state, this.data, bot.playerId, cmd);
       events.push(...step(this.state, this.data));
       this.accumulatorMs -= this.tickMs;
       ran++;

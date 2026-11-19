@@ -43,7 +43,7 @@ test.beforeEach(async ({ page }) => {
     (window as unknown as { dm: () => unknown }).dm = () =>
       (window as unknown as { __dm: unknown }).__dm;
   });
-  await page.goto('/');
+  await page.goto('/?mode=solo');
   await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
   // Territorio libre para construir y oro de sobra.
   await page.evaluate(() => {

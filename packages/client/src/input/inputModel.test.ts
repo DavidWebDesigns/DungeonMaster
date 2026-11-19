@@ -314,7 +314,7 @@ describe('atajos de teclado', () => {
     expect(keyAction(' ', data)).toEqual({ type: 'center' });
     expect(keyAction('z', data)).toEqual({ type: 'rotate', step: -1 });
     expect(keyAction('x', data)).toEqual({ type: 'rotate', step: 1 });
-    expect(keyAction('p', data)).toBeNull();
+    expect(keyAction('v', data)).toBeNull();
   });
 });
 
@@ -514,5 +514,14 @@ describe('trampas e Imps con el ratón', () => {
     input.pointerMove(pt(6, 3), { kind: 'imp', id: sandbox.state.imps[0]!.id });
     input.slapHovered();
     expect(sent).toHaveLength(0);
+  });
+});
+
+describe('atajos de partida local', () => {
+  it('P pausa y [ ] cambian la velocidad', () => {
+    const data = loadGameData();
+    expect(keyAction('p', data)).toEqual({ type: 'pause' });
+    expect(keyAction(']', data)).toEqual({ type: 'speed', step: 1 });
+    expect(keyAction('[', data)).toEqual({ type: 'speed', step: -1 });
   });
 });
