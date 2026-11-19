@@ -11,7 +11,7 @@
 import type { DataSet } from '../data';
 import { visibleMask } from '../sim/fog';
 import { rulesOf } from '../sim/rules';
-import type { MatchResult, MatchState, PlayerId } from '../sim/types';
+import type { MatchResult, MatchState, PlayerId, SimEvent } from '../sim/types';
 
 /** Un campo de un registro de entidad. */
 export type Field = number | string | number[] | number[][];
@@ -31,6 +31,8 @@ export interface Delta {
   del?: string[];
   /** Valores sueltos que cambian (oro, maná, estado de la partida...). */
   scalars?: Record<string, unknown>;
+  /** Eventos del tick que este jugador puede ver (para efectos y avisos). */
+  ev?: SimEvent[];
 }
 
 /** Lo que el servidor sabe que un cliente ya tiene. */
@@ -140,6 +142,43 @@ export function scalarsFor(
 }
 
 /**
+ * Eventos del tick que un jugador puede conocer: los suyos, los públicos (día de pago, eliminaciones, fin) y los que
+ * ocurren dentro de su visión (golpes, hechizos, trampas, salas destruidas). Los cambios de terreno no se envían:
+ * el cliente los deduce de los tiles. Nada de lo que pasa fuera de su vista.
+ */
+export function eventsFor(
+  events: readonly SimEvent[],
+  state: MatchState,
+  pid: PlayerId,
+  vis: Uint8Array,
+): SimEvent[] {
+  const sees = (x: number, y: number) => vis[Math.floor(y) * state.width + Math.floor(x)] === 1;
+  const out: SimEvent[] = [];
+  for (const e of events) {
+    switch (e.type) {
+      case 'tileChanged':
+        break;
+      case 'payday':
+      case 'eliminated':
+      case 'gameOver':
+        out.push(e);
+        break;
+      case 'hit':
+      case 'spellCast':
+      case 'trapTriggered':
+        if (sees(e.x, e.y)) out.push(e);
+        break;
+      case 'tileDestroyed':
+        if (vis[e.tile] === 1) out.push(e);
+        break;
+      default:
+        if ('playerId' in e && e.playerId === pid) out.push(e);
+    }
+  }
+  return out;
+}
+
+/**
  * Calcula el delta de este tick para un jugador y actualiza lo que sabe su cliente. Devuelve `null` si no hay nada
  * nuevo que contar (casi nunca: el tick siempre avanza).
  */
@@ -148,6 +187,8 @@ export function computeDelta(
   data: DataSet,
   pid: PlayerId,
   known: ClientKnowledge,
+  /** Eventos del tick (se filtran por lo que el jugador puede ver). */
+  events: readonly SimEvent[] = [],
 ): Delta {
   const rules = rulesOf(data);
   const vis = visibleMask(state, rules, pid);
@@ -229,6 +270,8 @@ export function computeDelta(
     }
   }
   if (Object.keys(scalars).length) delta.scalars = scalars;
+  const ev = eventsFor(events, state, pid, vis);
+  if (ev.length) delta.ev = ev;
   return delta;
 }
 

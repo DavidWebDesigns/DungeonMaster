@@ -8,7 +8,7 @@ import { step } from '../sim/step';
 import { duel, extendTerritory, loadData, run, spawn } from '../sim/testUtils';
 import type { MatchState } from '../sim/types';
 import { Mirror } from './mirror';
-import { ClientKnowledge, computeDelta } from './view';
+import { ClientKnowledge, computeDelta, eventsFor } from './view';
 
 const data = loadData();
 const rules = rulesOf(data);
@@ -300,4 +300,46 @@ describe('ancho de banda', () => {
       expect(worst, `peor segundo del jugador ${pid}`).toBeLessThan(20 * 1024);
     }
   }, 300_000);
+});
+
+describe('eventos por jugador', () => {
+  it('cada jugador recibe sus eventos y lo público, y de lo ajeno solo lo que ocurre a la vista', () => {
+    const { state, data: d } = duel();
+    const vis = visibleMask(state, rules, 1);
+    const near = {
+      type: 'hit',
+      attackerOwner: 2,
+      targetOwner: 1,
+      targetKind: 'creature',
+      damage: 5,
+      x: 6.5,
+      y: 6.5,
+    } as const;
+    const far = { ...near, x: 40.5, y: 40.5 };
+    const events = [
+      { type: 'levelUp', playerId: 1, creatureId: 3, level: 2 },
+      { type: 'levelUp', playerId: 2, creatureId: 4, level: 2 },
+      { type: 'payday', tick: 1200 },
+      { type: 'tileChanged', tile: 5 },
+      near,
+      far,
+      { type: 'trapTriggered', playerId: 2, trap: 'spikeTrap', x: 40.5, y: 40.5 },
+      { type: 'tileDestroyed', tile: 40 * 64 + 40, owner: 2 },
+    ] as const;
+    const got = eventsFor(events, state, 1, vis).map(
+      (e) => e.type + (('playerId' in e && e.playerId) || ''),
+    );
+    expect(got).toEqual(['levelUp1', 'payday', 'hit']);
+    void d;
+  });
+
+  it('el delta incluye los eventos filtrados y no incluye cambios de terreno', () => {
+    const { state, data: d } = duel();
+    const k = new ClientKnowledge(64 * 64);
+    const delta = computeDelta(state, d, 1, k, [
+      { type: 'tileChanged', tile: 1 },
+      { type: 'payday', tick: 5 },
+    ]);
+    expect(delta.ev).toEqual([{ type: 'payday', tick: 5 }]);
+  });
 });

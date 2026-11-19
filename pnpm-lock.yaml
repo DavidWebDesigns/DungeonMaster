@@ -72,6 +72,10 @@ importers:
       '@dm/shared':
         specifier: workspace:*
         version: link:../shared
+    devDependencies:
+      '@colyseus/sdk':
+        specifier: 0.18.10
+        version: 0.18.10(@colyseus/core@0.18.29)(typescript@5.9.3)(zod@4.6.7)
 
   packages/shared:
     dependencies:

@@ -1,6 +1,18 @@
 /**
- * @dm/server: servidor autoritativo con Colyseus.
- * Se construye en la fase 5 (docs/PLAN.md, sección 8). Hasta entonces solo existe
- * para que el monorepo, el typecheck y las dependencias queden listos desde el inicio.
+ * @dm/server: servidor autoritativo con Colyseus (lobby, partida, vistas por jugador, reconexión).
  */
-export const SERVER_PHASE = 5;
+export {
+  MatchSession,
+  cleanNick,
+  type EndedInfo,
+  type OutMessage,
+  type SessionOptions,
+} from './session';
+export {
+  MatchRoom,
+  configureServer,
+  generateCode,
+  normalizeCode,
+  type ServerConfig,
+} from './matchRoom';
+export { startServer } from './server';

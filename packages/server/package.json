@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "Servidor autoritativo (Colyseus). Se implementa en la fase 5.",
+  "description": "Servidor autoritativo (Colyseus): lobby, partida en red, vistas por jugador y reconexión.",
   "exports": {
     ".": "./src/index.ts"
   },
@@ -11,5 +11,11 @@
     "@colyseus/core": "0.18.29",
     "@colyseus/ws-transport": "0.18.5",
     "@dm/shared": "workspace:*"
+  },
+  "scripts": {
+    "start": "tsx src/main.ts"
+  },
+  "devDependencies": {
+    "@colyseus/sdk": "0.18.10"
   }
 }

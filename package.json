@@ -21,7 +21,8 @@
     "dev": "pnpm --filter @dm/client dev",
     "sim": "tsx tools/sim/index.ts",
     "balance": "tsx tools/balance/index.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "server": "pnpm --filter @dm/server start"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
