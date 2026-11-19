@@ -46,3 +46,15 @@ test('?rivals=1&difficulty=hard cambia el número de bots', async ({ page }) => 
     ),
   ).toBe(2);
 });
+
+test('la maqueta de menús solo aparece con ?menus=preview y el juego normal no la carga', async ({
+  page,
+}) => {
+  await page.goto('/?menus=preview');
+  await expect(page.locator('.mainmenu')).toBeVisible();
+  await expect(page.locator('.pvesetup .difficulties button')).toHaveCount(3);
+  await expect(page.locator('.results .endstats')).toBeVisible();
+  await page.goto('/');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  await expect(page.locator('.mainmenu')).toHaveCount(0);
+});

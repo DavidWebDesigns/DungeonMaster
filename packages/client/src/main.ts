@@ -4,6 +4,7 @@ import { loadGameData } from './data/loadGameData';
 import { Game } from './game';
 import { startOnline } from './online/app';
 import { Sandbox } from './sandbox/sandbox';
+import { menusPreviewRequested } from './menus/flag';
 
 const app = document.getElementById('app');
 if (!app) throw new Error('Falta #app en index.html');
@@ -13,7 +14,12 @@ try {
   const params = new URLSearchParams(location.search);
   const mode = params.get('mode') ?? (params.get('vs') === 'bot' ? 'solo' : 'pve');
   const seed = Number(params.get('seed') ?? 1) || 1;
-  if (mode === 'online') {
+  if (menusPreviewRequested(params)) {
+    // Maqueta de menús: se carga bajo demanda y no forma parte del juego (menus/flag.ts).
+    await import('./menus/menus.css');
+    const { showMenusPreview } = await import('./menus/preview');
+    showMenusPreview(app, data);
+  } else if (mode === 'online') {
     // ?mode=online: partida en red (menú, lobby y juego contra otros jugadores). ?code=ABCDEF para unirse directo.
     startOnline(app, data, params);
   } else {
