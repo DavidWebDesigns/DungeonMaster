@@ -55,5 +55,6 @@ pnpm e2e            pruebas de navegador con Playwright (arrancan solas el clien
 pnpm server         servidor de partidas en red (ws://localhost:2567); cliente en red: ?mode=online
 pnpm perf           pruebas de rendimiento (tiempo real, fuera de pnpm check)
 pnpm sim            partidas headless de bots: --games N --players P --jobs K --out f.json
+pnpm duel           duelos 1c1 entre dificultades del PvE (--a hard --b easy --games 20)
 pnpm balance        informe de balance (tablas de criaturas; --games N añade partidas)
 ```

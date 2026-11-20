@@ -36,6 +36,10 @@ export interface BotOptions {
   attackArmy?: number;
   /** Si pasa este tiempo (en ticks) con al menos 4 criaturas, ataca aunque no sean tantas. */
   attackAfterTicks?: number;
+  /** Cada cuántos ticks decide (por defecto, una vez por segundo). Más alto = bot más lento. */
+  thinkEveryTicks?: number;
+  /** Fracción de decisiones que se salta (por defecto 0,05). Más alta = bot más torpe. */
+  mistakeChance?: number;
 }
 
 const ROOM_ORDER = ['lair', 'hatchery', 'trainingRoom', 'library'] as const;
@@ -44,7 +48,14 @@ const ROOM_SIZE = 3;
 const RESERVE_GOLD = 300;
 
 export function createBot(playerId: PlayerId, seed: number, options: BotOptions = {}): Bot {
-  const opts = { targetImps: 7, attackArmy: 8, attackAfterTicks: 15000, ...options };
+  const opts = {
+    targetImps: 7,
+    attackArmy: 8,
+    attackAfterTicks: 15000,
+    thinkEveryTicks: 0,
+    mistakeChance: 0.05,
+    ...options,
+  };
   const mem = { rng: seed | 0, lastRoomTry: -1000, enemy: 0 };
 
   function ownPlayer(state: MatchState): PlayerState | undefined {
@@ -385,9 +396,10 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
       const p = ownPlayer(state);
       if (!p || p.eliminated || state.status === 'ended') return [];
       // Una decisión por segundo, repartida entre bots para no hacerlo todos en el mismo tick.
-      if ((state.tick + playerId * 3) % data.global.tickRate !== 0) return [];
+      const every = opts.thinkEveryTicks > 0 ? opts.thinkEveryTicks : data.global.tickRate;
+      if ((state.tick + playerId * 3) % every !== 0) return [];
       // Un poco de aleatoriedad (con la semilla del bot) para que las partidas no sean idénticas.
-      if (nextFloat(mem) < 0.05) return [];
+      if (nextFloat(mem) < opts.mistakeChance) return [];
       const out: Command[] = [];
       planHeal(state, data, p, out);
       planAttack(state, data, p, out);

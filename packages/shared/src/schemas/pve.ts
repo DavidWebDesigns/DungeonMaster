@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Id, PositiveInt, PositiveNumber, Seconds } from './common';
+import { Fraction, Id, PositiveInt, PositiveNumber, Seconds } from './common';
 
 /** Cómo juega el bot en una dificultad. Son los mismos ajustes que acepta `createBot`. */
 export const PveBotSettings = z.strictObject({
@@ -9,6 +9,10 @@ export const PveBotSettings = z.strictObject({
   attackArmy: PositiveInt,
   /** Si pasa este tiempo con al menos 4 criaturas, ataca aunque no sean tantas. */
   attackAfterSeconds: Seconds,
+  /** Cada cuántos segundos toma decisiones (1 = como el bot normal). */
+  thinkSeconds: PositiveNumber,
+  /** Fracción de decisiones que se salta. */
+  mistakeChance: Fraction,
 });
 
 export const PveDifficulty = z.strictObject({

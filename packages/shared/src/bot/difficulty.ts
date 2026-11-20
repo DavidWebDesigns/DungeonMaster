@@ -9,5 +9,7 @@ export function botOptionsFor(data: DataSet, difficultyId: string): BotOptions |
     targetImps: d.bot.targetImps,
     attackArmy: d.bot.attackArmy,
     attackAfterTicks: Math.round(d.bot.attackAfterSeconds * data.global.tickRate),
+    thinkEveryTicks: Math.max(1, Math.round(d.bot.thinkSeconds * data.global.tickRate)),
+    mistakeChance: d.bot.mistakeChance,
   };
 }

@@ -6,17 +6,35 @@
     {
       "id": "easy",
       "name": "Fácil",
-      "bot": { "targetImps": 5, "attackArmy": 12, "attackAfterSeconds": 2400 }
+      "bot": {
+        "targetImps": 5,
+        "attackArmy": 12,
+        "attackAfterSeconds": 2400,
+        "thinkSeconds": 3,
+        "mistakeChance": 0.4
+      }
     },
     {
       "id": "normal",
       "name": "Normal",
-      "bot": { "targetImps": 7, "attackArmy": 8, "attackAfterSeconds": 1500 }
+      "bot": {
+        "targetImps": 7,
+        "attackArmy": 8,
+        "attackAfterSeconds": 1500,
+        "thinkSeconds": 1,
+        "mistakeChance": 0.05
+      }
     },
     {
       "id": "hard",
       "name": "Difícil",
-      "bot": { "targetImps": 9, "attackArmy": 6, "attackAfterSeconds": 900 }
+      "bot": {
+        "targetImps": 9,
+        "attackArmy": 8,
+        "attackAfterSeconds": 1500,
+        "thinkSeconds": 0.6,
+        "mistakeChance": 0.02
+      }
     }
   ]
 }

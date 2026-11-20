@@ -21,6 +21,7 @@
     "dev": "pnpm --filter @dm/client dev",
     "sim": "tsx tools/sim/index.ts",
     "balance": "tsx tools/balance/index.ts",
+    "duel": "tsx tools/sim/duel.ts",
     "e2e": "playwright test",
     "server": "pnpm --filter @dm/server start",
     "perf": "vitest run --config vitest.perf.config.ts"

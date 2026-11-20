@@ -14,6 +14,8 @@ export interface BotMatchOptions {
   /** Tope de ticks (por defecto, la duración máxima de la partida). */
   maxTicks?: number;
   bot?: BotOptions;
+  /** Ajustes propios de cada jugador (sustituyen a `bot`): sirve para enfrentar dificultades distintas. */
+  botsByPlayer?: Record<number, BotOptions>;
   /** Se llama con los eventos de cada tick (para estadísticas). */
   onEvents?: (events: SimEvent[], state: MatchState) => void;
   /** Se llama cada `sampleEvery` ticks con el estado (para muestrear oro, criaturas...). */
@@ -33,7 +35,7 @@ export interface BotMatchResult {
 export function playBotMatch(data: DataSet, opts: BotMatchOptions): BotMatchResult {
   const state = createMatch({ playerCount: opts.players }, data, opts.seed);
   const bots = state.players.map((p) =>
-    createBot(p.id, opts.seed * 7919 + p.id * 104729, opts.bot),
+    createBot(p.id, opts.seed * 7919 + p.id * 104729, opts.botsByPlayer?.[p.id] ?? opts.bot),
   );
   const limit =
     opts.maxTicks ?? Math.round(data.global.match.maxMinutes * 60 * data.global.tickRate) + 5;
