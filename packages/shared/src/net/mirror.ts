@@ -60,6 +60,7 @@ export class Mirror {
       nextPayTick: 0,
       nextTaskId: 1,
       nextRoomId: 1,
+      revives: [],
       tileDamage: new Array<number>(n).fill(0),
       status: 'playing',
       result: null,

@@ -1,5 +1,5 @@
 /** Tipos del estado de la simulación. Todo es plano y serializable: sin clases ni referencias a los datos. */
-import type { Point } from '../schemas';
+import type { Point, StatusKind } from '../schemas';
 
 export type PlayerId = number;
 
@@ -111,6 +111,24 @@ export type CreatureGoal =
   | 'rally';
 export type CreatureMode = 'idle' | 'needPath' | 'moving' | 'acting';
 
+/** Un estado temporal en una criatura (inmovilizada, ralentizada, aturdida, debilitada). */
+export interface Status {
+  kind: StatusKind;
+  /** Tick en que termina. */
+  until: number;
+  /** Intensidad: ralentizar y debilitar usan un valor negativo (−0,4 = −40 %); atar y aturdir, 0. */
+  value: number;
+}
+
+/** Una criatura que murió y volverá a la vida en `at` (Vampiro con Cementerio). */
+export interface Revive {
+  owner: PlayerId;
+  type: string;
+  /** Nivel con el que vuelve. */
+  level: number;
+  at: number;
+}
+
 /** Una criatura que llegó por el Portal (no incluye a los Imps). */
 export interface Creature {
   id: number;
@@ -174,6 +192,14 @@ export interface Creature {
   attackedByKind: 'none' | 'creature' | 'imp';
   attackedBy: number;
   attackedTick: number;
+  /** Estados temporales activos (como mucho uno por tipo, ordenados por tipo). */
+  statuses: Status[];
+  /** Tick a partir del cual puede volver a usar cada habilidad activa (por id). */
+  abilityReady: Record<string, number>;
+  /** Ticks seguidos sin moverse (Guardia). */
+  stillTicks: number;
+  /** Ya se rearmó en esta vida (Rearmarse solo funciona una vez). */
+  reassembled: boolean;
 }
 
 export interface MatchResult {
@@ -235,6 +261,8 @@ export interface MatchState {
   nextPayTick: number;
   nextTaskId: number;
   nextRoomId: number;
+  /** Criaturas muertas que volverán a la vida (Inmortal), por orden de aparición. */
+  revives: Revive[];
   /** Daño recibido por cada tile de sala (la sala pierde el tile al llegar a roomTileHp). */
   tileDamage: number[];
   /** La partida sigue en juego o ya terminó. */

@@ -1,0 +1,208 @@
+[
+  {
+    "id": "torturerEnjoysPain",
+    "creature": "torturer",
+    "name": "Disfruta el dolor",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "moodOnSlap",
+      "delta": 3
+    }
+  },
+  {
+    "id": "torturerBind",
+    "creature": "torturer",
+    "name": "Atadura",
+    "kind": "active",
+    "unlockLevel": 3,
+    "cooldownSeconds": 12,
+    "rangeTiles": 2,
+    "durationSeconds": 2,
+    "effect": {
+      "type": "status",
+      "status": "root",
+      "value": 0
+    }
+  },
+  {
+    "id": "executionerFinisher",
+    "creature": "executioner",
+    "name": "Ejecución",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "executeBonus",
+      "belowHpFraction": 0.3,
+      "damageBonus": 0.5
+    }
+  },
+  {
+    "id": "executionerIntimidate",
+    "creature": "executioner",
+    "name": "Intimidar",
+    "kind": "passive",
+    "unlockLevel": 4,
+    "radiusTiles": 2,
+    "effect": {
+      "type": "auraDamageMod",
+      "maxEnemyLevel": 3,
+      "damageMod": -0.15
+    }
+  },
+  {
+    "id": "darkKnightGuard",
+    "creature": "darkKnight",
+    "name": "Guardia",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "stillGuard",
+      "stillSeconds": 2,
+      "damageTakenMod": -0.25
+    }
+  },
+  {
+    "id": "darkKnightCharge",
+    "creature": "darkKnight",
+    "name": "Carga",
+    "kind": "active",
+    "unlockLevel": 3,
+    "cooldownSeconds": 12,
+    "rangeTiles": 5,
+    "durationSeconds": 1,
+    "effect": {
+      "type": "charge"
+    }
+  },
+  {
+    "id": "skeletonUndead",
+    "creature": "skeleton",
+    "name": "No muerto",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "immunity",
+      "to": ["fear", "poison"]
+    }
+  },
+  {
+    "id": "skeletonReassemble",
+    "creature": "skeleton",
+    "name": "Rearmarse",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "reassemble",
+      "chance": 0.25,
+      "hpFraction": 0.3
+    }
+  },
+  {
+    "id": "vampireDrain",
+    "creature": "vampire",
+    "name": "Drenar",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "lifesteal",
+      "fraction": 0.5
+    }
+  },
+  {
+    "id": "vampireUndying",
+    "creature": "vampire",
+    "name": "Inmortal",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "undying",
+      "reviveSeconds": 60,
+      "levelLoss": 1,
+      "requiresRoom": "graveyard"
+    }
+  },
+  {
+    "id": "vampireSlow",
+    "creature": "vampire",
+    "name": "Ralentizar",
+    "kind": "active",
+    "unlockLevel": 4,
+    "cooldownSeconds": 10,
+    "rangeTiles": 3,
+    "durationSeconds": 5,
+    "effect": {
+      "type": "status",
+      "status": "slow",
+      "value": -0.3
+    }
+  },
+  {
+    "id": "salamanderLavaborn",
+    "creature": "salamander",
+    "name": "Hija de la lava",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "crossTerrain",
+      "terrains": ["lava"],
+      "immuneTo": ["fire"]
+    }
+  },
+  {
+    "id": "witchSlowPotion",
+    "creature": "witch",
+    "name": "Poción de lentitud",
+    "kind": "active",
+    "unlockLevel": 1,
+    "cooldownSeconds": 10,
+    "rangeTiles": 5,
+    "radiusTiles": 1.5,
+    "durationSeconds": 5,
+    "effect": {
+      "type": "status",
+      "status": "slow",
+      "value": -0.4
+    }
+  },
+  {
+    "id": "witchCurse",
+    "creature": "witch",
+    "name": "Maldición",
+    "kind": "active",
+    "unlockLevel": 3,
+    "cooldownSeconds": 15,
+    "rangeTiles": 5,
+    "durationSeconds": 8,
+    "effect": {
+      "type": "status",
+      "status": "weaken",
+      "value": -0.2
+    }
+  },
+  {
+    "id": "fallenAngelFlight",
+    "creature": "fallenAngel",
+    "name": "Vuelo",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "crossTerrain",
+      "terrains": ["water", "lava"]
+    }
+  },
+  {
+    "id": "fallenAngelDive",
+    "creature": "fallenAngel",
+    "name": "Picada",
+    "kind": "active",
+    "unlockLevel": 1,
+    "cooldownSeconds": 10,
+    "rangeTiles": 4,
+    "radiusTiles": 1,
+    "effect": {
+      "type": "dive",
+      "damageMultiplier": 1.5
+    }
+  }
+]

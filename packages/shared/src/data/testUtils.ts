@@ -10,6 +10,7 @@ import rooms from '../../../../data/mvp/rooms.json';
 import creatures from '../../../../data/mvp/creatures.json';
 import spells from '../../../../data/mvp/spells.json';
 import traps from '../../../../data/mvp/traps.json';
+import abilities from '../../../../data/mvp/abilities.json';
 import pve from '../../../../data/mvp/pve.json';
 import progression from '../../../../data/mvp/progression.json';
 import mood from '../../../../data/mvp/mood.json';
@@ -25,6 +26,7 @@ export function realRawData(): RawDataFiles {
     creatures,
     spells,
     traps,
+    abilities,
     pve,
     progression,
     mood,

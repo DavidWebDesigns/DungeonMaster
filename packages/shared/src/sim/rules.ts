@@ -5,6 +5,7 @@ type TerrainDef = DataSet['terrain'][number];
 type RoomDef = DataSet['rooms'][number];
 type CreatureDef = DataSet['creatures'][number];
 type SpellDef = DataSet['spells'][number];
+type AbilityDef = DataSet['abilities'][number];
 
 /** Búsquedas derivadas de los datos (se calculan una vez por DataSet). */
 export interface Rules {
@@ -18,6 +19,8 @@ export interface Rules {
   spells: Record<string, SpellDef>;
   imp: CreatureDef;
   creatureDefs: Record<string, CreatureDef>;
+  /** Habilidades de cada criatura (por id de criatura), en el orden de abilities.json. */
+  abilitiesOf: Record<string, AbilityDef[]>;
   /** Índice del terreno "suelo sin reclamar" (el que se puede reclamar y es caminable). */
   neutralTerrain: number | undefined;
   /** Bandas de ánimo de mayor a menor. */
@@ -43,6 +46,8 @@ export function rulesOf(data: DataSet): Rules {
   for (const s of data.spells) spells[s.id] = s;
   const creatureDefs: Record<string, CreatureDef> = Object.create(null);
   for (const c of data.creatures) creatureDefs[c.id] = c;
+  const abilitiesOf: Record<string, AbilityDef[]> = Object.create(null);
+  for (const a of data.abilities) (abilitiesOf[a.creature] ??= []).push(a);
   const imp = data.creatures.find((c) => c.id === 'imp');
   if (!imp) throw new Error('creatures.json no define al Imp');
   const rules: Rules = {
@@ -55,6 +60,7 @@ export function rulesOf(data: DataSet): Rules {
     spells,
     imp,
     creatureDefs,
+    abilitiesOf,
     neutralTerrain:
       data.terrain.findIndex((t) => t.walkable && t.becomesOnClaim !== undefined) >= 0
         ? data.terrain.findIndex((t) => t.walkable && t.becomesOnClaim !== undefined)

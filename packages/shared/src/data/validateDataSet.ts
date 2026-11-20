@@ -1,4 +1,4 @@
-import type { Rect } from '../schemas';
+import { ACTIVE_EFFECTS, type Rect } from '../schemas';
 import type { DataError, DataSet } from './dataSet';
 import { DATA_FILE_NAMES, mapFileName } from './files';
 
@@ -283,6 +283,73 @@ export function validateDataSet(d: DataSet): DataError[] {
   const imp = d.creatures.find((c) => c.id === 'imp');
   if (imp && imp.attraction !== null)
     err(F.creatures, '', 'el Imp no llega por el Portal: su attraction debe ser null');
+
+  // ---------- abilities ----------
+  const abilityIds = new Set(d.abilities.map((a) => a.id));
+  for (const id of duplicates(d.abilities.map((a) => a.id)))
+    err(F.abilities, '', `id repetido: "${id}"`);
+  const terrainOk = (id: string) => terrainIds.has(id);
+  d.abilities.forEach((a, i) => {
+    const owner = d.creatures.find((c) => c.id === a.creature);
+    if (!owner) err(F.abilities, `[${i}].creature`, `la criatura "${a.creature}" no existe`);
+    else if (!owner.abilities?.includes(a.id))
+      err(
+        F.abilities,
+        `[${i}].creature`,
+        `"${a.creature}" no lista la habilidad "${a.id}" en sus abilities`,
+      );
+    if (a.unlockLevel > d.progression.maxLevel)
+      err(
+        F.abilities,
+        `[${i}].unlockLevel`,
+        `se desbloquea en el nivel ${a.unlockLevel}, por encima del tope de nivel (${d.progression.maxLevel})`,
+      );
+    const isActiveEffect = (ACTIVE_EFFECTS as readonly string[]).includes(a.effect.type);
+    if ((a.kind === 'active') !== isActiveEffect)
+      err(
+        F.abilities,
+        `[${i}].effect`,
+        `el efecto "${a.effect.type}" no corresponde a una habilidad ${a.kind === 'active' ? 'activa' : 'pasiva'}`,
+      );
+    if (a.kind === 'active') {
+      if (a.cooldownSeconds === undefined)
+        err(F.abilities, `[${i}].cooldownSeconds`, 'una habilidad activa necesita cooldownSeconds');
+      if (a.rangeTiles === undefined)
+        err(F.abilities, `[${i}].rangeTiles`, 'una habilidad activa necesita rangeTiles');
+      if (
+        (a.effect.type === 'status' || a.effect.type === 'charge') &&
+        a.durationSeconds === undefined
+      )
+        err(F.abilities, `[${i}].durationSeconds`, `"${a.effect.type}" necesita durationSeconds`);
+      if (a.effect.type === 'dive' && a.radiusTiles === undefined)
+        err(F.abilities, `[${i}].radiusTiles`, 'la Picada necesita radiusTiles');
+    }
+    if (a.effect.type === 'auraDamageMod' && a.radiusTiles === undefined)
+      err(F.abilities, `[${i}].radiusTiles`, 'un aura necesita radiusTiles');
+    if (a.effect.type === 'crossTerrain')
+      for (const t of a.effect.terrains)
+        if (!terrainOk(t))
+          err(F.abilities, `[${i}].effect.terrains`, `el terreno "${t}" no existe`);
+    if (a.effect.type === 'undying' && !roomIds.has(a.effect.requiresRoom))
+      err(
+        F.abilities,
+        `[${i}].effect.requiresRoom`,
+        `la sala "${a.effect.requiresRoom}" no existe`,
+      );
+  });
+  d.creatures.forEach((c, i) => {
+    c.abilities?.forEach((id, j) => {
+      const a = d.abilities.find((x) => x.id === id);
+      if (!abilityIds.has(id))
+        err(F.creatures, `[${i}].abilities[${j}]`, `la habilidad "${id}" no existe`);
+      else if (a?.creature !== c.id)
+        err(
+          F.creatures,
+          `[${i}].abilities[${j}]`,
+          `"${id}" pertenece a "${a?.creature}", no a "${c.id}"`,
+        );
+    });
+  });
 
   // ---------- spells ----------
   for (const id of duplicates(d.spells.map((s) => s.id))) err(F.spells, '', `id repetido: "${id}"`);

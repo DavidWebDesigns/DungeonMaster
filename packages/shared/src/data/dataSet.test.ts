@@ -315,6 +315,49 @@ describe('errores de referencias cruzadas', () => {
     expect(parseDataSet(ok).ok).toBe(true);
   });
 
+  it('rechaza habilidades mal definidas o que no cuadran con su criatura', () => {
+    const ab = (raw: ReturnType<typeof realRawData>, id: string) =>
+      (raw.abilities as any[]).find((a) => a.id === id);
+    const cr = (raw: ReturnType<typeof realRawData>, id: string) =>
+      (raw.creatures as any[]).find((c) => c.id === id);
+    const raw = realRawData();
+    ab(raw, 'torturerBind').creature = 'inventada';
+    expectError(parseDataSet(raw), 'abilities.json', 'la criatura "inventada" no existe');
+    const raw2 = realRawData();
+    cr(raw2, 'torturer').abilities = ['torturerEnjoysPain'];
+    expectError(parseDataSet(raw2), 'abilities.json', 'no lista la habilidad "torturerBind"');
+    const raw3 = realRawData();
+    cr(raw3, 'torturer').abilities.push('inventada');
+    expectError(parseDataSet(raw3), 'creatures.json', 'la habilidad "inventada" no existe');
+    const raw4 = realRawData();
+    cr(raw4, 'goblin').abilities = ['torturerBind'];
+    expectError(parseDataSet(raw4), 'creatures.json', 'pertenece a "torturer"');
+    const raw5 = realRawData();
+    ab(raw5, 'torturerBind').unlockLevel = 9;
+    expectError(parseDataSet(raw5), 'abilities.json', 'por encima del tope de nivel');
+    const raw6 = realRawData();
+    delete ab(raw6, 'torturerBind').cooldownSeconds;
+    expectError(parseDataSet(raw6), 'abilities.json', 'necesita cooldownSeconds');
+    const raw7 = realRawData();
+    ab(raw7, 'torturerBind').kind = 'passive';
+    expectError(parseDataSet(raw7), 'abilities.json', 'no corresponde a una habilidad pasiva');
+    const raw8 = realRawData();
+    delete ab(raw8, 'fallenAngelDive').radiusTiles;
+    expectError(parseDataSet(raw8), 'abilities.json', 'necesita radiusTiles');
+    const raw9 = realRawData();
+    ab(raw9, 'fallenAngelFlight').effect.terrains = ['nada'];
+    expectError(parseDataSet(raw9), 'abilities.json', 'el terreno "nada" no existe');
+    const raw10 = realRawData();
+    ab(raw10, 'vampireUndying').effect.requiresRoom = 'nada';
+    expectError(parseDataSet(raw10), 'abilities.json', 'la sala "nada" no existe');
+    const raw11 = realRawData();
+    ab(raw11, 'torturerBind').effect.status = 'volar';
+    expectError(parseDataSet(raw11), 'abilities.json', 'effect.status');
+    const raw12 = realRawData();
+    (raw12.abilities as any[]).push(structuredClone(ab(raw12, 'torturerBind')));
+    expectError(parseDataSet(raw12), 'abilities.json', 'id repetido');
+  });
+
   it('rechaza ajustes de combate que no tengan sentido', () => {
     const raw = realRawData();
     (raw.global as any).combat.retaliationSeconds = 0;

@@ -59,6 +59,8 @@ export const CreatureDef = z.strictObject({
       maxPerPlayer: PositiveInt.optional(),
     })
     .nullable(),
+  /** Ids de abilities.json de esta criatura (solo las de nivel ≤ progression.maxLevel). */
+  abilities: z.array(Id).optional(),
   enemies: z.array(Id),
   flags: z.array(z.string().min(1)),
 });

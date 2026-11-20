@@ -100,6 +100,10 @@ export function newCreature(
     attackedByKind: 'none',
     attackedBy: 0,
     attackedTick: -1000000,
+    statuses: [],
+    abilityReady: {},
+    stillTicks: 0,
+    reassembled: false,
   };
   c.hp = creatureMaxHp(rules, c);
   c.band = rules.bands.find((b) => c.mood >= b.min)?.id ?? '';

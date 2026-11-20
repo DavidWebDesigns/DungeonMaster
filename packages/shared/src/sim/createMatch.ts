@@ -65,6 +65,7 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     nextPayTick: Math.round(data.economy.paydayIntervalSeconds * data.global.tickRate),
     nextTaskId: 1,
     nextRoomId: 1,
+    revives: [],
     tileDamage: new Array<number>(map.width * map.height).fill(0),
     status: 'playing',
     result: null,

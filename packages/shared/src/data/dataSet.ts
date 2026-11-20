@@ -1,5 +1,6 @@
 import type { z } from 'zod';
 import {
+  AbilitiesFile,
   CreaturesFile,
   EconomyConfig,
   GlobalConfig,
@@ -25,6 +26,7 @@ export interface DataSet {
   creatures: CreaturesFile;
   spells: SpellsFile;
   traps: TrapsFile;
+  abilities: AbilitiesFile;
   pve: PveConfig;
   progression: ProgressionConfig;
   mood: MoodConfig;
@@ -54,6 +56,7 @@ const SCHEMAS: Record<DataKey, z.ZodType> = {
   creatures: CreaturesFile,
   spells: SpellsFile,
   traps: TrapsFile,
+  abilities: AbilitiesFile,
   pve: PveConfig,
   progression: ProgressionConfig,
   mood: MoodConfig,
