@@ -166,6 +166,7 @@ export function eventsFor(
         break;
       case 'hit':
       case 'spellCast':
+      case 'abilityUsed':
       case 'trapTriggered':
         if (sees(e.x, e.y)) out.push(e);
         break;

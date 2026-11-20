@@ -24,3 +24,4 @@ export * from './traps';
 export { dropImp } from './imps';
 export * from './stats';
 export * from './abilities';
+export * from './abilityActions';

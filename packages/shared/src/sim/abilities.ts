@@ -126,6 +126,22 @@ export function applyLifesteal(rules: Rules, attacker: Creature, dealt: number):
     attacker.hp = Math.min(creatureMaxHp(rules, attacker), attacker.hp + dealt * p.effect.fraction);
 }
 
+/**
+ * ¿Puede la criatura estar de pie en este tile? Los terrenos caminables, y además los que su habilidad de cruzar
+ * terreno permite (el Ángel caído sobre agua y lava, la Salamandra sobre lava).
+ */
+export function canStandOn(
+  state: MatchState,
+  rules: Rules,
+  c: Pick<Creature, 'type' | 'level'>,
+  tile: number,
+): boolean {
+  const t = state.terrain[tile] as number;
+  if (rules.walkable[t]) return true;
+  const cross = passive(rules, c, 'crossTerrain');
+  return cross ? cross.effect.terrains.some((id) => rules.terrainIndex[id] === t) : false;
+}
+
 /** Cada tick: caducan los estados y se cuentan los ticks seguidos sin moverse (Guardia). */
 export function tickAbilityState(state: MatchState): void {
   for (const c of state.creatures) {

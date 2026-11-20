@@ -346,6 +346,14 @@ export type SimEvent =
     }
   | { type: 'tileDestroyed'; tile: number; owner: PlayerId }
   | { type: 'spellCast'; playerId: PlayerId; spell: string; x: number; y: number }
+  | {
+      type: 'abilityUsed';
+      playerId: PlayerId;
+      creatureId: number;
+      ability: string;
+      x: number;
+      y: number;
+    }
   | { type: 'eliminated'; playerId: PlayerId }
   | { type: 'gameOver'; result: MatchResult }
   | { type: 'slapped'; playerId: PlayerId; creatureId: number }

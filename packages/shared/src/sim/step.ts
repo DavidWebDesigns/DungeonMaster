@@ -1,5 +1,6 @@
 import type { DataSet } from '../data';
 import { tickAbilityState } from './abilities';
+import { updateAbilities } from './abilityActions';
 import { runQueuedCommands } from './applyCommand';
 import { updateCreatures } from './behavior';
 import { tickPayday, tickHatcheries } from './creatureEconomy';
@@ -41,6 +42,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
     budgets.set(p.id, rules.data.global.pathfinding.maxPerTickPerPlayer);
   updateImps(state, rules, events, budgets);
   updateCreatures(state, rules, events, budgets);
+  updateAbilities(state, rules, events);
   updateCombat(state, rules, events);
   updateTraps(state, rules, events);
   tickSpells(state, rules);
