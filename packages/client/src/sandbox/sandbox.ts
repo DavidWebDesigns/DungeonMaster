@@ -15,7 +15,9 @@ import {
   createBot,
   createMatch,
   hashState,
+  rulesOf,
   step,
+  treasuryCapacity,
   type Bot,
   type Command,
   type CommandResult,
@@ -45,6 +47,7 @@ export interface SandboxOptions {
 }
 
 export class Sandbox implements GameSource {
+  readonly debug = this;
   readonly localPlayer = LOCAL_PLAYER;
   readonly state: MatchState;
   readonly data: DataSet;
@@ -81,6 +84,23 @@ export class Sandbox implements GameSource {
     this.stats = newMatchStats(this.state.players.map((p) => p.id));
     this.tickMs = 1000 / data.global.tickRate;
     this.snapshot();
+  }
+
+  /** Trampas de pruebas (solo existen en local): ver todo el mapa, aunque haya niebla. */
+  revealMap = false;
+
+  /**
+   * Trampa de pruebas: llena el maná y suma oro hasta donde caben las Tesorerías. Cambia el estado directamente, así
+   * que esa partida ya no se puede reproducir desde su registro de comandos.
+   */
+  giveResources(): void {
+    const me = this.state.players.find((p) => p.id === LOCAL_PLAYER);
+    if (!me) return;
+    me.mana = this.data.global.mana.max;
+    me.gold = Math.max(
+      me.gold,
+      Math.min(me.gold + 5000, treasuryCapacity(this.state, rulesOf(this.data), me.id)),
+    );
   }
 
   /** Valida y encola un comando del jugador local; se ejecuta al empezar el próximo tick. */

@@ -524,4 +524,10 @@ describe('atajos de partida local', () => {
     expect(keyAction(']', data)).toEqual({ type: 'speed', step: 1 });
     expect(keyAction('[', data)).toEqual({ type: 'speed', step: -1 });
   });
+
+  it('F9 y F10 son trampas de pruebas', () => {
+    const data = loadGameData();
+    expect(keyAction('F9', data)).toEqual({ type: 'debug', what: 'resources' });
+    expect(keyAction('F10', data)).toEqual({ type: 'debug', what: 'reveal' });
+  });
 });

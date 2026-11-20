@@ -8,6 +8,7 @@ export type KeyAction =
   | { type: 'cancel' }
   | { type: 'slap' }
   | { type: 'pause' }
+  | { type: 'debug'; what: 'resources' | 'reveal' }
   | { type: 'speed'; step: 1 | -1 };
 
 /**
@@ -57,6 +58,11 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
     // Solo en partidas locales (PvE): pausa y velocidad. En red el juego las ignora.
     case 'p':
       return { type: 'pause' };
+    // Trampas de pruebas (solo partidas locales): F9 recursos, F10 ver todo el mapa.
+    case 'F9':
+      return { type: 'debug', what: 'resources' };
+    case 'F10':
+      return { type: 'debug', what: 'reveal' };
     case ']':
       return { type: 'speed', step: 1 };
     case '[':

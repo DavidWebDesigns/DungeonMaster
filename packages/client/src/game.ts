@@ -188,7 +188,7 @@ export class Game {
         this.previewWithGhosts(),
         this.particles,
         hover ? { x: hover.x + 0.5, y: hover.y + 0.5 } : null,
-        this.versus,
+        this.versus && !this.sandbox.debug?.revealMap,
         this.input.hoverUnit,
       );
       this.updateHover();
@@ -240,7 +240,9 @@ export class Game {
         this.data,
         events,
         this.me,
-        this.versus ? (x, y) => canSee(state, rules, this.me, x, y) : undefined,
+        this.versus && !this.sandbox.debug?.revealMap
+          ? (x, y) => canSee(state, rules, this.me, x, y)
+          : undefined,
       );
       for (const e of effects) {
         if (e.type === 'burst') this.particles.burst(e);
@@ -463,7 +465,23 @@ export class Game {
     else if (action.type === 'center') this.camera = centerOn(this.camera, this.heartTile);
     else if (action.type === 'slap') this.input.slapHovered();
     else if (action.type === 'pause') this.togglePause();
+    else if (action.type === 'debug') this.debugAction(action.what);
     else if (action.type === 'speed') this.changeSpeed(action.step);
+  }
+
+  /** Trampas de pruebas: F9 llena maná y suma oro; F10 muestra u oculta la niebla. Solo en partidas locales. */
+  private debugAction(what: 'resources' | 'reveal'): void {
+    const dbg = this.sandbox.debug;
+    if (!dbg) return;
+    if (what === 'resources') {
+      dbg.giveResources();
+      this.say('[Pruebas] Maná lleno y +5000 de oro (si caben).');
+    } else {
+      dbg.revealMap = !dbg.revealMap;
+      this.say(
+        dbg.revealMap ? '[Pruebas] Todo el mapa visible.' : '[Pruebas] Niebla de guerra activa.',
+      );
+    }
   }
 
   /** Pausa y velocidad existen solo en partidas locales: en red las manda el servidor. */

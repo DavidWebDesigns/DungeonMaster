@@ -139,3 +139,26 @@ describe('Sandbox en modo PvE', () => {
     expect(run()).toBe(run());
   });
 });
+
+describe('trampas de pruebas (solo en local)', () => {
+  it('giveResources llena el maná y suma oro sin pasar de la capacidad de las Tesorerías', () => {
+    const sb = new Sandbox(data, 1);
+    const me = sb.state.players[0]!;
+    me.gold = 100;
+    sb.giveResources();
+    expect(me.mana).toBe(data.global.mana.max);
+    expect(me.gold).toBe(5100);
+    me.gold = 8000;
+    sb.giveResources();
+    expect(me.gold).toBeLessThanOrEqual(9000);
+    expect(me.gold).toBeGreaterThanOrEqual(8000);
+  });
+
+  it('ver todo el mapa empieza apagado y el sandbox expone las trampas como debug', () => {
+    const sb = new Sandbox(data, 1, { rivals: 1 });
+    expect(sb.revealMap).toBe(false);
+    expect(sb.debug.revealMap).toBe(false);
+    sb.debug.revealMap = true;
+    expect(sb.revealMap).toBe(true);
+  });
+});

@@ -23,6 +23,8 @@ export interface GameSource {
   readonly alpha: number;
   /** Estadísticas de la partida (solo las partidas locales las llevan; en red llegan con el fin de partida). */
   readonly stats?: MatchStats;
+  /** Trampas de pruebas: solo las partidas locales las tienen (en red no existen). */
+  readonly debug?: { giveResources(): void; revealMap: boolean };
   paused: boolean;
   /** Multiplicador del paso del tiempo. Solo las partidas locales lo tienen: en red no se puede acelerar. */
   speed?: number;

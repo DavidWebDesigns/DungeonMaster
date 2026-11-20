@@ -58,3 +58,24 @@ test('la maqueta de menús solo aparece con ?menus=preview y el juego normal no 
   await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
   await expect(page.locator('.mainmenu')).toHaveCount(0);
 });
+
+test('F9 llena el maná y F10 alterna ver todo el mapa (trampas de pruebas del PvE)', async ({
+  page,
+}) => {
+  await page.goto('/?rivals=1');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  type Dbg = {
+    __dm: { sandbox: { revealMap: boolean; state: { players: Array<{ mana: number }> } } };
+  };
+  await page.evaluate(() => {
+    (window as unknown as Dbg).__dm.sandbox.state.players[0]!.mana = 10;
+  });
+  await page.keyboard.press('F9');
+  expect(
+    await page.evaluate(() => (window as unknown as Dbg).__dm.sandbox.state.players[0]!.mana),
+  ).toBeGreaterThan(4000);
+  await page.keyboard.press('F10');
+  expect(await page.evaluate(() => (window as unknown as Dbg).__dm.sandbox.revealMap)).toBe(true);
+  await page.keyboard.press('F10');
+  expect(await page.evaluate(() => (window as unknown as Dbg).__dm.sandbox.revealMap)).toBe(false);
+});
