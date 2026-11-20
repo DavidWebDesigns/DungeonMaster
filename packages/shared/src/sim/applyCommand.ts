@@ -237,7 +237,11 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       return { ok: true, tiles: [] };
     case 'slap': {
       if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
-      const c = state.creatures.find((k) => k.id === cmd.id);
+      // Criaturas e Imps se abofetean igual (los Imps no tienen ánimo, solo trabajan más rápido).
+      const c =
+        cmd.kind === 'imp'
+          ? state.imps.find((k) => k.id === cmd.id)
+          : state.creatures.find((k) => k.id === cmd.id);
       if (!c || c.held) return fail('INVALID_TARGET');
       if (c.owner !== pid) return fail('NOT_OWNER');
       if (state.tick < player.slapReadyTick) return fail('COOLDOWN');
@@ -332,9 +336,17 @@ function execute(
       break;
     }
     case 'slap': {
+      const g = rules.data.global;
+      if (cmd.kind === 'imp') {
+        const imp = state.imps.find((k) => k.id === cmd.id);
+        if (!imp) break;
+        imp.slapUntil = state.tick + Math.round(g.slap.durationSeconds * g.tickRate);
+        player.slapReadyTick = state.tick + Math.round(g.slap.cooldownSeconds * g.tickRate);
+        events.push({ type: 'impSlapped', playerId: player.id, impId: imp.id });
+        break;
+      }
       const c = state.creatures.find((k) => k.id === cmd.id);
       if (!c) break;
-      const g = rules.data.global;
       c.mood = Math.max(rules.data.mood.min, c.mood - rules.data.mood.slapMoodPenalty);
       c.slapUntil = state.tick + Math.round(g.slap.durationSeconds * g.tickRate);
       player.slapReadyTick = state.tick + Math.round(g.slap.cooldownSeconds * g.tickRate);

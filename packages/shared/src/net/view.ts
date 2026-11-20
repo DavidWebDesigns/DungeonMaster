@@ -85,6 +85,7 @@ function impRec(i: MatchState['imps'][number], own: boolean): EntityRec {
   if (own) {
     r['c'] = Math.round(i.carry);
     r['hd'] = i.held ? 1 : 0;
+    r['su'] = i.slapUntil;
   }
   return r;
 }

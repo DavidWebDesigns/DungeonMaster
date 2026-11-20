@@ -456,3 +456,20 @@ describe('animaciones de criaturas', () => {
     expect(fxFor(sb, [died('eliminated')]).some((e) => e.type === 'creatureKilled')).toBe(false);
   });
 });
+
+describe('bofetada a un Imp', () => {
+  it('suena, levanta chispas y suelta el "+velocidad" flotante sobre el Imp', () => {
+    const sb = new Sandbox(data, 1);
+    const imp = sb.state.imps.find((i) => i.owner === LOCAL_PLAYER)!;
+    const out = deriveEffects(
+      takeSnapshot(sb.state),
+      sb.state,
+      data,
+      [{ type: 'impSlapped', playerId: 1, impId: imp.id }],
+      LOCAL_PLAYER,
+    );
+    expect(sounds(out)).toContain('slap');
+    expect(bursts(out)).toHaveLength(1);
+    expect(out.find((e) => e.type === 'floater')).toMatchObject({ x: imp.x, y: imp.y });
+  });
+});

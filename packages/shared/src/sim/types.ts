@@ -74,6 +74,8 @@ export interface Imp {
   hp: number;
   /** Está en la mano del jugador. */
   held: boolean;
+  /** Hasta qué tick trabaja más rápido por una bofetada (0 = nunca). */
+  slapUntil: number;
   /** Criatura que lo atacó la última vez (0 = nadie) y cuándo. */
   attackedBy: number;
   attackedTick: number;
@@ -258,7 +260,7 @@ export type Command =
   | { type: 'buildTrap'; trap: string; tile: Point }
   | { type: 'sellTrap'; tile: Point }
   | { type: 'drop'; tile: Point }
-  | { type: 'slap'; id: number };
+  | { type: 'slap'; id: number; kind?: 'creature' | 'imp' };
 
 export type ErrorCode =
   | 'NO_GOLD'
@@ -319,4 +321,5 @@ export type SimEvent =
   | { type: 'eliminated'; playerId: PlayerId }
   | { type: 'gameOver'; result: MatchResult }
   | { type: 'slapped'; playerId: PlayerId; creatureId: number }
+  | { type: 'impSlapped'; playerId: PlayerId; impId: number }
   | { type: 'ate'; playerId: PlayerId; creatureId: number };

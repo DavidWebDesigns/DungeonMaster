@@ -279,6 +279,21 @@ export function deriveEffects(
         out.push({ type: 'sound', sound: 'slap', volume: 1 });
         break;
       }
+      case 'impSlapped': {
+        const imp = impById.get(e.impId);
+        if (imp) {
+          burst(imp.x, 0.5, imp.y, [1, 1, 1], 8, 1.6, 2, 0.1);
+          out.push({
+            type: 'floater',
+            x: imp.x,
+            y: imp.y,
+            text: `+${Math.round(data.global.slap.workSpeedBonus * 100)}% velocidad`,
+            color: '#ffe27a',
+          });
+        }
+        out.push({ type: 'sound', sound: 'slap', volume: 1 });
+        break;
+      }
       case 'levelUp': {
         const c = state.creatures.find((k) => k.id === e.creatureId);
         if (c) {

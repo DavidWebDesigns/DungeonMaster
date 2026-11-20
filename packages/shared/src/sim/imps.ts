@@ -199,10 +199,12 @@ function move(state: MatchState, rules: Rules, imp: Imp): void {
 function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: SimEvent[]): void {
   const player = getPlayer(state, imp.owner);
   if (!player) return;
+  // Tras una bofetada trabaja y mina más rápido (el mismo bono que las criaturas).
+  const speed = state.tick < imp.slapUntil ? 1 + rules.data.global.slap.workSpeedBonus : 1;
 
   if (isMining(state, rules, task)) {
     const carryMax = rules.data.economy.impCarryGold;
-    const rate = rules.data.economy.miningGoldPerSecond * rules.dt;
+    const rate = rules.data.economy.miningGoldPerSecond * rules.dt * speed;
     const left = state.goldLeft[task.tile] as number;
     const take = Math.min(rate, left, carryMax - imp.carry, goldRoom(state, rules, player));
     if (take > EPS) {
@@ -225,7 +227,7 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
     return;
   }
 
-  imp.work += rules.dt;
+  imp.work += rules.dt * speed;
   if (imp.work >= taskSeconds(state, rules, task) - EPS) {
     completeTask(state, rules, task, events);
     imp.taskId = 0;

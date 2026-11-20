@@ -183,8 +183,11 @@ export class InputModel {
 
   /** Abofetea a la criatura que hay bajo el cursor (tecla B). */
   slapHovered(): void {
-    const id = this.hoverCreature;
-    if (id !== null) this.dispatch({ type: 'slap', id });
+    const u = this.hoverUnit;
+    if (u === null) return;
+    this.dispatch(
+      u.kind === 'imp' ? { type: 'slap', id: u.id, kind: 'imp' } : { type: 'slap', id: u.id },
+    );
   }
 
   /** Llamar una vez por frame: envía el siguiente trozo pendiente en cuanto avanza el tick. */

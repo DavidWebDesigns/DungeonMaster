@@ -546,11 +546,13 @@ describe('trampas e Imps con el ratón', () => {
     expect([Math.floor(imp.x), Math.floor(imp.y)]).toEqual([4, 9]);
   });
 
-  it('B solo abofetea a criaturas, no a Imps', () => {
+  it('B también abofetea a los Imps (con su tipo, para que no se confunda con una criatura)', () => {
     const { input, sent, sandbox } = setup();
-    input.pointerMove(pt(6, 3), { kind: 'imp', id: sandbox.state.imps[0]!.id });
+    const id = sandbox.state.imps[0]!.id;
+    input.pointerMove(pt(6, 3), { kind: 'imp', id });
     input.slapHovered();
-    expect(sent).toHaveLength(0);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.cmd).toEqual({ type: 'slap', id, kind: 'imp' });
   });
 });
 
@@ -574,5 +576,22 @@ describe('atajos de partida local', () => {
     const data = loadGameData();
     expect(keyAction('F9', data)).toEqual({ type: 'debug', what: 'resources' });
     expect(keyAction('F10', data)).toEqual({ type: 'debug', what: 'reveal' });
+  });
+});
+
+describe('bofetada con B', () => {
+  it('sobre un Imp envía la bofetada de Imp y sobre una criatura, la de criatura', () => {
+    const { input, sent, sandbox } = setup();
+    const imp = sandbox.state.imps.find((i) => i.owner === LOCAL_PLAYER)!;
+    input.pointerMove(null, { kind: 'imp', id: imp.id });
+    input.slapHovered();
+    expect(sent[0]!.cmd).toEqual({ type: 'slap', id: imp.id, kind: 'imp' });
+    expect(sent[0]!.res.ok).toBe(true);
+    input.pointerMove(null, { kind: 'creature', id: 7 });
+    input.slapHovered();
+    expect(sent[1]!.cmd).toEqual({ type: 'slap', id: 7 });
+    input.pointerMove(null, null);
+    input.slapHovered();
+    expect(sent).toHaveLength(2);
   });
 });
