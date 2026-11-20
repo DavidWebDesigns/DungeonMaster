@@ -1,3 +1,4 @@
+import { distanceField } from './pathfinding';
 import type { DataSet } from '../data';
 
 type TerrainDef = DataSet['terrain'][number];
@@ -67,4 +68,21 @@ export function rulesOf(data: DataSet): Rules {
 /** Segundos de juego a ticks (redondeado): los datos hablan en segundos y la simulación en ticks. */
 export function secondsToTicks(rules: Rules, seconds: number): number {
   return Math.round(seconds * rules.data.global.tickRate);
+}
+
+/** Distancia de camino (andando) desde un tile a todos los demás, con los costes de los datos. */
+export function walkDistances(
+  state: { width: number; height: number; terrain: ArrayLike<number> },
+  rules: Rules,
+  from: number,
+): Float64Array {
+  const { straightCost, diagonalCost } = rules.data.global.pathfinding;
+  return distanceField({
+    width: state.width,
+    height: state.height,
+    walkable: (t) => rules.walkable[state.terrain[t] as number] === true,
+    start: from,
+    straightCost,
+    diagonalCost,
+  });
 }

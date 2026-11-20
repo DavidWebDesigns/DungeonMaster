@@ -117,3 +117,42 @@ export function findPath(q: PathQuery): number[] | null {
   }
   return null;
 }
+
+/**
+ * Distancia de camino desde `start` a todos los tiles, con las mismas reglas de movimiento que `findPath`
+ * (8 direcciones sin cortar esquinas, costes recto y diagonal). `Infinity` donde no se puede llegar.
+ * Sirve para decidir "el más cercano" por lo que realmente hay que andar, no por la línea recta.
+ */
+export function distanceField(
+  q: Pick<PathQuery, 'width' | 'height' | 'walkable' | 'start' | 'straightCost' | 'diagonalCost'>,
+): Float64Array {
+  const { width, height, walkable, start, straightCost, diagonalCost } = q;
+  const g = new Float64Array(width * height).fill(Infinity);
+  const closed = new Uint8Array(width * height);
+  const heap = new MinHeap();
+  g[start] = 0;
+  heap.push(start, 0);
+  while (heap.size > 0) {
+    const cur = heap.pop();
+    if (closed[cur]) continue;
+    closed[cur] = 1;
+    const cx = cur % width;
+    const cy = Math.floor(cur / width);
+    const gc = g[cur] as number;
+    for (const [dx, dy] of DIRS8) {
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+      const ni = ny * width + nx;
+      if (closed[ni] || !walkable(ni)) continue;
+      const diagonal = dx !== 0 && dy !== 0;
+      if (diagonal && (!walkable(cy * width + nx) || !walkable(ny * width + cx))) continue;
+      const ng = gc + (diagonal ? diagonalCost : straightCost);
+      if (ng < (g[ni] as number)) {
+        g[ni] = ng;
+        heap.push(ni, ng);
+      }
+    }
+  }
+  return g;
+}

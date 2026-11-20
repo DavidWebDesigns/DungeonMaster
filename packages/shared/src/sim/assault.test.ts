@@ -181,3 +181,44 @@ describe('soltar solo en terreno propio', () => {
     expect(applyCommand(state, data, 1, { type: 'drop', tile: { x: 3, y: 8 } }).ok).toBe(true);
   });
 });
+
+describe('precisión: el más cercano es el más cercano andando', () => {
+  /** Encierra un tile entre rocas para que nadie pueda llegar a él. */
+  function isolate(
+    state: Parameters<typeof applyCommand>[0],
+    data: Parameters<typeof applyCommand>[1],
+    x: number,
+    y: number,
+  ) {
+    const rock = rulesOf(data).terrainIndex['solidRock']!;
+    for (let dy = -1; dy <= 1; dy++)
+      for (let dx = -1; dx <= 1; dx++)
+        if (dx !== 0 || dy !== 0) state.terrain[tileIndex(state, x + dx, y + dy)] = rock;
+  }
+
+  it('un enemigo cercano pero inalcanzable no gana a uno algo más lejano al que sí se puede llegar', () => {
+    const { state, data } = duel();
+    noImps(state);
+    const sealed = spawn(state, data, 2, 'troll', 9.5, 3.5);
+    const reachable = spawn(state, data, 2, 'troll', 3.5, 3.5);
+    // Una criatura propia da vista sobre ambos.
+    spawn(state, data, 1, 'troll', 6.5, 6.5);
+    isolate(state, data, 9, 3);
+    const t = findAssaultTarget(state, rulesOf(data), 1, tileIndex(state, 9, 5));
+    expect(t).toEqual({ kind: 'creature', id: reachable.id });
+    expect(t?.id).not.toBe(sealed.id);
+  });
+
+  it('si todos están tras los muros, se cae a la distancia en línea recta (como antes)', () => {
+    const { state, data } = duel();
+    noImps(state);
+    const a = spawn(state, data, 2, 'troll', 9.5, 3.5);
+    const b = spawn(state, data, 2, 'troll', 3.5, 3.5);
+    spawn(state, data, 1, 'troll', 6.5, 6.5);
+    isolate(state, data, 9, 3);
+    isolate(state, data, 3, 3);
+    const t = findAssaultTarget(state, rulesOf(data), 1, tileIndex(state, 9, 5));
+    expect(t).toEqual({ kind: 'creature', id: a.id });
+    expect(t?.id).not.toBe(b.id);
+  });
+});

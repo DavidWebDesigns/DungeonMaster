@@ -1,7 +1,7 @@
 import { getPlayer, goldRoom, treasuryCapacity } from './economy';
 import { octile, tileOfPosition, tileX, tileY } from './grid';
 import { findPath } from './pathfinding';
-import type { Rules } from './rules';
+import { walkDistances, type Rules } from './rules';
 import {
   completeTask,
   findAutoClaimTile,
@@ -303,20 +303,21 @@ export function dropImp(state: MatchState, rules: Rules, imp: Imp, tile: number)
   if (imp.carry > 0) return;
   const player = state.players.find((p) => p.id === imp.owner);
   if (!player) return;
-  const { straightCost, diagonalCost } = rules.data.global.pathfinding;
   const hasRoom = goldRoom(state, rules, player) > EPS;
+  // "Más cercana" = la que menos hay que andar desde donde cae (rodeando muros), no la de línea recta.
+  const dist = walkDistances(state, rules, tile);
   let best: Task | undefined;
   let bestKey: [number, number, number] | undefined;
   for (const t of state.tasks) {
     if (t.owner !== imp.owner || t.reservedBy !== 0 || t.blockedVersion === state.mapVersion)
       continue;
     if (isMining(state, rules, t) && !hasRoom) continue;
-    if (workTiles(state, rules, t).length === 0) continue;
-    const key: [number, number, number] = [
-      octile(state, tile, t.tile, straightCost, diagonalCost),
-      taskPriority(t),
-      t.id,
-    ];
+    const work = workTiles(state, rules, t);
+    if (work.length === 0) continue;
+    const d = Math.min(...work.map((w) => dist[w] as number));
+    // Si no hay camino hasta ella, no se elige (el Imp se quedaría parado frente a una pared).
+    if (!Number.isFinite(d)) continue;
+    const key: [number, number, number] = [d, taskPriority(t), t.id];
     if (
       !bestKey ||
       key[0] < bestKey[0] ||

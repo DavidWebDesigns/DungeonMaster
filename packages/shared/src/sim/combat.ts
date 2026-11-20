@@ -9,7 +9,7 @@ import { tileIndex } from './grid';
 import { removeCreature } from './needs';
 import { removeRoomTile } from './rooms';
 import { nextFloat } from './rng';
-import { secondsToTicks, type Rules } from './rules';
+import { secondsToTicks, walkDistances, type Rules } from './rules';
 import { removeTask } from './tasks';
 import type { Creature, Imp, MatchState, PlayerId, SimEvent } from './types';
 import { gainXp } from './xp';
@@ -261,11 +261,25 @@ export function findAssaultTarget(
   const px = (tile % state.width) + 0.5;
   const py = Math.floor(tile / state.width) + 0.5;
   const seen = (x: number, y: number) => vis[Math.floor(y) * state.width + Math.floor(x)] === 1;
-  let best: { kind: 'creature' | 'imp' | 'structure'; id: number } | null = null;
-  let bestD = Infinity;
+  // "Más cercano" = a quien menos hay que andar para llegar (rodeando muros). Si ninguno es alcanzable
+  // (todo tras muros), se cae a la distancia en línea recta, como antes.
+  const walk = walkDistances(state, rules, tile);
   const rank = { creature: 0, imp: 1, structure: 2 } as const;
-  const consider = (kind: 'creature' | 'imp' | 'structure', id: number, x: number, y: number) => {
-    const d = Math.hypot(x - px, y - py);
+  type Pick = { kind: 'creature' | 'imp' | 'structure'; id: number };
+  let best: Pick | null = null;
+  let bestD = Infinity;
+  let reachable = false;
+  const consider = (kind: Pick['kind'], id: number, x: number, y: number) => {
+    const walking = walk[Math.floor(y) * state.width + Math.floor(x)] as number;
+    // Un objetivo alcanzable siempre gana a uno inalcanzable; entre iguales manda la distancia.
+    const canReach = Number.isFinite(walking);
+    if (reachable && !canReach) return;
+    if (canReach && !reachable) {
+      reachable = true;
+      bestD = Infinity;
+      best = null;
+    }
+    const d = canReach ? walking : Math.hypot(x - px, y - py);
     if (
       d < bestD - 1e-9 ||
       (Math.abs(d - bestD) <= 1e-9 &&

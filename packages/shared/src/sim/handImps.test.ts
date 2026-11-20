@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applyCommand } from './applyCommand';
 import { tileIndex } from './grid';
+import { dropImp, resetImp } from './imps';
+import { rulesOf } from './rules';
 import { step } from './step';
 import { matchAtCorner0, pt, row, run } from './testUtils';
 
@@ -120,5 +122,53 @@ describe('Imps en la mano', () => {
     step(state, data);
     expect(state.players[0]!.hand).toEqual([]);
     expect(mine.every((i) => !i.held)).toBe(true);
+  });
+});
+
+/** Ejecuta los comandos pendientes y deja a todos los Imps sin tarea, para que ninguna marca esté reservada. */
+function free(
+  state: ReturnType<typeof matchAtCorner0>['state'],
+  data: ReturnType<typeof matchAtCorner0>['data'],
+) {
+  step(state, data);
+  for (const i of state.imps) resetImp(state, i);
+}
+
+describe('Imp soltado: la tarea más cercana es la más cercana andando', () => {
+  it('no elige una marca que parece cercana pero a la que no se puede llegar', () => {
+    const { state, data } = matchAtCorner0();
+    // Dos marcas: el muro (11,4), pegado a la base, y el muro (4,11), al otro lado de ella.
+    expect(applyCommand(state, data, 1, { type: 'dig', tiles: [pt(11, 4)] }).ok).toBe(true);
+    expect(applyCommand(state, data, 1, { type: 'dig', tiles: [pt(4, 11)] }).ok).toBe(true);
+    free(state, data);
+    // Se sella el único suelo desde el que se trabaja la primera: queda "cerca" pero inalcanzable.
+    const rock = rulesOf(data).terrainIndex['solidRock']!;
+    for (const [x, y] of [
+      [10, 3],
+      [10, 5],
+      [9, 3],
+      [9, 4],
+      [9, 5],
+    ] as const)
+      state.terrain[tileIndex(state, x, y)] = rock;
+    state.mapVersion++;
+    for (const i of state.imps) i.held = false;
+    const imp = state.imps.find((i) => i.owner === 1)!;
+    dropImp(state, rulesOf(data), imp, tileIndex(state, 9, 6));
+    const task = state.tasks.find((t) => t.id === imp.taskId)!;
+    expect(task.tile).toBe(tileIndex(state, 4, 11));
+  });
+
+  it('entre dos marcas alcanzables elige la que menos hay que andar', () => {
+    const { state, data } = matchAtCorner0();
+    applyCommand(state, data, 1, { type: 'dig', tiles: [pt(11, 4)] });
+    applyCommand(state, data, 1, { type: 'dig', tiles: [pt(4, 11)] });
+    free(state, data);
+    const imp = state.imps.find((i) => i.owner === 1)!;
+    dropImp(state, rulesOf(data), imp, tileIndex(state, 9, 6));
+    expect(state.tasks.find((t) => t.id === imp.taskId)!.tile).toBe(tileIndex(state, 11, 4));
+    const imp2 = state.imps.filter((i) => i.owner === 1)[1]!;
+    dropImp(state, rulesOf(data), imp2, tileIndex(state, 5, 9));
+    expect(state.tasks.find((t) => t.id === imp2.taskId)!.tile).toBe(tileIndex(state, 4, 11));
   });
 });

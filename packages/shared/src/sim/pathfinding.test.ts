@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findPath } from './pathfinding';
+import { distanceField, findPath } from './pathfinding';
 import { octile } from './grid';
 
 /** Mapa de texto: '#' bloquea, cualquier otra cosa se puede pisar. */
@@ -92,5 +92,55 @@ describe('A*', () => {
       heuristic: () => 0,
     };
     expect(findPath(q)).toEqual([4, 5]);
+  });
+});
+
+describe('distanceField', () => {
+  const W = 7;
+  const H = 5;
+  // Un muro vertical en x=3 con un hueco abajo (y=4): ir de un lado al otro obliga a dar la vuelta.
+  const wall = new Set([0, 1, 2, 3].map((y) => y * W + 3));
+  const field = (start: number) =>
+    distanceField({
+      width: W,
+      height: H,
+      walkable: (t) => !wall.has(t),
+      start,
+      straightCost: 1,
+      diagonalCost: 1.41,
+    });
+
+  it('la distancia de camino rodea el muro: es mayor que la línea recta', () => {
+    const f = field(1 * W + 2);
+    // Recta: 2 tiles; por el hueco de abajo hay que bajar, cruzar y subir.
+    expect(f[1 * W + 4]).toBeGreaterThan(3);
+    expect(f[1 * W + 4]).toBe(8);
+  });
+
+  it('es 0 en el origen, Infinity donde no se puede llegar y coincide con findPath', () => {
+    const f = field(0);
+    expect(f[0]).toBe(0);
+    expect(f[3]).toBe(Infinity);
+    const goal = 2 * W + 6;
+    const path = findPath({
+      width: W,
+      height: H,
+      walkable: (t) => !wall.has(t),
+      start: 0,
+      isGoal: (t) => t === goal,
+      heuristic: () => 0,
+      straightCost: 1,
+      diagonalCost: 1.41,
+    })!;
+    let cost = 0;
+    let prev = 0;
+    for (const t of path) {
+      const diag =
+        Math.abs((t % W) - (prev % W)) === 1 &&
+        Math.abs(Math.floor(t / W) - Math.floor(prev / W)) === 1;
+      cost += diag ? 1.41 : 1;
+      prev = t;
+    }
+    expect(f[goal]).toBeCloseTo(cost, 5);
   });
 });

@@ -533,14 +533,11 @@ describe('la mano', () => {
     });
   });
 
-  it('soltar la deja en el tile pedido, incluso en territorio ajeno', () => {
+  it('soltar la deja en el tile pedido', () => {
     const { state, data, list } = withCreatures(1);
     const c = list[0]!;
     applyCommand(state, data, 1, { type: 'pickUp', id: c.id });
     step(state, data);
-    // Un tile caminable lejos de la base (suelo neutral del mapa).
-    const far = data.map.bases.find((b) => b.slot === state.players[0]!.slot)!;
-    void far;
     expect(applyCommand(state, data, 1, { type: 'drop', tile: { x: 3, y: 8 } }).ok).toBe(true);
     step(state, data);
     expect(c.held).toBe(false);
