@@ -99,7 +99,9 @@ export class OnlineConnection {
         screen: 'menu',
         error: /not found|no.*room|locked/i.test(msg)
           ? 'No existe esa sala (o ya empezó).'
-          : `No se pudo conectar: ${msg}`,
+          : /llen|Ya existe/.test(msg)
+            ? msg
+            : `No se pudo conectar: ${msg}`,
       });
     }
   }

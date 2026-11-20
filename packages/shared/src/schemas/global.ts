@@ -55,6 +55,8 @@ export const GlobalConfig = z.strictObject({
     maxMessagesPerSecond: PositiveInt,
     /** Tamaño máximo de un mensaje del cliente al servidor, en bytes. */
     maxPayloadBytes: PositiveInt,
+    /** Salas abiertas a la vez en un servidor (más allá, crear una sala falla). */
+    maxRooms: PositiveInt,
   }),
   commands: z.strictObject({
     maxPerSecond: PositiveInt,

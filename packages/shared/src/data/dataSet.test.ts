@@ -226,6 +226,9 @@ describe('errores de referencias cruzadas', () => {
     const raw2 = realRawData();
     delete (raw2.global as any).connection.maxPayloadBytes;
     expectError(parseDataSet(raw2), 'global.json', 'connection.maxPayloadBytes');
+    const raw3 = realRawData();
+    (raw3.global as any).connection.maxRooms = -1;
+    expectError(parseDataSet(raw3), 'global.json', 'connection.maxRooms');
   });
 
   it('rechaza un pve.json con dificultad por defecto inexistente, repetida o demasiados rivales', () => {

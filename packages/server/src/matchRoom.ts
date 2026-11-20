@@ -27,6 +27,9 @@ export function configureServer(c: ServerConfig): void {
 
 export class MatchRoom extends Room {
   override maxClients = 4;
+  /** Códigos de las salas abiertas en este proceso: sirve para limitar cuántas hay y evitar códigos repetidos. */
+  private static readonly liveCodes = new Set<string>();
+  private liveCode: string | null = null;
   private session!: MatchSession;
   private cfg!: ServerConfig;
   private accumulatorMs = 0;
@@ -36,6 +39,12 @@ export class MatchRoom extends Room {
     if (!config) throw new Error('El servidor no está configurado (configureServer).');
     this.cfg = config;
     const code = normalizeCode(options.code) || generateCode(Math.random);
+    const live = MatchRoom.liveCodes;
+    if (live.size >= this.cfg.data.global.connection.maxRooms)
+      throw new Error('El servidor está lleno: hay demasiadas salas abiertas.');
+    if (live.has(code)) throw new Error('Ya existe una sala con ese código.');
+    live.add(code);
+    this.liveCode = code;
     this.session = new MatchSession({
       code,
       data: this.cfg.data,
@@ -85,6 +94,12 @@ export class MatchRoom extends Room {
   override onLeave(client: Client): void {
     this.session.leave(client.sessionId);
     this.flush();
+  }
+
+  /** La sala se cierra: su código queda libre y deja de contar para el límite. */
+  override onDispose(): void {
+    if (this.liveCode) MatchRoom.liveCodes.delete(this.liveCode);
+    this.liveCode = null;
   }
 
   /** Envía lo que la sesión tiene pendiente y reacciona a los cambios de fase. */

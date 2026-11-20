@@ -41,7 +41,8 @@
     "reconnectSeconds": 120,
     "inactivitySurrenderSeconds": 300,
     "maxMessagesPerSecond": 60,
-    "maxPayloadBytes": 16384
+    "maxPayloadBytes": 16384,
+    "maxRooms": 200
   },
   "commands": { "maxPerSecond": 30, "maxTilesPerCommand": 64 },
   "hand": { "capacity": 10 },

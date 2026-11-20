@@ -37,4 +37,4 @@ pnpm --filter @dm/server start      # escucha en PORT (por defecto 2567)
 
 - Elegir nombre y dominio definitivos y comprobar que no chocan con marcas existentes (el nombre actual es de trabajo).
 - Playtest #1 en red con 3 o 4 personas (pendiente).
-- No hay límite de salas ni protección contra abusos más allá de los 30 comandos por segundo por jugador.
+- Límites por abuso (docs/DUDAS.md #88): 30 comandos y 60 mensajes por segundo por jugador, mensajes de hasta 16 KB y 200 salas abiertas. No hay límite por IP ni cuentas: si el servidor se publica, conviene añadir uno en el proxy.
