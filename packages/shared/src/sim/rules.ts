@@ -25,18 +25,22 @@ export interface Rules {
 
 const cache = new WeakMap<DataSet, Rules>();
 
+/**
+ * Los mapas por id se crean sin prototipo (`Object.create(null)`): un cliente puede mandar ids como "__proto__" o
+ * "constructor", y con objetos normales esa búsqueda devolvería algo que no es una definición.
+ */
 export function rulesOf(data: DataSet): Rules {
   const hit = cache.get(data);
   if (hit) return hit;
-  const terrainIndex: Record<string, number> = {};
+  const terrainIndex: Record<string, number> = Object.create(null);
   data.terrain.forEach((t, i) => {
     terrainIndex[t.id] = i;
   });
-  const roomDefs: Record<string, RoomDef> = {};
+  const roomDefs: Record<string, RoomDef> = Object.create(null);
   for (const r of data.rooms) roomDefs[r.id] = r;
-  const spells: Record<string, SpellDef> = {};
+  const spells: Record<string, SpellDef> = Object.create(null);
   for (const s of data.spells) spells[s.id] = s;
-  const creatureDefs: Record<string, CreatureDef> = {};
+  const creatureDefs: Record<string, CreatureDef> = Object.create(null);
   for (const c of data.creatures) creatureDefs[c.id] = c;
   const imp = data.creatures.find((c) => c.id === 'imp');
   if (!imp) throw new Error('creatures.json no define al Imp');

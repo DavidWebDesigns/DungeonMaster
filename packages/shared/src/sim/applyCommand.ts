@@ -78,6 +78,9 @@ function chained(
 }
 
 function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Command): Validation {
+  // Lo que llega por red puede ser cualquier cosa: sin forma de comando no se mira nada más.
+  if (!cmd || typeof cmd !== 'object' || typeof (cmd as { type?: unknown }).type !== 'string')
+    return fail('INVALID_COMMAND');
   const pid = player.id;
   switch (cmd.type) {
     case 'dig': {
