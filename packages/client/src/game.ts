@@ -33,6 +33,8 @@ import { NoticeLog } from './ui/notices';
 
 /** Radio (en alturas de pantalla) dentro del cual un clic coge a una criatura. */
 const CREATURE_PICK_RADIUS = 0.09;
+/** Clave del almacenamiento local donde se recuerda si el sonido está silenciado. */
+const MUTE_KEY = 'dm.muted';
 
 export class Game {
   /** La fuente del estado: el sandbox local o la conexión con el servidor. */
@@ -93,6 +95,11 @@ export class Game {
     this.floaterLayer = document.createElement('div');
     this.floaterLayer.className = 'floaters';
     host.appendChild(this.floaterLayer);
+    try {
+      this.audio.muted = localStorage.getItem(MUTE_KEY) === '1';
+    } catch {
+      // Sin almacenamiento: sonido activado por defecto.
+    }
     this.alertEl = document.createElement('div');
     this.alertEl.className = 'heart-alert';
     host.appendChild(this.alertEl);
@@ -465,8 +472,20 @@ export class Game {
     else if (action.type === 'center') this.camera = centerOn(this.camera, this.heartTile);
     else if (action.type === 'slap') this.input.slapHovered();
     else if (action.type === 'pause') this.togglePause();
+    else if (action.type === 'mute') this.toggleMute();
     else if (action.type === 'debug') this.debugAction(action.what);
     else if (action.type === 'speed') this.changeSpeed(action.step);
+  }
+
+  /** M: silencia o activa el sonido (se recuerda entre partidas). */
+  private toggleMute(): void {
+    this.audio.muted = !this.audio.muted;
+    try {
+      localStorage.setItem(MUTE_KEY, this.audio.muted ? '1' : '0');
+    } catch {
+      // Sin almacenamiento (modo privado): solo vale para esta partida.
+    }
+    this.say(this.audio.muted ? 'Sonido desactivado (M para activarlo).' : 'Sonido activado.');
   }
 
   /** Trampas de pruebas: F9 llena maná y suma oro; F10 muestra u oculta la niebla. Solo en partidas locales. */

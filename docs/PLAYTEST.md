@@ -19,7 +19,7 @@ pnpm server              servidor de partidas (solo para jugar en red, ws://loca
 | `/?mode=online`              | Partida en red: crear sala o unirse con el código de 6 letras |
 | `/?menus=preview`            | Maqueta de menús (todavía no conectada al juego)              |
 
-Atajos útiles para probar: **P** pausa, **[** y **]** velocidad (×1, ×2, ×4), **F9** llena maná y oro, **F10** muestra
+Atajos útiles para probar: **M** silencia el sonido, **P** pausa, **[** y **]** velocidad (×1, ×2, ×4), **F9** llena maná y oro, **F10** muestra
 todo el mapa (solo en partidas locales). Resto de atajos: línea de ayuda al pie del juego y `docs/PLAN.md` 10.2.
 
 ## Qué mirar en cada fase

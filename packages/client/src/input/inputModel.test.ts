@@ -525,6 +525,10 @@ describe('atajos de partida local', () => {
     expect(keyAction('[', data)).toEqual({ type: 'speed', step: -1 });
   });
 
+  it('M silencia o activa el sonido', () => {
+    expect(keyAction('m', loadGameData())).toEqual({ type: 'mute' });
+  });
+
   it('F9 y F10 son trampas de pruebas', () => {
     const data = loadGameData();
     expect(keyAction('F9', data)).toEqual({ type: 'debug', what: 'resources' });
