@@ -37,7 +37,12 @@
     "reinforceSeconds": 4,
     "autoClaimRadius": 10
   },
-  "connection": { "reconnectSeconds": 120, "inactivitySurrenderSeconds": 300 },
+  "connection": {
+    "reconnectSeconds": 120,
+    "inactivitySurrenderSeconds": 300,
+    "maxMessagesPerSecond": 60,
+    "maxPayloadBytes": 16384
+  },
   "commands": { "maxPerSecond": 30, "maxTilesPerCommand": 64 },
   "hand": { "capacity": 10 },
   "slap": { "cooldownSeconds": 1, "workSpeedBonus": 0.25, "durationSeconds": 10 },

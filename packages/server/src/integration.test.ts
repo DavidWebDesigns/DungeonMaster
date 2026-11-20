@@ -176,6 +176,22 @@ describe('servidor Colyseus con dos clientes', () => {
     await expect(new Client(url).join('match', { code: 'NOROOM' })).rejects.toBeDefined();
   });
 
+  it('un mensaje de tamaño abusivo corta la conexión de quien lo manda y no afecta a los demás', async () => {
+    const code = 'BIGMSG';
+    const ana = await new Client(url).create('match', { code, nick: 'Ana' });
+    const beto = await new Client(url).join('match', { code, nick: 'Beto' });
+    const left = new Promise<void>((resolve) => ana.onLeave(() => resolve()));
+    ana.send(MSG.nick, { nick: 'x'.repeat(data.global.connection.maxPayloadBytes * 2) });
+    await Promise.race([
+      left,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('no se cortó')), 8000)),
+    ]);
+    // Beto sigue conectado y puede seguir usando la sala.
+    beto.send(MSG.ready, { ready: true });
+    await new Promise((r) => setTimeout(r, 300));
+    await beto.leave();
+  }, 30_000);
+
   it('una sala llena no admite a un quinto jugador y una empezada tampoco', async () => {
     const code = 'FULLAB';
     const rooms: Room[] = [];

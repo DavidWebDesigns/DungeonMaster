@@ -85,6 +85,8 @@ interface Slot {
   known: ClientKnowledge | null;
   disconnectedTick: number;
   lastCommandTick: number;
+  /** Mensajes que aún puede mandar (se rellena en cada tick): frena a quien inunde la sala. */
+  budget: number;
   needsSnapshot: boolean;
 }
 
@@ -189,6 +191,7 @@ export class MatchSession {
       known: null,
       disconnectedTick: 0,
       lastCommandTick: 0,
+      budget: this.data.global.connection.maxMessagesPerSecond,
       needsSnapshot: false,
     });
     this.pushLobby();
@@ -253,6 +256,9 @@ export class MatchSession {
   handle(clientId: string, type: string, payload: unknown): void {
     const s = this.slot(clientId);
     if (!s) return;
+    // Presupuesto de mensajes: pasado el límite se descartan sin responder (responder también sería inundar).
+    if (s.budget < 1) return;
+    s.budget--;
     switch (type) {
       case MSG.ready: {
         if (this.phase !== 'lobby') return;
@@ -326,8 +332,16 @@ export class MatchSession {
 
   /* ---------------- el reloj ---------------- */
 
+  /** Cada tick devuelve a cada jugador su parte del presupuesto de mensajes por segundo (con tope de un segundo). */
+  private refillBudgets(): void {
+    const c = this.data.global.connection;
+    const perTick = c.maxMessagesPerSecond / this.data.global.tickRate;
+    for (const s of this.slots) s.budget = Math.min(c.maxMessagesPerSecond, s.budget + perTick);
+  }
+
   /** Avanza un tick (100 ms). */
   tick(): void {
+    this.refillBudgets();
     if (this.phase === 'countdown') return this.tickCountdown();
     if (this.phase !== 'playing' || !this.state) return;
     const state = this.state;

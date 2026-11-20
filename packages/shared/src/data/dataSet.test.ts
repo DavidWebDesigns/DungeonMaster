@@ -219,6 +219,15 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw), 'global.json', 'combat.structureReach');
   });
 
+  it('rechaza límites de red que no sean positivos', () => {
+    const raw = realRawData();
+    (raw.global as any).connection.maxMessagesPerSecond = 0;
+    expectError(parseDataSet(raw), 'global.json', 'connection.maxMessagesPerSecond');
+    const raw2 = realRawData();
+    delete (raw2.global as any).connection.maxPayloadBytes;
+    expectError(parseDataSet(raw2), 'global.json', 'connection.maxPayloadBytes');
+  });
+
   it('rechaza un pve.json con dificultad por defecto inexistente, repetida o demasiados rivales', () => {
     const raw = realRawData();
     (raw.pve as any).defaultDifficulty = 'imposible';

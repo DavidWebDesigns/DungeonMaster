@@ -51,6 +51,10 @@ export const GlobalConfig = z.strictObject({
   connection: z.strictObject({
     reconnectSeconds: Seconds,
     inactivitySurrenderSeconds: Seconds,
+    /** Mensajes de red por segundo y por jugador (de cualquier tipo); el exceso se descarta. */
+    maxMessagesPerSecond: PositiveInt,
+    /** Tamaño máximo de un mensaje del cliente al servidor, en bytes. */
+    maxPayloadBytes: PositiveInt,
   }),
   commands: z.strictObject({
     maxPerSecond: PositiveInt,

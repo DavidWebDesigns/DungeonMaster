@@ -43,6 +43,50 @@ function started() {
   return s;
 }
 
+describe('presupuesto de mensajes', () => {
+  it('quien inunda la sala de mensajes solo consigue los de su presupuesto por segundo', () => {
+    const s = session();
+    s.join('a', 'Ana');
+    s.join('b', 'Beto');
+    s.drain();
+    const limit = data.global.connection.maxMessagesPerSecond;
+    for (let i = 0; i < limit * 5; i++) s.handle('b', MSG.ready, { ready: i % 2 === 0 });
+    const lobbies = ofType<LobbyInfo>(s.drain(), MSG.lobby);
+    // Cada mensaje aceptado produce un envío del lobby; el resto se descartó en silencio.
+    expect(lobbies.length).toBeLessThanOrEqual(limit);
+    expect(lobbies.length).toBeGreaterThan(limit / 2);
+  });
+
+  it('el presupuesto se recupera con el tiempo (un segundo entero lo llena otra vez)', () => {
+    const s = session();
+    s.join('a', 'Ana');
+    s.join('b', 'Beto');
+    const limit = data.global.connection.maxMessagesPerSecond;
+    for (let i = 0; i < limit * 2; i++) s.handle('b', MSG.ready, { ready: true });
+    s.drain();
+    for (let i = 0; i < data.global.tickRate; i++) s.tick();
+    s.drain();
+    s.handle('b', MSG.ready, { ready: false });
+    expect(ofType<LobbyInfo>(s.drain(), MSG.lobby)).toHaveLength(1);
+  });
+
+  it('el tráfico normal (unos pocos mensajes por segundo) nunca se corta', () => {
+    const s = started();
+    s.drain();
+    for (let sec = 0; sec < 5; sec++) {
+      for (let i = 0; i < 20; i++) {
+        s.handle('a', MSG.cmd, {
+          seq: sec * 100 + i,
+          cmd: { type: 'dig', tiles: [{ x: 1, y: 1 }] },
+        });
+      }
+      for (let t = 0; t < data.global.tickRate; t++) s.tick();
+    }
+    const acks = ofType<AckMsg>(s.drain(), MSG.ack, 'a');
+    expect(acks).toHaveLength(100);
+  });
+});
+
 describe('lobby', () => {
   it('los jugadores entran con apodo, color distinto y el primero es anfitrión', () => {
     const s = session();
