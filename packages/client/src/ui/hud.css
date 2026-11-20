@@ -372,3 +372,8 @@
   image-rendering: pixelated;
   touch-action: none;
 }
+
+.chip.clock .speed {
+  color: #f0c84a;
+  font-weight: 700;
+}

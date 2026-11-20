@@ -13,6 +13,7 @@ import { localStatsRows, type EndStatsRow } from './ui/endStats';
 import { keyAction } from './input/keymap';
 import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { FloaterList, floaterPose } from './feel/anim';
+import { speedLabel } from './ui/speedLabel';
 import { minimapPixels } from './ui/minimap';
 import { MinimapView } from './ui/minimapView';
 import { errorMessage } from './input/messages';
@@ -332,7 +333,8 @@ export class Game {
     const { state } = this.sandbox;
     this.checkTreasury();
     const armed = state.tick < this.surrenderArmedUntil;
-    const key = `${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
+    const speed = speedLabel(this.sandbox.paused, this.sandbox.speed);
+    const key = `${speed}|${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
     if (key === this.hudKey) return;
     this.hudKey = key;
     const model = buildHudModel(
@@ -351,6 +353,7 @@ export class Game {
         },
         endStats: this.endStatsRows(),
         surrenderArmed: armed,
+        speedLabel: speed,
         onSurrender: () => this.surrender(),
         onRestart: () => window.location.reload(),
         onSelectCreature: (id) => {

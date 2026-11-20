@@ -126,3 +126,21 @@ test('el minimapa se dibuja y un clic en él mueve la cámara a ese punto', asyn
   expect(await countDigs()).toBe(digsBefore);
   await page.screenshot({ path: 'test-results/minimap.png' });
 });
+
+test('P pausa la partida y el reloj lo indica; ] sube la velocidad y se ve en la barra', async ({
+  page,
+}) => {
+  await page.goto('/?rivals=1');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  const tick = () =>
+    page.evaluate(() => (window as unknown as { __dm: Hook }).__dm.sandbox.state.tick);
+  await page.keyboard.press('p');
+  await expect(page.locator('.chip.clock')).toContainText('Pausa');
+  const t1 = await tick();
+  await page.waitForTimeout(800);
+  expect(await tick()).toBe(t1);
+  await page.keyboard.press('p');
+  await expect(page.locator('.chip.clock')).not.toContainText('Pausa');
+  await page.keyboard.press(']');
+  await expect(page.locator('.chip.clock')).toContainText('×2');
+});

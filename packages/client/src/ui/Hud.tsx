@@ -15,6 +15,8 @@ export interface HudProps {
   endStats?: EndStatsRow[];
   /** El botón de rendirse espera confirmación. */
   surrenderArmed?: boolean;
+  /** Indicador de pausa o velocidad (solo en partidas locales). */
+  speedLabel?: string;
 }
 
 const fmt = (n: number) => n.toLocaleString('es');
@@ -37,6 +39,7 @@ export function Hud({
   onRestart,
   surrenderArmed,
   endStats,
+  speedLabel,
 }: HudProps) {
   return (
     <div class="hud">
@@ -56,7 +59,10 @@ export function Hud({
         <div class="chip" title="Imps">
           Imps {model.imps}/{model.impsMax}
         </div>
-        <div class="chip clock">{model.clock}</div>
+        <div class="chip clock">
+          {model.clock}
+          {speedLabel && <span class="speed"> {speedLabel}</span>}
+        </div>
         <div class="chip" title="Tiempo hasta que tus criaturas cobren">
           Pago {Math.ceil(model.payday)} s
         </div>
