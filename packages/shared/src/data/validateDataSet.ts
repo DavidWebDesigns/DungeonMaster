@@ -375,10 +375,20 @@ export function validateDataSet(d: DataSet): DataError[] {
   // ---------- traps ----------
   for (const id of duplicates(d.traps.map((t) => t.id))) err(F.traps, '', `id repetido: "${id}"`);
   d.traps.forEach((t, i) => {
-    const room = d.rooms.find((r) => r.id === t.requiresRoom);
-    if (!room) err(F.traps, `[${i}].requiresRoom`, `la sala "${t.requiresRoom}" no existe`);
-    else if (!room.buildable)
-      err(F.traps, `[${i}].requiresRoom`, `la sala "${t.requiresRoom}" no se puede construir`);
+    t.requiresRooms.forEach((req, j) => {
+      const room = d.rooms.find((r) => r.id === req);
+      if (!room) err(F.traps, `[${i}].requiresRooms[${j}]`, `la sala "${req}" no existe`);
+      else if (!room.buildable)
+        err(F.traps, `[${i}].requiresRooms[${j}]`, `la sala "${req}" no se puede construir`);
+    });
+    if (t.family === 'physical' && (t.hp === undefined || t.wearPerTrigger === undefined))
+      err(F.traps, `[${i}]`, `"${t.id}" es física: necesita hp y wearPerTrigger`);
+    if (t.family === 'elemental' && t.uses === undefined)
+      err(F.traps, `[${i}].uses`, `"${t.id}" es elemental: necesita uses`);
+    if (t.family === 'physical' && t.uses !== undefined)
+      err(F.traps, `[${i}].uses`, `"${t.id}" es física: no lleva uses`);
+    if (t.family === 'elemental' && t.hp !== undefined)
+      err(F.traps, `[${i}].hp`, `"${t.id}" es elemental: no se puede atacar, no lleva hp`);
     if (t.triggerRadius < 0.5)
       err(F.traps, `[${i}].triggerRadius`, 'debe ser al menos 0,5 tiles (la mitad de un tile)');
   });

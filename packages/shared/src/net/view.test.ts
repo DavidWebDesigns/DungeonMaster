@@ -6,7 +6,7 @@ import { createMatch } from '../sim/createMatch';
 import { visibleMask } from '../sim/fog';
 import { rulesOf } from '../sim/rules';
 import { step } from '../sim/step';
-import { duel, extendTerritory, loadData, run, spawn } from '../sim/testUtils';
+import { buildRooms, duel, loadData, run, spawn } from '../sim/testUtils';
 import type { MatchState } from '../sim/types';
 import { Mirror } from './mirror';
 import { ClientKnowledge, computeDelta, eventsFor } from './view';
@@ -147,21 +147,15 @@ describe('vistas por jugador: lo que se ve', () => {
 
   it('las trampas y las tareas son siempre propias: el rival nunca las recibe', () => {
     const { state, data: d } = duel();
-    extendTerritory(state, d);
+    buildRooms(state, d, ['trainingRoom', 'workshop']);
     state.players[0]!.gold = 9000;
-    applyCommand(state, d, 1, {
-      type: 'buildRoom',
-      room: 'tortureChamber',
-      rect: { x: 2, y: 11, w: 3, h: 3 },
-    });
-    step(state, d);
-    applyCommand(state, d, 1, { type: 'buildTrap', trap: 'spikeTrap', tile: { x: 8, y: 15 } });
+    applyCommand(state, d, 1, { type: 'buildTrap', trap: 'spikeTrap', tile: { x: 9, y: 12 } });
     applyCommand(state, d, 1, { type: 'dig', tiles: [{ x: 11, y: 4 }] });
     step(state, d);
     const p1 = new Follower(1, state);
     const p2 = new Follower(2, state);
     // Aunque el jugador 2 viera ese tile, no recibe trampas ajenas.
-    spawn(state, d, 2, 'troll', 8.5, 15.5);
+    spawn(state, d, 2, 'troll', 9.5, 12.5);
     p1.update(state);
     p2.update(state);
     expect(p1.mirror.state.traps).toHaveLength(1);

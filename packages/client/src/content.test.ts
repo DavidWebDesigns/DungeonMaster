@@ -67,7 +67,8 @@ describe('todo el contenido de /data tiene su parte en el cliente', () => {
 
   it('las trampas exigen una sala que se puede construir', () => {
     for (const t of data.traps)
-      expect(data.rooms.find((r) => r.id === t.requiresRoom)?.buildable).toBe(true);
+      for (const req of t.requiresRooms)
+        expect(data.rooms.find((r) => r.id === req)?.buildable, `${t.id} pide ${req}`).toBe(true);
   });
 
   it('el consejero sabe nombrar a todas las criaturas (a partir de los datos)', () => {

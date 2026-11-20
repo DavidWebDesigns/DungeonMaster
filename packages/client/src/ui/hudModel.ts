@@ -27,6 +27,11 @@ export interface ToolButton {
   hint: string;
 }
 
+/** "A", "A y B", "A, B y C". */
+function joinNames(names: string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} y ${names.at(-1)}` : (names[0] ?? '');
+}
+
 export interface RoomButton {
   id: string;
   name: string;
@@ -221,7 +226,7 @@ export function buildHudModel(
       minCost: r.goldPerTile * minTiles,
       minSize: `${r.minSize.w}×${r.minSize.h}`,
       affordable: player.gold >= r.goldPerTile * minTiles,
-      requires: missing.map((id) => data.rooms.find((x) => x.id === id)?.name ?? id).join(' y '),
+      requires: joinNames(missing.map((id) => data.rooms.find((x) => x.id === id)?.name ?? id)),
       available: missing.length === 0,
       active: tool.kind === 'build' && tool.room === r.id,
     };
@@ -232,8 +237,12 @@ export function buildHudModel(
     name: t.name,
     hotkey: trapHotkey(i),
     cost: t.goldCost,
-    requires: data.rooms.find((r) => r.id === t.requiresRoom)?.name ?? t.requiresRoom,
-    available: state.rooms.some((r) => r.owner === playerId && r.type === t.requiresRoom),
+    requires: joinNames(
+      missingRooms(state, playerId, t.requiresRooms).map(
+        (id) => data.rooms.find((r) => r.id === id)?.name ?? id,
+      ),
+    ),
+    available: missingRooms(state, playerId, t.requiresRooms).length === 0,
     affordable: player.gold >= t.goldCost,
     active: tool.kind === 'trap' && tool.trap === t.id,
   }));

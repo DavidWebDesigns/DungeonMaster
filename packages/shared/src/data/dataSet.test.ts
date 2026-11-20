@@ -44,7 +44,14 @@ describe('datos reales de /data/mvp', () => {
       'fallenAngel',
     ]);
     expect(result.data.spells).toHaveLength(5);
-    expect(result.data.traps.map((t) => t.id)).toEqual(['spikeTrap', 'blastTrap']);
+    expect(result.data.traps.map((t) => t.id)).toEqual([
+      'spikeTrap',
+      'boulderTrap',
+      'crushingWalls',
+      'frostTrap',
+      'fireTrap',
+      'lightningTrap',
+    ]);
   });
 
   it('contienen las cifras clave del plan (sección 6)', () => {
@@ -402,11 +409,31 @@ describe('errores de referencias cruzadas', () => {
 
   it('detecta una trampa que exige una sala inexistente o no construible', () => {
     const raw = realRawData();
-    (raw.traps as any)[0].requiresRoom = 'inventada';
-    expectError(parseDataSet(raw), 'traps.json', '[0].requiresRoom');
+    (raw.traps as any)[0].requiresRooms = ['inventada'];
+    expectError(parseDataSet(raw), 'traps.json', '[0].requiresRooms[0]');
     const raw2 = realRawData();
-    (raw2.traps as any)[0].requiresRoom = 'heart';
+    (raw2.traps as any)[0].requiresRooms = ['heart'];
     expectError(parseDataSet(raw2), 'traps.json', 'no se puede construir');
+  });
+
+  it('exige vida y desgaste a las físicas y usos a las elementales, sin mezclar', () => {
+    const trap = (raw: ReturnType<typeof realRawData>, id: string) =>
+      (raw.traps as any[]).find((t) => t.id === id);
+    const raw = realRawData();
+    delete trap(raw, 'spikeTrap').hp;
+    expectError(parseDataSet(raw), 'traps.json', 'es física: necesita hp y wearPerTrigger');
+    const raw2 = realRawData();
+    delete trap(raw2, 'frostTrap').uses;
+    expectError(parseDataSet(raw2), 'traps.json', 'es elemental: necesita uses');
+    const raw3 = realRawData();
+    trap(raw3, 'spikeTrap').uses = 5;
+    expectError(parseDataSet(raw3), 'traps.json', 'es física: no lleva uses');
+    const raw4 = realRawData();
+    trap(raw4, 'fireTrap').hp = 500;
+    expectError(parseDataSet(raw4), 'traps.json', 'no se puede atacar');
+    const raw5 = realRawData();
+    trap(raw5, 'lightningTrap').effect.falloff = 2;
+    expectError(parseDataSet(raw5), 'traps.json', 'falloff');
   });
 
   it('detecta ids de trampa repetidos, un radio de disparo diminuto y un daño no positivo', () => {

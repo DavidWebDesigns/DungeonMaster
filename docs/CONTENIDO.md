@@ -35,9 +35,10 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
 
 ## Añadir una trampa
 
-1. **`data/mvp/traps.json`**: `id`, `name`, `modelId`, `goldCost`, `buildSeconds` (lo que tarda un Imp), `requiresRoom` (la sala que hay que
-   tener para colocarla), `triggerRadius`, `cooldownSeconds`, `consumable`, `sellRefund` y `effect`.
-2. **Efectos:** hoy existe `areaDamage` (`damage`, `radius`). Un efecto nuevo se añade a `schemas/traps.ts` y a `sim/traps.ts` (`updateTraps`).
+1. **`data/mvp/traps.json`**: `id`, `name`, `modelId`, `goldCost`, `buildSeconds` (lo que tarda un Imp), `requiresRooms` (las salas que hay que
+   tener para colocarla), `family` (`physical` con `hp` y `wearPerTrigger`, o `elemental` con `uses`), `trigger` (`step`, `proximity` o `lineOfSight`),
+   `triggerRadius`, `cooldownSeconds`, `sellRefund` y `effect`.
+2. **Efectos:** hay `areaDamage`, `freezeArea`, `rollingBoulder`, `chainLightning` y `crushingWalls`. Un efecto nuevo se añade a `schemas/traps.ts` y a `sim/traps.ts` (`updateTraps`).
 3. **`render/creatureStyle.ts` → `TRAP_LOOKS`**: forma (`spikes` o `barrel`) y color.
 4. Se coloca en un tile de suelo propio, la construyen los Imps (tarea `buildTrap`) y es invisible para el rival.
 

@@ -205,17 +205,18 @@ export function deriveEffects(
     }
     if (e.type === 'trapTriggered') {
       if (!seesAt(e.x, e.y)) continue;
-      const blast = e.trap === 'blastTrap';
-      burst(
-        e.x,
-        0.5,
-        e.y,
-        blast ? [1, 0.55, 0.2] : [0.85, 0.85, 0.9],
-        blast ? 26 : 12,
-        blast ? 2.6 : 1.8,
-        3.2,
-        blast ? 0.18 : 0.12,
-      );
+      // El color y el tamaño salen del efecto de la trampa (los datos), no de su nombre.
+      const fx = data.traps.find((t) => t.id === e.trap)?.effect.type;
+      const big = fx === 'areaDamage' || fx === 'crushingWalls' || fx === 'chainLightning';
+      const color: RGB =
+        e.trap === 'fireTrap'
+          ? [1, 0.55, 0.2]
+          : fx === 'freezeArea'
+            ? [0.6, 0.85, 1]
+            : fx === 'chainLightning'
+              ? [1, 0.95, 0.4]
+              : [0.85, 0.85, 0.9];
+      burst(e.x, 0.5, e.y, color, big ? 26 : 12, big ? 2.6 : 1.8, 3.2, big ? 0.18 : 0.12);
       out.push({ type: 'sound', sound: 'trap', volume: 1 });
       continue;
     }

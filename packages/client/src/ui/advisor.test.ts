@@ -83,9 +83,9 @@ describe('el consejero', () => {
       { type: 'trapBuilt', playerId: 1, trapId: 3, trap: 'spikeTrap', tile: 5 },
     ]);
     expect(ready[0]!.text).toBe('Trampa de pinchos lista y armada.');
-    const hit = advise([{ type: 'trapTriggered', playerId: 1, trap: 'blastTrap', x: 1, y: 1 }]);
-    expect(hit[0]!.text).toBe('¡Tu trampa explosiva ha atrapado a un intruso!');
-    expect(advise([{ type: 'trapTriggered', playerId: 2, trap: 'blastTrap', x: 1, y: 1 }])).toEqual(
+    const hit = advise([{ type: 'trapTriggered', playerId: 1, trap: 'fireTrap', x: 1, y: 1 }]);
+    expect(hit[0]!.text).toBe('¡Tu trampa de fuego ha atrapado a un intruso!');
+    expect(advise([{ type: 'trapTriggered', playerId: 2, trap: 'fireTrap', x: 1, y: 1 }])).toEqual(
       [],
     );
   });

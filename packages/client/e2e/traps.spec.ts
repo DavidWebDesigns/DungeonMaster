@@ -21,6 +21,7 @@ interface Hook {
         slapUntil: number;
       }>;
       tick: number;
+      roomAt: number[];
       tasks: Array<{ id: number; kind: string }>;
     };
   };
@@ -52,45 +53,71 @@ test.beforeEach(async ({ page }) => {
       }
     s.mapVersion++;
     s.players[0]!.gold = 9000;
+    // El HUD (9 salas en dos filas) tapa la parte baja: se centra la cámara en la zona de construcción.
+    const g = dm() as unknown as { camera: { targetX: number; targetZ: number } };
+    g.camera = { ...g.camera, targetX: 7, targetZ: 14 };
   });
   await page.waitForTimeout(300);
 });
 
-test('la Cámara de tortura desbloquea las trampas, que se colocan y construyen los Imps', async ({
+test('el Taller desbloquea las trampas físicas, que se colocan y construyen los Imps', async ({
   page,
 }) => {
-  // Antes de la Cámara, las trampas salen bloqueadas.
-  await expect(page.locator('.panel.traps .btn.locked')).toHaveCount(2);
-  await page.keyboard.press('6'); // Cámara de tortura
-  const room = await page.evaluate(() => dm().tileToScreen(3, 12));
-  await page.mouse.click(room.x, room.y);
+  // Antes del Taller, las 6 trampas salen bloqueadas.
+  await expect(page.locator('.panel.traps .btn.locked')).toHaveCount(6);
+  // La Sala de entrenamiento (4) y el Taller (7, que la exige) se construyen con el ratón.
+  await page.keyboard.press('4');
+  const training = await page.evaluate(() => dm().tileToScreen(3, 15));
+  await page.mouse.click(training.x, training.y);
+  await advance(page, 1);
+  await page.keyboard.press('7');
+  const workshop = await page.evaluate(() => dm().tileToScreen(7, 12));
+  await page.mouse.click(workshop.x, workshop.y);
   await advance(page, 1);
   expect(await page.evaluate(() => dm().sandbox.state.rooms.map((r) => r.type))).toContain(
-    'tortureChamber',
+    'workshop',
   );
-  await expect(page.locator('.panel.traps .btn.locked')).toHaveCount(0);
+  // Las físicas ya se pueden usar; las elementales siguen pidiendo Cámara de tortura y Biblioteca.
+  await expect(page.locator('.panel.traps .btn.locked')).toHaveCount(3);
 
   await page.keyboard.press('g'); // Trampa de pinchos
   await expect(page.locator('.panel.traps .btn.active')).toContainText('Trampa de pinchos');
-  const spot = await page.evaluate(() => dm().tileToScreen(8, 15));
-  await page.mouse.click(spot.x, spot.y);
+  // La orden se manda directamente (el HUD tapa buena parte del mapa en esta resolución).
+  const placed = await page.evaluate(() => {
+    const st = dm().sandbox.state;
+    for (let y = 12; y < 20; y++)
+      for (let x = 10; x >= 2; x--) {
+        const i = y * st.width + x;
+        if (st.owner[i] === 1 && (st.roomAt as number[])[i] === 0)
+          return (dm().sandbox as unknown as { send(c: unknown): { ok: boolean } }).send({
+            type: 'buildTrap',
+            trap: 'spikeTrap',
+            tile: { x, y },
+          });
+      }
+    return null;
+  });
+  expect(placed).toMatchObject({ ok: true });
   await advance(page, 1);
   expect(await page.evaluate(() => dm().sandbox.state.traps)).toMatchObject([
     { type: 'spikeTrap', built: false },
   ]);
-  await advance(page, 25);
+  await advance(page, 100);
   expect(await page.evaluate(() => dm().sandbox.state.traps)).toMatchObject([
     { type: 'spikeTrap', built: true },
   ]);
   await page.screenshot({ path: 'test-results/trap.png' });
 });
 
-test('sin Cámara, colocar una trampa avisa de lo que falta', async ({ page }) => {
+test('sin Taller, colocar una trampa avisa de lo que falta', async ({ page }) => {
+  // Con la Tesorería llena saldría ese aviso en su lugar.
+  await page.evaluate(() => (dm().sandbox.state.players[0]!.gold = 5000));
+  await advance(page, 1);
   await page.keyboard.press('g');
-  const spot = await page.evaluate(() => dm().tileToScreen(8, 15));
+  const spot = await page.evaluate(() => dm().tileToScreen(10, 12));
   await page.mouse.click(spot.x, spot.y);
   await advance(page, 1);
-  await expect(page.locator('.notice', { hasText: 'Cámara de tortura' })).toBeVisible();
+  await expect(page.locator('.notice', { hasText: 'Te falta construir: Taller' })).toBeVisible();
   expect(await page.evaluate(() => dm().sandbox.state.traps.length)).toBe(0);
 });
 

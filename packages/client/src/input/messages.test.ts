@@ -25,7 +25,7 @@ describe('errorMessage con contexto', () => {
       'REQUIRES_ROOM',
       ctx({ type: 'buildTrap', trap: 'spikeTrap', tile: { x: 3, y: 3 } }),
     );
-    expect(m).toBe('Te falta construir: Cámara de tortura.');
+    expect(m).toBe('Te falta construir: Taller.');
   });
 
   it('sin contexto, o con otro código, da el texto genérico', () => {

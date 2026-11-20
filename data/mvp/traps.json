@@ -3,12 +3,15 @@
     "id": "spikeTrap",
     "name": "Trampa de pinchos",
     "modelId": "trap_spike",
-    "goldCost": 150,
-    "buildSeconds": 6,
-    "requiresRoom": "tortureChamber",
-    "triggerRadius": 1.0,
+    "goldCost": 300,
+    "buildSeconds": 20,
+    "requiresRooms": ["workshop"],
+    "family": "physical",
+    "trigger": "step",
+    "triggerRadius": 0.6,
     "cooldownSeconds": 6,
-    "consumable": false,
+    "hp": 1200,
+    "wearPerTrigger": 150,
     "sellRefund": 0.5,
     "effect": {
       "type": "areaDamage",
@@ -17,20 +20,102 @@
     }
   },
   {
-    "id": "blastTrap",
-    "name": "Trampa explosiva",
-    "modelId": "trap_blast",
-    "goldCost": 400,
-    "buildSeconds": 10,
-    "requiresRoom": "tortureChamber",
-    "triggerRadius": 1.2,
-    "cooldownSeconds": 0,
-    "consumable": true,
+    "id": "boulderTrap",
+    "name": "Trampa de piedra rodante",
+    "modelId": "trap_boulder",
+    "goldCost": 600,
+    "buildSeconds": 40,
+    "requiresRooms": ["workshop"],
+    "family": "physical",
+    "trigger": "lineOfSight",
+    "triggerRadius": 8,
+    "cooldownSeconds": 30,
+    "hp": 1800,
+    "wearPerTrigger": 300,
+    "sellRefund": 0.5,
+    "effect": {
+      "type": "rollingBoulder",
+      "damage": 800
+    }
+  },
+  {
+    "id": "crushingWalls",
+    "name": "Paredes aplastantes",
+    "modelId": "trap_crushing_walls",
+    "goldCost": 800,
+    "buildSeconds": 50,
+    "requiresRooms": ["workshop"],
+    "family": "physical",
+    "trigger": "step",
+    "triggerRadius": 0.6,
+    "cooldownSeconds": 15,
+    "hp": 2500,
+    "wearPerTrigger": 400,
+    "sellRefund": 0.5,
+    "effect": {
+      "type": "crushingWalls",
+      "damage": 1200,
+      "radius": 0.8
+    }
+  },
+  {
+    "id": "frostTrap",
+    "name": "Trampa de hielo",
+    "modelId": "trap_frost",
+    "goldCost": 450,
+    "buildSeconds": 30,
+    "requiresRooms": ["workshop", "tortureChamber", "library"],
+    "family": "elemental",
+    "trigger": "step",
+    "triggerRadius": 0.6,
+    "cooldownSeconds": 12,
+    "uses": 5,
+    "sellRefund": 0.5,
+    "effect": {
+      "type": "freezeArea",
+      "damage": 150,
+      "radius": 1.5,
+      "freezeSeconds": 3
+    }
+  },
+  {
+    "id": "fireTrap",
+    "name": "Trampa de fuego",
+    "modelId": "trap_fire",
+    "goldCost": 500,
+    "buildSeconds": 30,
+    "requiresRooms": ["workshop", "tortureChamber", "library"],
+    "family": "elemental",
+    "trigger": "proximity",
+    "triggerRadius": 3,
+    "cooldownSeconds": 10,
+    "uses": 5,
     "sellRefund": 0.5,
     "effect": {
       "type": "areaDamage",
-      "damage": 900,
-      "radius": 2.0
+      "damage": 360,
+      "radius": 3
+    }
+  },
+  {
+    "id": "lightningTrap",
+    "name": "Trampa eléctrica",
+    "modelId": "trap_lightning",
+    "goldCost": 650,
+    "buildSeconds": 35,
+    "requiresRooms": ["workshop", "tortureChamber", "library"],
+    "family": "elemental",
+    "trigger": "proximity",
+    "triggerRadius": 4,
+    "cooldownSeconds": 14,
+    "uses": 5,
+    "sellRefund": 0.5,
+    "effect": {
+      "type": "chainLightning",
+      "damage": 300,
+      "jumps": 3,
+      "falloff": 0.25,
+      "jumpRange": 3
     }
   }
 ]

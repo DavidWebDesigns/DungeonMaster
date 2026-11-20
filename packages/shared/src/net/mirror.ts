@@ -233,7 +233,16 @@ export class Mirror {
       case 't': {
         let t = this.traps.get(id);
         if (!t) {
-          t = { id, type: '', owner: this.me, tile: 0, built: false, readyAt: 0 };
+          t = {
+            id,
+            type: '',
+            owner: this.me,
+            tile: 0,
+            built: false,
+            readyAt: 0,
+            hp: 0,
+            usesLeft: 0,
+          };
           this.traps.set(id, t);
         }
         if ('y' in rec) t.type = str(rec['y']);

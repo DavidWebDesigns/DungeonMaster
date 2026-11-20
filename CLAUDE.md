@@ -12,7 +12,7 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 - Fase 5 (multijugador): implementada y probada con dos navegadores reales (lobby, partida, reconexión). Falta el Playtest #1 en red con 3 o 4 personas.
 - Modo PvE (fase 6, en curso): `pnpm dev` abre por defecto tu mazmorra contra 3 bots en dificultad normal (`data/mvp/pve.json`). `?rivals=0..3`, `?difficulty=easy|normal|hard`, `?mode=solo|online`. P pausa y `[` `]` cambian la velocidad; F9 llena maná y oro, F10 muestra el mapa entero (trampas de pruebas, solo en local). El tutorial queda para después del MVP.
 - Fase 6 (en curso): game feel casi completo, minimapa, pantalla de fin con estadísticas, guía de despliegue (`docs/DESPLIEGUE.md`) y guía de playtest (`docs/PLAYTEST.md`). Faltan modelos .glb reales, balance final y menús conectados.
-- Progresión de salas (en curso, plan en ASSETS.md §1.1): hechos los requisitos entre salas, los cupos de criaturas y las salas Taller, Cementerio y Templo; atajos: salas 1 a 9, trampas `G H J K L N`. Faltan criaturas nuevas, habilidades y trampas por familias.
+- Progresión de salas (en curso, plan en ASSETS.md §1.1): hechos los requisitos entre salas, los cupos de criaturas y las salas Taller, Cementerio y Templo; atajos: salas 1 a 9, trampas `G H J K L N`. Hechas también las 6 criaturas nuevas, las 16 habilidades de nivel 1 a 5 y las 6 trampas por familias (Taller; físicas y elementales). Pendiente: que los bots usen cupos y salas nuevas, reparación de trampas y revisar el balance.
 - Siguiente: playtest de las fases 2 a 5 y fase 6 (pulido). Propón archivos y pruebas antes de escribir código.
 
 ## Reglas de arquitectura

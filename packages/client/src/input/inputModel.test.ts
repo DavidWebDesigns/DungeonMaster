@@ -343,10 +343,12 @@ describe('atajos de teclado', () => {
     });
     expect(keyAction('H', data)).toEqual({
       type: 'tool',
-      tool: { kind: 'trap', trap: 'blastTrap' },
+      tool: { kind: 'trap', trap: 'boulderTrap' },
     });
-    // Las teclas de trampas sin trampa y el 0 no hacen nada.
-    expect(keyAction('j', data)).toBeNull();
+    // J K L N son las otras cuatro trampas; el 0 y las letras libres no hacen nada.
+    ['crushingWalls', 'frostTrap', 'fireTrap', 'lightningTrap'].forEach((trap, n) =>
+      expect(keyAction('jkln'[n]!, data)).toEqual({ type: 'tool', tool: { kind: 'trap', trap } }),
+    );
     expect(keyAction('0', data)).toBeNull();
   });
 
@@ -502,30 +504,30 @@ describe('trampas e Imps con el ratón', () => {
       }
     sandbox.state.mapVersion++;
     sandbox.state.players[0]!.gold = 9000;
-    ctx.input.setTool({ kind: 'build', room: 'tortureChamber' });
-    ctx.input.pointerDown(pt(2, 11), 0);
-    ctx.input.pointerUp(pt(2, 11));
+    // Taller y Sala de entrenamiento ya construidos (sus requisitos).
+    for (const [i, type] of ['trainingRoom', 'workshop'].entries())
+      sandbox.state.rooms.push({ id: 90 + i, type, owner: 1, tiles: [], timer: 0, stock: 0 });
     sandbox.advance(100);
     ctx.sent.length = 0;
     return ctx;
   }
 
-  it('sin Cámara de tortura la trampa se rechaza con REQUIRES_ROOM', () => {
+  it('sin Taller la trampa se rechaza con REQUIRES_ROOM', () => {
     const { input, sent } = setup();
     input.setTool({ kind: 'trap', trap: 'spikeTrap' });
     input.pointerDown(pt(3, 8), 0);
     expect(sent[0]!.res).toEqual({ ok: false, error: 'REQUIRES_ROOM' });
   });
 
-  it('con la Cámara, un clic coloca la trampa y el fantasma lo anuncia en verde o rojo', () => {
+  it('con el Taller, un clic coloca la trampa y el fantasma lo anuncia en verde o rojo', () => {
     const { input, sent, sandbox } = withTorture();
     input.setTool({ kind: 'trap', trap: 'spikeTrap' });
-    input.pointerMove(pt(8, 15));
-    expect(input.preview()).toEqual({ kind: 'target', tile: pt(8, 15), ok: true });
+    input.pointerMove(pt(9, 12));
+    expect(input.preview()).toEqual({ kind: 'target', tile: pt(9, 12), ok: true });
     input.pointerMove(pt(11, 4));
     expect(input.preview()).toMatchObject({ kind: 'target', ok: false });
-    input.pointerDown(pt(8, 15), 0);
-    expect(sent[0]!.cmd).toEqual({ type: 'buildTrap', trap: 'spikeTrap', tile: pt(8, 15) });
+    input.pointerDown(pt(9, 12), 0);
+    expect(sent[0]!.cmd).toEqual({ type: 'buildTrap', trap: 'spikeTrap', tile: pt(9, 12) });
     expect(sent[0]!.res.ok).toBe(true);
     sandbox.advance(100);
     expect(sandbox.state.traps).toHaveLength(1);
@@ -534,12 +536,12 @@ describe('trampas e Imps con el ratón', () => {
   it('con la herramienta de vender, un clic sobre una trampa propia la desmonta', () => {
     const { input, sent, sandbox } = withTorture();
     input.setTool({ kind: 'trap', trap: 'spikeTrap' });
-    input.pointerDown(pt(8, 15), 0);
+    input.pointerDown(pt(9, 12), 0);
     sandbox.advance(100);
     sent.length = 0;
     input.setTool({ kind: 'sell' });
-    input.pointerDown(pt(8, 15), 0);
-    expect(sent[0]!.cmd).toEqual({ type: 'sellTrap', tile: pt(8, 15) });
+    input.pointerDown(pt(9, 12), 0);
+    expect(sent[0]!.cmd).toEqual({ type: 'sellTrap', tile: pt(9, 12) });
     sandbox.advance(100);
     expect(sandbox.state.traps).toHaveLength(0);
   });

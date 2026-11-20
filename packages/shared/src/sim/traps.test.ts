@@ -87,81 +87,109 @@ describe('Cámara de tortura', () => {
   });
 });
 
+/** Partida con las salas pedidas ya construidas (en sus sitios de ROOM_SPOTS) y 9.000 de oro. Las trampas van en (9..10, 11..13). */
+function tw(rooms: Parameters<typeof buildRooms>[2]) {
+  const { state, data } = duel();
+  buildRooms(state, data, rooms);
+  state.players[0]!.gold = 9000;
+  return { state, data };
+}
+const PHYSICAL = ['trainingRoom', 'workshop'] as const;
+const ALL = ['trainingRoom', 'workshop', 'library', 'tortureChamber'] as const;
+
 describe('colocar trampas', () => {
-  it('sin Cámara de tortura da REQUIRES_ROOM', () => {
-    const { state, data } = world(false);
-    expect(trap(state, data, 'spikeTrap', 8, 15)).toEqual({ ok: false, error: 'REQUIRES_ROOM' });
-    expect(state.traps).toHaveLength(0);
+  it('sin el Taller da REQUIRES_ROOM; las elementales piden además Cámara de tortura y Biblioteca', () => {
+    const { state, data } = tw([]);
+    expect(trap(state, data, 'spikeTrap', 9, 12)).toEqual({ ok: false, error: 'REQUIRES_ROOM' });
+    const m2 = tw([...PHYSICAL]);
+    expect(trap(m2.state, m2.data, 'spikeTrap', 9, 12).ok).toBe(true);
+    expect(trap(m2.state, m2.data, 'frostTrap', 10, 12)).toEqual({
+      ok: false,
+      error: 'REQUIRES_ROOM',
+    });
+    const m3 = tw(['trainingRoom', 'workshop', 'library']);
+    expect(trap(m3.state, m3.data, 'frostTrap', 10, 12)).toEqual({
+      ok: false,
+      error: 'REQUIRES_ROOM',
+    });
+    const m4 = tw([...ALL]);
+    expect(trap(m4.state, m4.data, 'frostTrap', 10, 12).ok).toBe(true);
   });
 
-  it('con la Cámara, cobra el coste, crea la trampa sin construir y manda construirla a un Imp', () => {
-    const { state, data } = world(true);
+  it('cobra el coste, crea la trampa sin construir (con su vida o sus usos) y manda construirla a un Imp', () => {
+    const { state, data } = tw([...ALL]);
     const gold = state.players[0]!.gold;
-    expect(trap(state, data, 'spikeTrap', 8, 15).ok).toBe(true);
-    expect(state.players[0]!.gold).toBe(gold - 150);
-    expect(state.traps).toHaveLength(1);
-    expect(state.traps[0]).toMatchObject({ type: 'spikeTrap', owner: 1, built: false });
-    expect(state.tasks.some((t) => t.kind === 'buildTrap')).toBe(true);
+    expect(trap(state, data, 'spikeTrap', 9, 12).ok).toBe(true);
+    expect(trap(state, data, 'fireTrap', 10, 12).ok).toBe(true);
+    expect(state.players[0]!.gold).toBe(gold - 300 - 500);
+    expect(state.traps[0]).toMatchObject({
+      type: 'spikeTrap',
+      owner: 1,
+      built: false,
+      hp: 1200,
+      usesLeft: 0,
+    });
+    expect(state.traps[1]).toMatchObject({ type: 'fireTrap', built: false, hp: 0, usesLeft: 5 });
+    expect(state.tasks.filter((t) => t.kind === 'buildTrap')).toHaveLength(2);
   });
 
-  it('los Imps la construyen (6 s) y queda armada', () => {
-    const { state, data } = world(true);
-    trap(state, data, 'spikeTrap', 8, 15);
-    const events = run(state, data, 400);
+  it('los Imps la construyen (20 s) y queda armada', () => {
+    const { state, data } = tw([...PHYSICAL]);
+    trap(state, data, 'spikeTrap', 9, 12);
+    const events = run(state, data, 600);
     expect(state.traps[0]!.built).toBe(true);
     expect(events.filter((e) => e.type === 'trapBuilt')).toHaveLength(1);
-    expect(state.tasks.some((t) => t.kind === 'buildTrap')).toBe(false);
   });
 
-  it('errores: sin oro, tile ocupado, fuera del territorio, sobre una sala o sobre otra trampa', () => {
-    const { state, data } = world(true);
+  it('errores: tile ocupado, fuera del territorio, sobre una sala, otra trampa o sin oro', () => {
+    const { state, data } = tw([...PHYSICAL]);
     expect(trap(state, data, 'spikeTrap', 11, 4)).toEqual({ ok: false, error: 'INVALID_TARGET' }); // muro
     expect(trap(state, data, 'spikeTrap', 30, 30)).toEqual({ ok: false, error: 'INVALID_TARGET' }); // lejos
-    expect(trap(state, data, 'spikeTrap', 3, 12)).toEqual({ ok: false, error: 'INVALID_TARGET' }); // sobre la Cámara
-    expect(trap(state, data, 'inventada', 8, 15)).toEqual({ ok: false, error: 'INVALID_COMMAND' });
-    expect(trap(state, data, 'spikeTrap', 8, 15).ok).toBe(true);
-    expect(trap(state, data, 'blastTrap', 8, 15)).toEqual({ ok: false, error: 'INVALID_TARGET' }); // ya hay una
+    expect(trap(state, data, 'spikeTrap', 3, 15)).toEqual({ ok: false, error: 'INVALID_TARGET' }); // sobre una sala
+    expect(trap(state, data, 'inventada', 9, 12)).toEqual({ ok: false, error: 'INVALID_COMMAND' });
+    expect(trap(state, data, 'spikeTrap', 9, 12).ok).toBe(true);
+    expect(trap(state, data, 'boulderTrap', 9, 12)).toEqual({ ok: false, error: 'INVALID_TARGET' }); // ya hay una
     state.players[0]!.gold = 100;
-    expect(trap(state, data, 'blastTrap', 9, 15)).toEqual({ ok: false, error: 'NO_GOLD' });
+    expect(trap(state, data, 'boulderTrap', 10, 12)).toEqual({ ok: false, error: 'NO_GOLD' });
   });
 
-  it('no se puede construir una sala encima de una trampa', () => {
-    const { state, data } = world(true);
-    trap(state, data, 'spikeTrap', 8, 16);
-    expect(
-      applyCommand(state, data, 1, {
-        type: 'buildRoom',
-        room: 'lair',
-        rect: { x: 7, y: 15, w: 3, h: 3 },
-      }),
-    ).toEqual({ ok: false, error: 'INVALID_TARGET' });
+  it('las paredes aplastantes solo se colocan en un pasillo de 1 tile', () => {
+    const { state, data } = tw([...PHYSICAL]);
+    expect(trap(state, data, 'crushingWalls', 9, 12)).toEqual({
+      ok: false,
+      error: 'INVALID_TARGET',
+    });
+    // Un pasillo: muro a izquierda y derecha del tile (10,13).
+    const wall = data.terrain.findIndex((t) => t.id === 'solidRock');
+    state.terrain[tileIndex(state, 9, 13)] = wall;
+    state.terrain[tileIndex(state, 11, 13)] = wall;
+    state.mapVersion++;
+    expect(trap(state, data, 'crushingWalls', 10, 13).ok).toBe(true);
   });
 
   it('se vende: devuelve el 50 % si está armada y todo si aún se estaba construyendo', () => {
-    const { state, data } = world(true);
-    trap(state, data, 'blastTrap', 8, 15);
+    const { state, data } = tw([...PHYSICAL]);
+    trap(state, data, 'spikeTrap', 9, 12);
     const g = state.players[0]!.gold;
-    applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 8, y: 15 } });
+    applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 9, y: 12 } });
     step(state, data);
-    expect(state.players[0]!.gold).toBe(g + 400);
-    expect(state.traps).toHaveLength(0);
-    expect(state.tasks.some((t) => t.kind === 'buildTrap')).toBe(false);
-    trap(state, data, 'blastTrap', 8, 15);
-    run(state, data, 600);
+    expect(state.players[0]!.gold).toBe(g + 300);
+    trap(state, data, 'spikeTrap', 9, 12);
+    run(state, data, 800);
     const g2 = state.players[0]!.gold;
-    applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 8, y: 15 } });
+    applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 9, y: 12 } });
     step(state, data);
-    expect(state.players[0]!.gold).toBe(g2 + 200);
+    expect(state.players[0]!.gold).toBe(g2 + 150);
   });
 
   it('vender lo ajeno o lo que no existe falla', () => {
-    const { state, data } = world(true);
-    trap(state, data, 'spikeTrap', 8, 15);
-    expect(applyCommand(state, data, 2, { type: 'sellTrap', tile: { x: 8, y: 15 } })).toEqual({
+    const { state, data } = tw([...PHYSICAL]);
+    trap(state, data, 'spikeTrap', 9, 12);
+    expect(applyCommand(state, data, 2, { type: 'sellTrap', tile: { x: 9, y: 12 } })).toEqual({
       ok: false,
       error: 'NOT_OWNER',
     });
-    expect(applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 9, y: 15 } })).toEqual({
+    expect(applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 10, y: 12 } })).toEqual({
       ok: false,
       error: 'INVALID_TARGET',
     });
@@ -169,115 +197,165 @@ describe('colocar trampas', () => {
 });
 
 describe('disparar trampas', () => {
-  /** Trampa armada al instante en (8,15) y un enemigo del jugador 2. */
-  function armed(type: string) {
-    const { state, data } = world(true);
-    trap(state, data, type, 8, 15);
+  /** Trampa armada al instante en (9,12). */
+  function armed(type: string, rooms: Parameters<typeof tw>[0] = [...ALL]) {
+    const { state, data } = tw(rooms);
+    trap(state, data, type, 9, 12);
     state.traps[0]!.built = true;
     state.tasks = [];
     return { state, data, rules: rulesOf(data) };
   }
+  const maxHp = (data: DataSet, c: Parameters<typeof creatureMaxHp>[1]) =>
+    creatureMaxHp(rulesOf(data), c);
 
   it('una trampa sin terminar no se dispara', () => {
-    const { state, data } = world(true);
-    trap(state, data, 'spikeTrap', 8, 15);
+    const { state, data } = tw([...PHYSICAL]);
+    trap(state, data, 'spikeTrap', 9, 12);
     state.tasks = [];
-    const e = spawn(state, data, 2, 'troll', 8.5, 15.5, { mood: 50 });
+    const e = spawn(state, data, 2, 'troll', 9.5, 12.5, { mood: 50 });
     const hp = e.hp;
     run(state, data, 5);
-    expect(e.hp).toBeLessThanOrEqual(hp); // sin daño de trampa
+    expect(e.hp).toBeLessThanOrEqual(hp);
     expect(state.traps[0]!.built).toBe(false);
   });
 
-  it('los pinchos dañan 350 al enemigo que pasa, con 6 s de enfriamiento', () => {
+  it('los pinchos (física, al pisar) dañan 350, se desgastan 150 y esperan 6 s', () => {
     const { state, data } = armed('spikeTrap');
-    const e = spawn(state, data, 2, 'troll', 8.5, 15.5, { mood: 50 });
-    e.goal = 'none';
-    const max = creatureMaxHp(rulesOf(data), e);
+    const e = spawn(state, data, 2, 'troll', 9.5, 12.5, { mood: 50 });
     const events = run(state, data, 1);
     expect(events.some((x) => x.type === 'trapTriggered')).toBe(true);
-    expect(max - e.hp).toBeGreaterThanOrEqual(350);
-    expect(max - e.hp).toBeLessThan(350 + 100); // algún golpe de otras criaturas como mucho
-    // Mientras se enfría no vuelve a disparar.
+    expect(maxHp(data, e) - e.hp).toBeGreaterThanOrEqual(350);
+    expect(state.traps[0]!.hp).toBe(1200 - 150);
+    // En enfriamiento no vuelve a disparar.
     const hp = e.hp;
-    e.x = 8.5;
-    e.y = 15.5;
-    run(state, data, 30);
-    e.x = 8.5;
-    e.y = 15.5;
-    expect(hp - e.hp).toBeLessThan(350);
-    // Pasado el enfriamiento, sí (el enemigo sigue encima de la trampa).
-    // Se mantiene encima de la trampa tick a tick (si no, se iría a pelear con los Imps).
-    let fired = false;
-    for (let n = 0; n < 45; n++) {
-      e.x = 8.5;
-      e.y = 15.5;
-      fired ||= step(state, data).some((x) => x.type === 'trapTriggered');
+    for (let n = 0; n < 30; n++) {
+      e.x = 9.5;
+      e.y = 12.5;
+      step(state, data);
     }
-    expect(fired).toBe(true);
+    expect(state.traps[0]!.hp).toBe(1050);
+    expect(hp - e.hp).toBeLessThan(350);
   });
 
-  it('la explosiva hace 900 en 2 tiles y se gasta al disparar', () => {
-    const { state, data } = armed('blastTrap');
-    const a = spawn(state, data, 2, 'bileDemon', 8.5, 15.5, { mood: 50 });
-    const b = spawn(state, data, 2, 'bileDemon', 9.9, 15.5, { mood: 50 });
-    const far = spawn(state, data, 2, 'bileDemon', 14.5, 15.5, { mood: 50 });
+  it('una trampa física se rompe al quedarse sin vida', () => {
+    const { state, data } = armed('spikeTrap');
+    state.traps[0]!.hp = 100; // el desgaste por disparo es 150
+    spawn(state, data, 2, 'troll', 9.5, 12.5, { mood: 50 });
     run(state, data, 1);
-    const max = creatureMaxHp(rulesOf(data), a);
-    expect(max - a.hp).toBeGreaterThanOrEqual(900);
-    expect(max - b.hp).toBeGreaterThanOrEqual(900);
-    expect(far.hp).toBe(max);
     expect(state.traps).toHaveLength(0);
+  });
+
+  it('una elemental tiene 5 usos y se consume al quinto', () => {
+    const { state, data } = armed('fireTrap');
+    const e = spawn(state, data, 2, 'bileDemon', 11.0, 12.5, { mood: 50 });
+    e.hp = 1e9;
+    let shots = 0;
+    for (let n = 0; n < 600 && state.traps.length > 0; n++) {
+      e.x = 11.0;
+      e.y = 12.5;
+      e.hp = 1e9;
+      shots += step(state, data).filter((x) => x.type === 'trapTriggered').length;
+    }
+    expect(shots).toBe(5);
+    expect(state.traps).toHaveLength(0);
+  });
+
+  it('la de fuego (disparo a 3 tiles) daña 360 a todos en 3 tiles y no a los lejanos', () => {
+    const { state, data } = armed('fireTrap');
+    const a = spawn(state, data, 2, 'bileDemon', 11.5, 12.5, { mood: 50 });
+    const b = spawn(state, data, 2, 'bileDemon', 9.5, 14.5, { mood: 50 });
+    const far = spawn(state, data, 2, 'bileDemon', 9.5, 19.5, { mood: 50 });
+    run(state, data, 1);
+    expect(maxHp(data, a) - a.hp).toBeGreaterThanOrEqual(360);
+    expect(maxHp(data, b) - b.hp).toBeGreaterThanOrEqual(360);
+    expect(far.hp).toBe(maxHp(data, far));
+    expect(state.traps[0]!.usesLeft).toBe(4);
+  });
+
+  it('la de hielo daña 150 e inmoviliza 3 s a las criaturas en 1,5 tiles', () => {
+    const { state, data } = armed('frostTrap');
+    const a = spawn(state, data, 2, 'goblin', 9.5, 12.5, { mood: 50 });
+    const b = spawn(state, data, 2, 'goblin', 10.5, 12.5, { mood: 50 });
+    run(state, data, 1);
+    for (const c of [a, b]) expect(c.statuses.find((s) => s.kind === 'root')).toBeDefined();
+    expect(maxHp(data, a) - a.hp).toBeGreaterThanOrEqual(150);
+  });
+
+  it('la eléctrica salta a los enemigos cercanos y cada salto hace un 25 % menos', () => {
+    const { state, data } = armed('lightningTrap');
+    const a = spawn(state, data, 2, 'bileDemon', 9.5, 14.0, { mood: 50 });
+    const b = spawn(state, data, 2, 'bileDemon', 9.5, 16.0, { mood: 50 });
+    const c = spawn(state, data, 2, 'bileDemon', 9.5, 18.0, { mood: 50 });
+    const d = spawn(state, data, 2, 'bileDemon', 9.5, 20.5, { mood: 50 });
+    const events = run(state, data, 1);
+    const dmg = (u: typeof a) => maxHp(data, u) - u.hp;
+    expect(dmg(a)).toBeCloseTo(300, 0);
+    expect(dmg(b)).toBeCloseTo(225, 0);
+    expect(dmg(c)).toBeCloseTo(168.75, 0);
+    expect(dmg(d)).toBe(0); // solo salta a 3 enemigos
+    expect(
+      events.filter((x) => x.type === 'hit' && x.targetOwner === 2 && x.attackerOwner === 1),
+    ).toHaveLength(3);
+  });
+
+  it('la piedra rodante (línea de visión, 8 tiles) daña 800 a todos los de la línea hasta el muro', () => {
+    const { state, data } = armed('boulderTrap', [...PHYSICAL]);
+    const a = spawn(state, data, 2, 'bileDemon', 9.5, 15.5, { mood: 50 });
+    const b = spawn(state, data, 2, 'bileDemon', 9.5, 17.5, { mood: 50 });
+    const off = spawn(state, data, 2, 'bileDemon', 7.5, 16.5, { mood: 50 });
+    run(state, data, 1);
+    expect(maxHp(data, a) - a.hp).toBeGreaterThanOrEqual(800);
+    expect(maxHp(data, b) - b.hp).toBeGreaterThanOrEqual(800);
+    expect(off.hp).toBe(maxHp(data, off));
+  });
+
+  it('la piedra rodante no se dispara contra quien no está en línea recta', () => {
+    const { state, data } = armed('boulderTrap', [...PHYSICAL]);
+    spawn(state, data, 2, 'bileDemon', 12.0, 15.0, { mood: 50 });
+    expect(run(state, data, 3).some((e) => e.type === 'trapTriggered')).toBe(false);
+  });
+
+  it('las paredes aplastantes hacen 1.200 al que pisa el pasillo', () => {
+    const { state, data } = tw([...PHYSICAL]);
+    const wall = data.terrain.findIndex((t) => t.id === 'solidRock');
+    state.terrain[tileIndex(state, 9, 13)] = wall;
+    state.terrain[tileIndex(state, 11, 13)] = wall;
+    trap(state, data, 'crushingWalls', 10, 13);
+    state.traps[0]!.built = true;
+    state.tasks = [];
+    const e = spawn(state, data, 2, 'bileDemon', 10.5, 13.5, { mood: 50 });
+    run(state, data, 1);
+    expect(maxHp(data, e) - e.hp).toBeGreaterThanOrEqual(1200);
   });
 
   it('no dispara contra el propio dueño, ni contra criaturas en la mano, ni contra rivales fuera de su radio', () => {
     const { state, data } = armed('spikeTrap');
-    const own = spawn(state, data, 1, 'troll', 8.5, 15.5);
-    const held = spawn(state, data, 2, 'troll', 8.5, 15.5, { held: true });
-    const far = spawn(state, data, 2, 'troll', 11.5, 15.5);
-    const events = run(state, data, 3);
-    expect(events.some((e) => e.type === 'trapTriggered')).toBe(false);
-    expect(own.hp).toBe(creatureMaxHp(rulesOf(data), own));
-    expect(held.hp).toBe(creatureMaxHp(rulesOf(data), held));
-    void far;
+    const own = spawn(state, data, 1, 'troll', 9.5, 12.5);
+    const held = spawn(state, data, 2, 'troll', 9.5, 12.5, { held: true });
+    spawn(state, data, 2, 'troll', 11.5, 12.5);
+    expect(run(state, data, 3).some((e) => e.type === 'trapTriggered')).toBe(false);
+    expect(own.hp).toBe(maxHp(data, own));
+    expect(held.hp).toBe(maxHp(data, held));
   });
 
   it('también dispara contra los Imps enemigos y puede matarlos', () => {
     const { state, data } = armed('spikeTrap');
     const imp = state.imps.find((i) => i.owner === 2)!;
-    imp.x = 8.5;
-    imp.y = 15.5;
+    imp.x = 9.5;
+    imp.y = 12.5;
     imp.hp = 100;
-    const events = run(state, data, 2);
-    expect(events.some((e) => e.type === 'impDied')).toBe(true);
+    expect(run(state, data, 2).some((e) => e.type === 'impDied')).toBe(true);
   });
 
-  it('las criaturas muertas por una trampa dan XP de ninguna criatura (no hay asesino)', () => {
-    const { state, data } = armed('blastTrap');
-    const victim = spawn(state, data, 2, 'goblin', 8.5, 15.5, { hp: 100 });
+  it('las criaturas muertas por una trampa no dan XP a nadie (no hay asesino)', () => {
+    const { state, data } = armed('spikeTrap');
+    const victim = spawn(state, data, 2, 'goblin', 9.5, 12.5, { hp: 100 });
     const events = run(state, data, 2);
     expect(events.some((e) => e.type === 'creatureDied' && e.creatureId === victim.id)).toBe(true);
   });
 
-  it('quien reclama el suelo enemigo se queda sin la trampa que había en él', () => {
+  it('al eliminar al dueño no quedan trampas', () => {
     const { state, data } = armed('spikeTrap');
-    const tile = tileIndex(state, 8, 15);
-    // El jugador 2 reclama ese tile (simulado: ya es suelo enemigo adyacente a su territorio).
-    state.owner[tile] = 1;
-    const claimed = data.terrain.findIndex((t) => t.id === 'claimedFloor');
-    state.terrain[tile] = claimed;
-    state.tasks.push({
-      id: 999,
-      owner: 2,
-      kind: 'claim',
-      tile,
-      reservedBy: 0,
-      blockedVersion: -1,
-      auto: false,
-    });
-    const task = state.tasks.find((t) => t.id === 999)!;
-    // completeTask se usa por los Imps; aquí basta con comprobar que al eliminar al dueño no quedan trampas.
-    void task;
     state.players[0]!.heartHp = 0;
     run(state, data, 1);
     expect(state.traps).toHaveLength(0);
@@ -292,11 +370,11 @@ describe('disparar trampas', () => {
 describe('determinismo con trampas', () => {
   it('misma semilla y mismos comandos, mismo estado', () => {
     const play = () => {
-      const { state, data } = world(true);
-      trap(state, data, 'spikeTrap', 8, 15);
-      trap(state, data, 'blastTrap', 9, 17);
-      spawn(state, data, 2, 'troll', 8.5, 14.5, { mood: 50 });
-      run(state, data, 600);
+      const { state, data } = tw([...ALL]);
+      trap(state, data, 'spikeTrap', 9, 12);
+      trap(state, data, 'fireTrap', 10, 12);
+      spawn(state, data, 2, 'troll', 9.5, 11.5, { mood: 50 });
+      run(state, data, 900);
       return JSON.stringify([
         state.traps,
         state.creatures.map((c) => [c.id, Math.round(c.hp)]),
@@ -308,5 +386,5 @@ describe('determinismo con trampas', () => {
 });
 
 void row;
-void buildRooms;
+void extendTerritory;
 void (null as unknown as SimEvent);

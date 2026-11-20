@@ -218,6 +218,10 @@ export interface Trap {
   built: boolean;
   /** Tick a partir del cual puede volver a dispararse. */
   readyAt: number;
+  /** Físicas: vida que le queda (se desgasta con cada disparo). */
+  hp: number;
+  /** Elementales: usos que le quedan. */
+  usesLeft: number;
 }
 
 export interface QueuedCommand {

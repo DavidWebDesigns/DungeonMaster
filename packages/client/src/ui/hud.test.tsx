@@ -285,26 +285,24 @@ describe('trampas en el HUD', () => {
     const sb = fresh();
     const m = buildHudModel(sb.state, data, 1, dig, []);
     expect(m.traps.map((t) => [t.hotkey, t.id, t.cost, t.requires, t.available])).toEqual([
-      ['G', 'spikeTrap', 150, 'Cámara de tortura', false],
-      ['H', 'blastTrap', 400, 'Cámara de tortura', false],
+      ['G', 'spikeTrap', 300, 'Taller', false],
+      ['H', 'boulderTrap', 600, 'Taller', false],
+      ['J', 'crushingWalls', 800, 'Taller', false],
+      ['K', 'frostTrap', 450, 'Taller, Cámara de tortura y Biblioteca', false],
+      ['L', 'fireTrap', 500, 'Taller, Cámara de tortura y Biblioteca', false],
+      ['N', 'lightningTrap', 650, 'Taller, Cámara de tortura y Biblioteca', false],
     ]);
   });
 
-  it('quedan disponibles al construir la Cámara de tortura y marcan la activa y las que no se pueden pagar', () => {
+  it('quedan disponibles al construir sus salas y marcan la activa y las que no se pueden pagar', () => {
     const sb = fresh();
-    sb.state.rooms.push({
-      id: 99,
-      type: 'tortureChamber',
-      owner: 1,
-      tiles: [],
-      timer: 0,
-      stock: 0,
-    });
-    sb.state.players[0]!.gold = 200;
-    const m = buildHudModel(sb.state, data, 1, { kind: 'trap', trap: 'blastTrap' }, []);
+    for (const [i, type] of ['workshop', 'tortureChamber', 'library'].entries())
+      sb.state.rooms.push({ id: 90 + i, type, owner: 1, tiles: [], timer: 0, stock: 0 });
+    sb.state.players[0]!.gold = 400;
+    const m = buildHudModel(sb.state, data, 1, { kind: 'trap', trap: 'fireTrap' }, []);
     expect(m.traps.every((t) => t.available)).toBe(true);
     expect(m.traps.find((t) => t.id === 'spikeTrap')!.affordable).toBe(true);
-    expect(m.traps.find((t) => t.id === 'blastTrap')).toMatchObject({
+    expect(m.traps.find((t) => t.id === 'fireTrap')).toMatchObject({
       affordable: false,
       active: true,
     });
@@ -314,7 +312,7 @@ describe('trampas en el HUD', () => {
     const sb = fresh();
     const out = render(<Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />);
     expect(out).toContain('Trampa de pinchos');
-    expect(out).toContain('Trampa explosiva');
+    expect(out).toContain('Trampa de fuego');
     expect(out).toContain('btn locked');
     expect(out).toContain('Cámara de tortura');
   });

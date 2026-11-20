@@ -115,7 +115,11 @@ export interface TrapLook {
 
 export const TRAP_LOOKS: Readonly<Record<string, TrapLook>> = {
   spikeTrap: { color: [0.75, 0.75, 0.8], shape: 'spikes' },
-  blastTrap: { color: [0.85, 0.3, 0.15], shape: 'barrel' },
+  boulderTrap: { color: [0.5, 0.45, 0.4], shape: 'barrel' },
+  crushingWalls: { color: [0.4, 0.4, 0.45], shape: 'spikes' },
+  frostTrap: { color: [0.55, 0.85, 1], shape: 'spikes' },
+  fireTrap: { color: [0.95, 0.4, 0.1], shape: 'barrel' },
+  lightningTrap: { color: [0.95, 0.9, 0.3], shape: 'barrel' },
 };
 
 export const trapLookOf = (id: string): TrapLook =>

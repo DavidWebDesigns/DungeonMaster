@@ -311,9 +311,9 @@ describe('efectos de trampas', () => {
   const fx = (events: SimEvent[], visible?: (x: number, y: number) => boolean) =>
     deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER, visible);
 
-  it('una trampa que se dispara suena y levanta chispas; la explosiva es mayor y naranja', () => {
-    const spike = fx([{ type: 'trapTriggered', playerId: 1, trap: 'spikeTrap', x: 8.5, y: 15.5 }]);
-    const blast = fx([{ type: 'trapTriggered', playerId: 1, trap: 'blastTrap', x: 8.5, y: 15.5 }]);
+  it('una trampa que se dispara suena y levanta chispas; la de fuego es mayor y naranja', () => {
+    const spike = fx([{ type: 'trapTriggered', playerId: 1, trap: 'frostTrap', x: 8.5, y: 15.5 }]);
+    const blast = fx([{ type: 'trapTriggered', playerId: 1, trap: 'fireTrap', x: 8.5, y: 15.5 }]);
     expect(sounds(spike)).toEqual(['trap']);
     expect((bursts(blast)[0] as { count: number }).count).toBeGreaterThan(
       (bursts(spike)[0] as { count: number }).count,

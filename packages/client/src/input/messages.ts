@@ -43,7 +43,7 @@ export function errorMessage(code: ErrorCode, ctx?: ErrorContext): string {
       cmd.type === 'buildRoom'
         ? data.rooms.find((r) => r.id === cmd.room)?.requiresRooms
         : cmd.type === 'buildTrap'
-          ? [data.traps.find((t) => t.id === cmd.trap)?.requiresRoom ?? '']
+          ? data.traps.find((t) => t.id === cmd.trap)?.requiresRooms
           : undefined;
     const names = missingRooms(state, player, required).map(
       (id) => data.rooms.find((r) => r.id === id)?.name ?? id,
