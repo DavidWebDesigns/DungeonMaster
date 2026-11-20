@@ -134,7 +134,14 @@ export class Game {
       },
       (cmd, res) => {
         if (!res.ok) {
-          this.say(errorMessage(res.error));
+          this.say(
+            errorMessage(res.error, {
+              cmd,
+              data,
+              state: this.sandbox.state,
+              player: this.me,
+            }),
+          );
           this.playSound('error', 0.8);
         } else if (cmd.type === 'pickUp') {
           this.playSound('pickup', 1);

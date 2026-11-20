@@ -2,12 +2,49 @@ import { findBed } from './lairs';
 import { creatureMaxHp } from './creatureStats';
 import { nextFloat } from './rng';
 import type { Rules } from './rules';
+import type { CreatureDef } from '../schemas';
 import type { Creature, MatchState, PlayerId, SimEvent } from './types';
 
 export function creatureCount(state: MatchState, owner: PlayerId): number {
   let n = 0;
   for (const c of state.creatures) if (c.owner === owner) n++;
   return n;
+}
+
+/** Criaturas vivas de una especie que tiene el jugador. */
+export function speciesCount(state: MatchState, owner: PlayerId, type: string): number {
+  let n = 0;
+  for (const c of state.creatures) if (c.owner === owner && c.type === type) n++;
+  return n;
+}
+
+/** Salas construidas de un tipo (cada construcción es una sala distinta; no se fusionan). */
+function roomCount(state: MatchState, owner: PlayerId, type: string): number {
+  let n = 0;
+  for (const r of state.rooms) if (r.owner === owner && r.type === type) n++;
+  return n;
+}
+
+/**
+ * Cuántas criaturas vivas de esta especie permite hoy la progresión de salas: 1 por sala construida (`fromRoom`) o
+ * 1 por cada `unlockEvery` criaturas vivas de la especie base (`fromCreature`), con el tope `maxPerPlayer`.
+ * `Infinity` si la especie no tiene cupos.
+ */
+export function slotCapacity(
+  state: MatchState,
+  owner: PlayerId,
+  def: { id: string; attraction: CreatureDef['attraction'] },
+): number {
+  const a = def.attraction;
+  if (!a) return 0;
+  let cap = Infinity;
+  if (a.slots) {
+    cap =
+      'fromRoom' in a.slots
+        ? roomCount(state, owner, a.slots.fromRoom)
+        : Math.floor(speciesCount(state, owner, a.slots.fromCreature) / a.slots.unlockEvery);
+  }
+  return a.maxPerPlayer !== undefined ? Math.min(cap, a.maxPerPlayer) : cap;
 }
 
 function roomTiles(state: MatchState, owner: PlayerId, type: string): number {
@@ -78,10 +115,14 @@ export function attractionCandidates(
   rules: Rules,
   owner: PlayerId,
   portalTile: number,
-): { candidates: Array<{ type: string; weight: number }>; why: 'noLair' | 'noRoom' | null } {
+): {
+  candidates: Array<{ type: string; weight: number }>;
+  why: 'noLair' | 'noRoom' | 'noSlots' | null;
+} {
   const candidates: Array<{ type: string; weight: number }> = [];
   let missingLair = false;
   let missingRoom = false;
+  let slotsFull = false;
   for (const def of rules.data.creatures) {
     if (!def.attraction) continue;
     const meets = def.attraction.requires.every(
@@ -92,6 +133,11 @@ export function attractionCandidates(
       else missingRoom = true;
       continue;
     }
+    // Cupos: ya tiene todas las que permite la progresión de salas.
+    if (speciesCount(state, owner, def.id) >= slotCapacity(state, owner, def)) {
+      slotsFull = true;
+      continue;
+    }
     if (def.base.lairTiles > 0 && !findBed(state, rules, owner, def.base.lairTiles, portalTile)) {
       missingLair = true;
       continue;
@@ -100,7 +146,16 @@ export function attractionCandidates(
   }
   return {
     candidates,
-    why: candidates.length > 0 ? null : missingLair ? 'noLair' : missingRoom ? 'noRoom' : null,
+    why:
+      candidates.length > 0
+        ? null
+        : missingLair
+          ? 'noLair'
+          : slotsFull
+            ? 'noSlots'
+            : missingRoom
+              ? 'noRoom'
+              : null,
   };
 }
 

@@ -16,6 +16,8 @@ export const CreatureDef = z.strictObject({
   /** Si no se indica, masculino. */
   gender: Gender.optional(),
   tier: Tier,
+  /** Amenaza de 1 a 10 (informativa: ayuda a comparar y a equilibrar criaturas). */
+  threat: PositiveNumber.optional(),
   jobClass: JobClass,
   fightStyle: FightStyle,
   base: z.strictObject({
@@ -42,6 +44,19 @@ export const CreatureDef = z.strictObject({
     .strictObject({
       requires: z.array(z.strictObject({ room: Id, minTiles: PositiveInt.optional() })).min(1),
       attractWeight: PositiveNumber,
+      /**
+       * Cupos: cuántas criaturas vivas de esta especie puede tener el jugador. Sin `slots`, no hay límite.
+       * `fromRoom`: 1 cupo por cada sala construida de ese tipo. `fromCreature`: 1 cupo por cada `unlockEvery`
+       * criaturas vivas de la especie base (por ejemplo, un Troll por cada 3 Goblins).
+       */
+      slots: z
+        .union([
+          z.strictObject({ fromRoom: Id }),
+          z.strictObject({ fromCreature: Id, unlockEvery: PositiveInt }),
+        ])
+        .optional(),
+      /** Tope duro de criaturas vivas de esta especie por jugador, con cupos o sin ellos (por ejemplo, un solo Ángel caído). */
+      maxPerPlayer: PositiveInt.optional(),
     })
     .nullable(),
   enemies: z.array(Id),

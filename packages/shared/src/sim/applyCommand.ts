@@ -9,7 +9,7 @@ import { checkBuildTrap, placeTrapNow, sellTrapNow, trapAt } from './traps';
 import { isVisible } from './fog';
 import { castEffect } from './spells';
 import { eliminatePlayer } from './victory';
-import { buildRoomNow, getRoom, sellRoomNow } from './rooms';
+import { buildRoomNow, getRoom, missingRooms, sellRoomNow } from './rooms';
 import { rulesOf, type Rules } from './rules';
 import { canClaim, canDig, canReinforce, isOwnGround, removeTask, setTask } from './tasks';
 import type {
@@ -136,6 +136,8 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       if (![r.x, r.y, r.w, r.h].every(isInt)) return fail('INVALID_COMMAND');
       const def = rules.roomDefs[cmd.room];
       if (!def?.buildable) return fail('INVALID_TARGET');
+      // Progresión: las salas superiores exigen tener antes otras.
+      if (missingRooms(state, pid, def.requiresRooms).length > 0) return fail('REQUIRES_ROOM');
       if (r.w < def.minSize.w || r.h < def.minSize.h) return fail('INVALID_TARGET');
       if (!inBounds(state, r.x, r.y) || !inBounds(state, r.x + r.w - 1, r.y + r.h - 1))
         return fail('INVALID_TARGET');

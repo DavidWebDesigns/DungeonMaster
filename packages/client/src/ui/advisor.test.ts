@@ -27,6 +27,9 @@ describe('el consejero', () => {
     expect(advise([{ type: 'portalIdle', playerId: 1, reason: 'full' }])[0]!.text).toContain(
       'no admite más',
     );
+    expect(advise([{ type: 'portalIdle', playerId: 1, reason: 'noSlots' }])[0]!.text).toContain(
+      'cada sala nueva da un cupo',
+    );
   });
 
   it('avisa del día de pago y del impago con el nombre de la criatura', () => {

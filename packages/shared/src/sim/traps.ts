@@ -4,7 +4,7 @@
  * pasan cerca. Son invisibles para el rival.
  */
 import { areaDamage } from './combat';
-import { clampGold } from './rooms';
+import { clampGold, missingRooms } from './rooms';
 import type { Rules } from './rules';
 import { removeTask, setTask } from './tasks';
 import type { ErrorCode, MatchState, PlayerState, SimEvent, Trap } from './types';
@@ -17,7 +17,7 @@ export function trapAt(state: MatchState, tile: number): Trap | undefined {
 
 /** ¿Tiene el jugador construida la sala que pide la trampa? */
 export function hasRequiredRoom(state: MatchState, owner: number, room: string): boolean {
-  return state.rooms.some((r) => r.owner === owner && r.type === room);
+  return missingRooms(state, owner, [room]).length === 0;
 }
 
 /** Comprueba si el jugador puede colocar la trampa en ese tile (sin gastar nada). */

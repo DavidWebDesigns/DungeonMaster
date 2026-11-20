@@ -2,6 +2,20 @@ import { treasuryCapacity } from './economy';
 import type { Rules } from './rules';
 import type { MatchState, PlayerState, Room, SimEvent } from './types';
 
+/** Ids de las salas de `required` que el jugador todavía no tiene construidas (en el orden pedido, sin repetir). */
+export function missingRooms(
+  state: MatchState,
+  owner: number,
+  required: readonly string[] | undefined,
+): string[] {
+  if (!required) return [];
+  const missing: string[] = [];
+  for (const id of required)
+    if (!missing.includes(id) && !state.rooms.some((r) => r.owner === owner && r.type === id))
+      missing.push(id);
+  return missing;
+}
+
 export function getRoom(state: MatchState, id: number): Room | undefined {
   return state.rooms.find((r) => r.id === id);
 }

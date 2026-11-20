@@ -232,6 +232,83 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw2), 'terrain.json', 'tiene que ser excavable');
   });
 
+  it('rechaza requisitos entre salas inexistentes, no construibles, a sí mismas o en ciclo', () => {
+    const rooms = (raw: ReturnType<typeof realRawData>) => raw.rooms as any[];
+    const raw = realRawData();
+    rooms(raw).find((r) => r.id === 'library').requiresRooms = ['inventada'];
+    expectError(parseDataSet(raw), 'rooms.json', 'la sala "inventada" no existe');
+    const raw2 = realRawData();
+    rooms(raw2).find((r) => r.id === 'library').requiresRooms = ['heart'];
+    expectError(parseDataSet(raw2), 'rooms.json', 'no se puede construir');
+    const raw3 = realRawData();
+    rooms(raw3).find((r) => r.id === 'library').requiresRooms = ['library'];
+    expectError(parseDataSet(raw3), 'rooms.json', 'no puede pedirse a sí misma');
+    const raw4 = realRawData();
+    rooms(raw4).find((r) => r.id === 'library').requiresRooms = ['trainingRoom'];
+    rooms(raw4).find((r) => r.id === 'trainingRoom').requiresRooms = ['library'];
+    expectError(parseDataSet(raw4), 'rooms.json', 'forman un ciclo');
+    // Una cadena sin ciclo es válida.
+    const ok = realRawData();
+    rooms(ok).find((r) => r.id === 'library').requiresRooms = ['trainingRoom'];
+    expect(parseDataSet(ok).ok).toBe(true);
+  });
+
+  it('rechaza cupos que apuntan a salas o criaturas inexistentes, a sí mismas o en ciclo', () => {
+    const creature = (raw: ReturnType<typeof realRawData>, id: string) =>
+      (raw.creatures as any[]).find((c) => c.id === id);
+    const raw = realRawData();
+    creature(raw, 'goblin').attraction.slots = { fromRoom: 'inventada' };
+    expectError(parseDataSet(raw), 'creatures.json', 'la sala "inventada" no existe');
+    const raw2 = realRawData();
+    creature(raw2, 'goblin').attraction.slots = { fromRoom: 'library' };
+    expectError(
+      parseDataSet(raw2),
+      'creatures.json',
+      'tiene que estar también en attraction.requires',
+    );
+    const raw3 = realRawData();
+    creature(raw3, 'troll').attraction.slots = { fromCreature: 'inventada', unlockEvery: 3 };
+    expectError(parseDataSet(raw3), 'creatures.json', 'la criatura "inventada" no existe');
+    const raw4 = realRawData();
+    creature(raw4, 'troll').attraction.slots = { fromCreature: 'troll', unlockEvery: 3 };
+    expectError(parseDataSet(raw4), 'creatures.json', 'de sí misma');
+    const raw5 = realRawData();
+    creature(raw5, 'troll').attraction.slots = { fromCreature: 'goblin', unlockEvery: 3 };
+    creature(raw5, 'goblin').attraction.slots = { fromCreature: 'troll', unlockEvery: 3 };
+    expectError(parseDataSet(raw5), 'creatures.json', 'forman un ciclo');
+    const raw6 = realRawData();
+    creature(raw6, 'troll').attraction.slots = { fromCreature: 'goblin', unlockEvery: 0 };
+    expectError(parseDataSet(raw6), 'creatures.json', 'unlockEvery');
+    const raw7 = realRawData();
+    creature(raw7, 'goblin').attraction.maxPerPlayer = 0;
+    expectError(parseDataSet(raw7), 'creatures.json', 'maxPerPlayer');
+    // Cupos bien formados son válidos.
+    const ok = realRawData();
+    creature(ok, 'goblin').attraction.slots = { fromRoom: 'lair' };
+    creature(ok, 'troll').attraction.slots = { fromCreature: 'goblin', unlockEvery: 3 };
+    creature(ok, 'goblin').attraction.maxPerPlayer = 5;
+    expect(parseDataSet(ok).ok).toBe(true);
+  });
+
+  it('una criatura sin cama debe no dormir y pedir una sala que no exista al empezar', () => {
+    const goblin = (raw: ReturnType<typeof realRawData>) =>
+      (raw.creatures as any[]).find((c) => c.id === 'goblin');
+    const raw = realRawData();
+    goblin(raw).base.lairTiles = 0;
+    expectError(parseDataSet(raw), 'creatures.json', 'duerme: necesita cama');
+    // Sin dormir, pero pidiendo solo la Tesorería (ya está en el mapa): llegaría en el minuto 0.
+    const raw2 = realRawData();
+    goblin(raw2).base.lairTiles = 0;
+    goblin(raw2).needs.sleeps = false;
+    goblin(raw2).attraction.requires = [{ room: 'treasury' }];
+    expectError(parseDataSet(raw2), 'creatures.json', 'llegaría en el minuto 0');
+    // Sin dormir y pidiendo una sala que hay que construir: válido.
+    const ok = realRawData();
+    goblin(ok).base.lairTiles = 0;
+    goblin(ok).needs.sleeps = false;
+    expect(parseDataSet(ok).ok).toBe(true);
+  });
+
   it('rechaza ajustes de combate que no tengan sentido', () => {
     const raw = realRawData();
     (raw.global as any).combat.retaliationSeconds = 0;

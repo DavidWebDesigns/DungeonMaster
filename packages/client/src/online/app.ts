@@ -85,7 +85,8 @@ export function startOnline(
     const wait = () => {
       if (net.framesApplied === 0) return void requestAnimationFrame(wait);
       game = new Game(host, data, net);
-      net.onReject = (e) => game?.notify(errorMessage(e));
+      net.onReject = (e, cmd) =>
+        game?.notify(errorMessage(e, { cmd, data, state: net.state, player: net.localPlayer }));
       game.start();
       (window as unknown as { __dm: Game }).__dm = game;
     };

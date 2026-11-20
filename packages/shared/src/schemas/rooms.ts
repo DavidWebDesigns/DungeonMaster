@@ -13,6 +13,8 @@ export const RoomDef = z.strictObject({
   /** false para Corazón y Portal: vienen en el mapa y no se construyen ni venden. */
   buildable: z.boolean(),
   goldPerTile: NonNegativeInt,
+  /** Salas que el jugador debe tener construidas antes de poder construir esta (progresión). */
+  requiresRooms: z.array(Id).optional(),
   minSize: Size,
   sellRefund: Fraction,
   /** Tesorería: oro que cabe por tile. */

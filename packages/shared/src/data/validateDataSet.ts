@@ -152,6 +152,38 @@ export function validateDataSet(d: DataSet): DataError[] {
       '',
       `el tamaño del Corazón debe coincidir con global.heart.size (${g.heart.size})`,
     );
+  // Progresión: requisitos entre salas (existen, son construibles, no se piden a sí mismas y no hay ciclos).
+  d.rooms.forEach((room, idx) => {
+    room.requiresRooms?.forEach((req, j) => {
+      const target = d.rooms.find((x) => x.id === req);
+      if (!target) err(F.rooms, `[${idx}].requiresRooms[${j}]`, `la sala "${req}" no existe`);
+      else if (!target.buildable)
+        err(
+          F.rooms,
+          `[${idx}].requiresRooms[${j}]`,
+          `"${req}" no se puede construir: no sirve de requisito`,
+        );
+      if (req === room.id)
+        err(F.rooms, `[${idx}].requiresRooms[${j}]`, 'una sala no puede pedirse a sí misma');
+    });
+  });
+  const graph = new Map(d.rooms.map((r) => [r.id, r.requiresRooms ?? []] as const));
+  const visiting = new Set<string>();
+  const done = new Set<string>();
+  const hasCycle = (id: string): boolean => {
+    if (done.has(id)) return false;
+    if (visiting.has(id)) return true;
+    visiting.add(id);
+    const cyc = (graph.get(id) ?? []).some((n) => graph.has(n) && n !== id && hasCycle(n));
+    visiting.delete(id);
+    done.add(id);
+    return cyc;
+  };
+  for (const room of d.rooms)
+    if (hasCycle(room.id)) {
+      err(F.rooms, '', `los requisitos entre salas forman un ciclo (por "${room.id}")`);
+      break;
+    }
   const training = d.rooms.find((r) => r.id === 'trainingRoom');
   if (
     training?.trainingMaxLevel !== undefined &&
@@ -164,6 +196,9 @@ export function validateDataSet(d: DataSet): DataError[] {
   for (const id of duplicates(d.creatures.map((c) => c.id)))
     err(F.creatures, '', `id repetido: "${id}"`);
   if (!creatureIds.has('imp')) err(F.creatures, '', 'falta la criatura obligatoria "imp"');
+  // Salas que ya existen al empezar la partida: el Corazón y las que trae el mapa en cada base.
+  const initialRooms = new Set<string>(['heart']);
+  for (const b of d.map.bases) for (const r of b.rooms) initialRooms.add(r.type);
   d.creatures.forEach((c, i) => {
     c.attraction?.requires.forEach((req, j) => {
       if (!roomIds.has(req.room))
@@ -181,13 +216,67 @@ export function validateDataSet(d: DataSet): DataError[] {
     });
     if (c.needs.paid && c.base.wage === 0)
       err(F.creatures, `[${i}].base.wage`, `"${c.id}" cobra sueldo pero su sueldo es 0`);
-    if (c.attraction && c.base.lairTiles === 0)
-      err(
-        F.creatures,
-        `[${i}].base.lairTiles`,
-        `"${c.id}" llega por el Portal: necesita cama (lairTiles > 0)`,
-      );
+    if (c.attraction && c.base.lairTiles === 0) {
+      // Sin cama solo vale una criatura que no duerme (el Esqueleto), y entonces debe pedir una sala que
+      // no exista desde el inicio de la partida (si no, llegaría en el minuto 0 sin construir nada).
+      if (c.needs.sleeps)
+        err(
+          F.creatures,
+          `[${i}].base.lairTiles`,
+          `"${c.id}" llega por el Portal y duerme: necesita cama (lairTiles > 0)`,
+        );
+      if (c.attraction.requires.every((req) => initialRooms.has(req.room)))
+        err(
+          F.creatures,
+          `[${i}].attraction.requires`,
+          `"${c.id}" no tiene cama y solo pide salas que ya existen al empezar: pediría nada y llegaría en el minuto 0`,
+        );
+    }
+    const slots = c.attraction?.slots;
+    if (slots && 'fromRoom' in slots) {
+      if (!roomIds.has(slots.fromRoom))
+        err(
+          F.creatures,
+          `[${i}].attraction.slots.fromRoom`,
+          `la sala "${slots.fromRoom}" no existe`,
+        );
+      else if (!c.attraction?.requires.some((req) => req.room === slots.fromRoom))
+        err(
+          F.creatures,
+          `[${i}].attraction.slots.fromRoom`,
+          `los cupos salen de "${slots.fromRoom}": tiene que estar también en attraction.requires`,
+        );
+    } else if (slots) {
+      if (!creatureIds.has(slots.fromCreature))
+        err(
+          F.creatures,
+          `[${i}].attraction.slots.fromCreature`,
+          `la criatura "${slots.fromCreature}" no existe`,
+        );
+      else if (slots.fromCreature === c.id)
+        err(
+          F.creatures,
+          `[${i}].attraction.slots.fromCreature`,
+          'una criatura no puede sacar sus cupos de sí misma',
+        );
+    }
   });
+  // Los cupos por criatura no pueden formar un ciclo (A sale de B y B de A): ninguna llegaría nunca.
+  const fromOf = new Map<string, string>();
+  for (const c of d.creatures) {
+    const sl = c.attraction?.slots;
+    if (sl && 'fromCreature' in sl) fromOf.set(c.id, sl.fromCreature);
+  }
+  for (const start of fromOf.keys()) {
+    const seen = new Set<string>([start]);
+    for (let cur = fromOf.get(start); cur !== undefined; cur = fromOf.get(cur)) {
+      if (seen.has(cur)) {
+        err(F.creatures, '', `los cupos por criatura forman un ciclo (por "${start}")`);
+        break;
+      }
+      seen.add(cur);
+    }
+  }
   const imp = d.creatures.find((c) => c.id === 'imp');
   if (imp && imp.attraction !== null)
     err(F.creatures, '', 'el Imp no llega por el Portal: su attraction debe ser null');

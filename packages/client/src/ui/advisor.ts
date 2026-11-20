@@ -12,6 +12,17 @@ export interface Advice {
   cooldownTicks: number;
 }
 
+/** Nombres de las salas (salvo la Guarida) que hacen llegar criaturas por el Portal, sacados de los datos. */
+export function attractingRooms(data: DataSet): string {
+  const ids = new Set<string>();
+  for (const c of data.creatures)
+    for (const req of c.attraction?.requires ?? []) if (req.room !== 'lair') ids.add(req.room);
+  const names = data.rooms.filter((r) => ids.has(r.id)).map((r) => r.name);
+  return names.length > 1
+    ? `${names.slice(0, -1).join(', ')} o ${names.at(-1)}`
+    : (names[0] ?? 'otra sala');
+}
+
 export function adviceFor(
   events: readonly SimEvent[],
   state: MatchState,
@@ -48,9 +59,11 @@ export function adviceFor(
         const text =
           e.reason === 'noLair'
             ? 'Construye una Guarida para atraer criaturas.'
-            : e.reason === 'noRoom'
-              ? 'Tus criaturas piden otras salas: Sala de entrenamiento, Biblioteca o Criadero.'
-              : 'Tu mazmorra no admite más criaturas por ahora.';
+            : e.reason === 'noSlots'
+              ? 'Ya tienes todas las criaturas que permiten tus salas: cada sala nueva da un cupo más.'
+              : e.reason === 'noRoom'
+                ? `Tus criaturas piden otras salas: ${attractingRooms(data)}.`
+                : 'Tu mazmorra no admite más criaturas por ahora.';
         out.push({ text, key: `portal-${e.reason}`, cooldownTicks: (600 * rate) / 10 });
         break;
       }
