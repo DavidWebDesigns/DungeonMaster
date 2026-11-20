@@ -36,6 +36,12 @@ describe('datos reales de /data/mvp', () => {
       'bileDemon',
       'executioner',
       'torturer',
+      'salamander',
+      'skeleton',
+      'witch',
+      'vampire',
+      'darkKnight',
+      'fallenAngel',
     ]);
     expect(result.data.spells).toHaveLength(5);
     expect(result.data.traps.map((t) => t.id)).toEqual(['spikeTrap', 'blastTrap']);

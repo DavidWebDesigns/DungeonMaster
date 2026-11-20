@@ -4,6 +4,7 @@
     "name": "Imp",
     "modelId": "creature_imp",
     "tier": "common",
+    "threat": 1,
     "jobClass": "worker",
     "fightStyle": "none",
     "base": {
@@ -30,6 +31,7 @@
     "name": "Goblin",
     "modelId": "creature_goblin",
     "tier": "common",
+    "threat": 2,
     "jobClass": "fighter",
     "fightStyle": "flanker",
     "base": {
@@ -53,7 +55,10 @@
           "room": "lair"
         }
       ],
-      "attractWeight": 4
+      "attractWeight": 4,
+      "slots": {
+        "fromRoom": "lair"
+      }
     },
     "enemies": [],
     "flags": []
@@ -63,6 +68,7 @@
     "name": "Troll",
     "modelId": "creature_troll",
     "tier": "common",
+    "threat": 2,
     "jobClass": "worker",
     "fightStyle": "blocker",
     "base": {
@@ -83,10 +89,14 @@
     "attraction": {
       "requires": [
         {
-          "room": "trainingRoom"
+          "room": "lair"
         }
       ],
-      "attractWeight": 3
+      "attractWeight": 3,
+      "slots": {
+        "fromCreature": "goblin",
+        "unlockEvery": 3
+      }
     },
     "enemies": [],
     "flags": []
@@ -96,6 +106,7 @@
     "name": "Warlock",
     "modelId": "creature_warlock",
     "tier": "common",
+    "threat": 2,
     "jobClass": "thinker",
     "fightStyle": "support",
     "base": {
@@ -119,7 +130,10 @@
           "room": "library"
         }
       ],
-      "attractWeight": 3
+      "attractWeight": 3,
+      "slots": {
+        "fromRoom": "library"
+      }
     },
     "enemies": [],
     "flags": ["ranged"]
@@ -129,6 +143,7 @@
     "name": "Demonio de bilis",
     "modelId": "creature_bile_demon",
     "tier": "common",
+    "threat": 7,
     "jobClass": "fighter",
     "fightStyle": "blocker",
     "base": {
@@ -165,6 +180,7 @@
     "name": "Verdugo",
     "modelId": "creature_executioner",
     "tier": "common",
+    "threat": 5,
     "jobClass": "fighter",
     "fightStyle": "blocker",
     "base": {
@@ -188,7 +204,11 @@
           "room": "tortureChamber"
         }
       ],
-      "attractWeight": 2
+      "attractWeight": 2,
+      "slots": {
+        "fromCreature": "torturer",
+        "unlockEvery": 3
+      }
     },
     "enemies": [],
     "flags": []
@@ -199,6 +219,7 @@
     "modelId": "creature_torturer",
     "gender": "f",
     "tier": "common",
+    "threat": 5,
     "jobClass": "fighter",
     "fightStyle": "flanker",
     "base": {
@@ -222,9 +243,239 @@
           "room": "tortureChamber"
         }
       ],
-      "attractWeight": 3
+      "attractWeight": 3,
+      "slots": {
+        "fromRoom": "tortureChamber"
+      }
     },
     "enemies": [],
     "flags": []
+  },
+  {
+    "id": "salamander",
+    "name": "Salamandra",
+    "modelId": "creature_salamander",
+    "gender": "f",
+    "tier": "common",
+    "threat": 3,
+    "jobClass": "fighter",
+    "fightStyle": "flanker",
+    "base": {
+      "hp": 1600,
+      "damage": 70,
+      "attackInterval": 1.2,
+      "range": 4,
+      "speed": 1.8,
+      "wage": 160,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "workshop"
+        }
+      ],
+      "attractWeight": 3,
+      "slots": {
+        "fromRoom": "workshop"
+      }
+    },
+    "enemies": [],
+    "flags": ["ranged"]
+  },
+  {
+    "id": "skeleton",
+    "name": "Esqueleto",
+    "modelId": "creature_skeleton",
+    "tier": "common",
+    "threat": 3,
+    "jobClass": "fighter",
+    "fightStyle": "blitzer",
+    "base": {
+      "hp": 1500,
+      "damage": 75,
+      "attackInterval": 1.1,
+      "range": 1,
+      "speed": 1.8,
+      "wage": 0,
+      "lairTiles": 0
+    },
+    "needs": {
+      "eats": false,
+      "sleeps": false,
+      "paid": false,
+      "hasMood": false
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "graveyard"
+        }
+      ],
+      "attractWeight": 3,
+      "slots": {
+        "fromRoom": "graveyard"
+      }
+    },
+    "enemies": [],
+    "flags": ["undead"]
+  },
+  {
+    "id": "witch",
+    "name": "Bruja",
+    "modelId": "creature_witch",
+    "gender": "f",
+    "tier": "common",
+    "threat": 4,
+    "jobClass": "thinker",
+    "fightStyle": "support",
+    "base": {
+      "hp": 1400,
+      "damage": 60,
+      "attackInterval": 1.6,
+      "range": 5,
+      "speed": 1.6,
+      "wage": 220,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "library"
+        }
+      ],
+      "attractWeight": 2,
+      "slots": {
+        "fromCreature": "warlock",
+        "unlockEvery": 3
+      }
+    },
+    "enemies": [],
+    "flags": ["ranged"]
+  },
+  {
+    "id": "vampire",
+    "name": "Vampiro",
+    "modelId": "creature_vampire",
+    "tier": "elite",
+    "threat": 6,
+    "jobClass": "thinker",
+    "fightStyle": "blitzer",
+    "base": {
+      "hp": 2800,
+      "damage": 130,
+      "attackInterval": 1.2,
+      "range": 1,
+      "speed": 2.4,
+      "wage": 500,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": false,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "graveyard"
+        }
+      ],
+      "attractWeight": 2,
+      "slots": {
+        "fromCreature": "skeleton",
+        "unlockEvery": 3
+      }
+    },
+    "enemies": [],
+    "flags": ["undead"]
+  },
+  {
+    "id": "darkKnight",
+    "name": "Caballero negro",
+    "modelId": "creature_dark_knight",
+    "tier": "elite",
+    "threat": 8,
+    "jobClass": "fighter",
+    "fightStyle": "blocker",
+    "base": {
+      "hp": 4200,
+      "damage": 200,
+      "attackInterval": 1.6,
+      "range": 1,
+      "speed": 1.6,
+      "wage": 600,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "trainingRoom"
+        }
+      ],
+      "attractWeight": 2,
+      "slots": {
+        "fromRoom": "trainingRoom"
+      }
+    },
+    "enemies": [],
+    "flags": []
+  },
+  {
+    "id": "fallenAngel",
+    "name": "Ángel caído",
+    "modelId": "creature_fallen_angel",
+    "tier": "elite",
+    "threat": 9,
+    "jobClass": "fighter",
+    "fightStyle": "blitzer",
+    "base": {
+      "hp": 5000,
+      "damage": 240,
+      "attackInterval": 1.4,
+      "range": 1.5,
+      "speed": 2.2,
+      "wage": 900,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "temple"
+        }
+      ],
+      "attractWeight": 1,
+      "slots": {
+        "fromRoom": "temple"
+      },
+      "maxPerPlayer": 1
+    },
+    "enemies": [],
+    "flags": ["flying"]
   }
 ]

@@ -19,6 +19,12 @@ export const CREATURE_LOOKS: Readonly<Record<string, CreatureLook>> = {
   bileDemon: { color: [0.62, 0.7, 0.2], radius: 0.36, height: 1.05 },
   executioner: { color: [0.25, 0.22, 0.28], radius: 0.3, height: 0.95 },
   torturer: { color: [0.8, 0.35, 0.55], radius: 0.18, height: 0.7 },
+  salamander: { color: [0.95, 0.5, 0.15], radius: 0.2, height: 0.6 },
+  skeleton: { color: [0.88, 0.86, 0.78], radius: 0.17, height: 0.85 },
+  witch: { color: [0.45, 0.2, 0.6], radius: 0.17, height: 0.78 },
+  vampire: { color: [0.5, 0.08, 0.15], radius: 0.19, height: 0.9 },
+  darkKnight: { color: [0.2, 0.22, 0.3], radius: 0.3, height: 1.0 },
+  fallenAngel: { color: [0.75, 0.72, 0.85], radius: 0.24, height: 1.15 },
 };
 
 const FALLBACK: CreatureLook = { color: [0.9, 0.9, 0.9], radius: 0.2, height: 0.6 };

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { applyCommand } from './applyCommand';
 import { creatureMaxHp } from './creatureStats';
 import { tileIndex } from './grid';
+import { attractionCandidates, newCreature } from './portal';
 import { rulesOf } from './rules';
 import { step } from './step';
 import { buildRooms, duel, extendTerritory, row, run, spawn } from './testUtils';
@@ -48,7 +49,7 @@ describe('Cámara de tortura', () => {
     expect(state.players[0]!.gold).toBe(9000 - 9 * 400 + 1800);
   });
 
-  it('atrae al Verdugo y a la Torturadora (y a nadie más sin otras salas)', () => {
+  it('atrae a la Torturadora (1 por Cámara) y al Verdugo solo con 3 torturadoras; sin más salas, a nadie más', () => {
     const { state, data } = world(true);
     // Guarida para tener camas.
     applyCommand(state, data, 1, {
@@ -63,7 +64,16 @@ describe('Cámara de tortura', () => {
       run(state, data, 300);
       for (const c of state.creatures.filter((k) => k.owner === 1)) types.add(c.type);
     }
-    expect([...types].sort()).toEqual(['executioner', 'goblin', 'torturer']);
+    expect([...types].sort()).toEqual(['goblin', 'torturer']);
+    // Con 3 torturadoras vivas, el Portal ya puede traer un Verdugo.
+    const rules = rulesOf(data);
+    for (let i = 0; i < 3; i++)
+      state.creatures.push(newCreature(state, rules, 1, 'torturer', 9 * 64 + 9));
+    const candidates = attractionCandidates(state, rules, 1, 9 * 64 + 9).candidates.map(
+      (c) => c.type,
+    );
+    expect(candidates).toContain('executioner');
+    expect(candidates).not.toContain('torturer');
   });
 
   it('el Verdugo y la Torturadora tienen estadísticas propias (provisionales)', () => {

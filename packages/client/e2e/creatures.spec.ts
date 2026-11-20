@@ -60,9 +60,9 @@ test.beforeEach(async ({ page }) => {
   await page.waitForTimeout(300);
 });
 
-async function buildLair(page: Page) {
+async function buildLair(page: Page, x = 2, y = 11) {
   await page.keyboard.press('1');
-  const p = await page.evaluate(() => dm().tileToScreen(2, 11));
+  const p = await page.evaluate(([tx, ty]) => dm().tileToScreen(tx!, ty!), [x, y] as const);
   await page.mouse.click(p.x, p.y);
   await advance(page, 1);
   // Tras construir se sigue en modo construir; Esc vuelve a la herramienta de excavar (y de recoger criaturas).
@@ -177,7 +177,10 @@ test('hover resalta la criatura, muestra su tarjeta y se recoge aunque esté act
 test('se llevan varias criaturas y el clic derecho las suelta todas en el tile del cursor', async ({
   page,
 }) => {
-  await buildLair(page);
+  // Cada Guarida da un cupo de Goblin: tres Guaridas, tres goblins.
+  await buildLair(page, 2, 11);
+  await buildLair(page, 5, 11);
+  await buildLair(page, 8, 11);
   await advance(page, 95); // llegan 3 criaturas
   const n = await page.evaluate(() => dm().sandbox.state.creatures.length);
   expect(n).toBeGreaterThanOrEqual(3);

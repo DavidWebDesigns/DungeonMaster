@@ -55,9 +55,9 @@ va en `ui/hudModel.ts` (`SPELL_HINTS`) y la prueba de contenido avisa si falta.
 
 ## Estado actual del contenido (prototipo)
 
-| Tipo      | Hay                                                                                                                                 |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Criaturas | Imp, Goblin, Troll, Warlock, Demonio de bilis y, **provisionales**, Verdugo y Torturadora (a la espera del documento de referencia) |
-| Salas     | Corazón, Portal, Guarida, Criadero, Tesorería, Sala de entrenamiento, Biblioteca y Cámara de tortura                                |
-| Trampas   | Trampa de pinchos y Trampa explosiva (provisionales)                                                                                |
-| Hechizos  | Crear Imp, Llamada a las armas, Acelerar, Curar y Rayo                                                                              |
+| Tipo      | Hay                                                                                                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Criaturas | Imp, Goblin, Troll, Warlock, Demonio de bilis, Salamandra, Esqueleto, Bruja, Vampiro, Caballero negro, Ángel caído y, **provisionales**, Verdugo y Torturadora (ver `ASSETS.md`) |
+| Salas     | Corazón, Portal, Guarida, Criadero, Tesorería, Sala de entrenamiento, Biblioteca, Cámara de tortura, Taller, Cementerio y Templo (con progresión y requisitos)                   |
+| Trampas   | Trampa de pinchos y Trampa explosiva (provisionales)                                                                                                                             |
+| Hechizos  | Crear Imp, Llamada a las armas, Acelerar, Curar y Rayo                                                                                                                           |

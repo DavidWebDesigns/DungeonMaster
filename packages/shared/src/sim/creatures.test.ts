@@ -130,32 +130,103 @@ describe('el Portal atrae criaturas', () => {
     );
   });
 
-  it('cada criatura ocupa su propia cama y al llenarse la Guarida avisa', () => {
+  it('con una sola Guarida solo llega 1 Goblin (1 cupo por sala) y el Portal avisa de que no hay cupos', () => {
     const { state, data } = world(['lair'], undefined, true);
-    const events = run(state, data, 300 * 10);
-    expect(state.creatures).toHaveLength(8); // 4×2 tiles = 8 camas
-    const beds = state.creatures.flatMap((c) => c.beds);
-    expect(new Set(beds).size).toBe(8);
+    const events = run(state, data, 300 * 4);
+    expect(state.creatures.map((c) => c.type)).toEqual(['goblin']);
     expect(
-      eventsOf(events, 'portalIdle').some((e) => e.type === 'portalIdle' && e.reason === 'noLair'),
+      eventsOf(events, 'portalIdle').some((e) => e.type === 'portalIdle' && e.reason === 'noSlots'),
     ).toBe(true);
   });
 
-  it('el requisito de cada criatura: Troll con Sala de entrenamiento, Warlock con Biblioteca, Demonio con Criadero y entrenamiento', () => {
+  it('cada criatura ocupa su propia cama y al llenarse las Guaridas avisa', () => {
+    // Criadero y Sala de entrenamiento dan el Demonio de bilis (sin cupo, 2 camas) y el Caballero (1 cupo).
+    const { state, data } = world(['lair', 'hatchery', 'trainingRoom'], undefined, true);
+    const events = run(state, data, 300 * 12);
+    const beds = state.creatures.flatMap((c) => c.beds);
+    expect(new Set(beds).size).toBe(beds.length);
+    expect(beds.length).toBeLessThanOrEqual(8); // 4×2 tiles = 8 camas
+    expect(state.creatures.length).toBeGreaterThanOrEqual(3);
+    expect(
+      eventsOf(events, 'portalIdle').some(
+        (e) => e.type === 'portalIdle' && (e.reason === 'noLair' || e.reason === 'noSlots'),
+      ),
+    ).toBe(true);
+  });
+
+  it('el requisito de cada sala: qué criatura invoca y con qué cupo', () => {
     const { state, data } = world(['lair']);
     const rules = rulesOf(data);
     const types = () =>
       attractionCandidates(state, rules, 1, PORTAL_TILE).candidates.map((c) => c.type);
     expect(types()).toEqual(['goblin']);
     buildRooms(state, data, ['trainingRoom']);
-    expect(types()).toEqual(['goblin', 'troll']);
+    expect(types()).toEqual(['goblin', 'darkKnight']);
     buildRooms(state, data, ['library']);
-    expect(types()).toEqual(['goblin', 'troll', 'warlock']);
+    expect(types()).toEqual(['goblin', 'warlock', 'darkKnight']);
     buildRooms(state, data, ['hatchery']);
-    expect(types()).toEqual(['goblin', 'troll', 'warlock', 'bileDemon']);
+    expect(types()).toEqual(['goblin', 'warlock', 'bileDemon', 'darkKnight']);
+    // Una por una, las salas nuevas de la progresión.
+    buildRooms(state, data, ['workshop', 'graveyard', 'tortureChamber', 'temple']);
+    expect(types()).toEqual([
+      'goblin',
+      'warlock',
+      'bileDemon',
+      'torturer',
+      'salamander',
+      'skeleton',
+      'darkKnight',
+      'fallenAngel',
+    ]);
   });
 
-  it('el reparto sigue los pesos 4, 3, 3 y 2 y es el mismo con la misma semilla', () => {
+  it('las criaturas superiores aparecen al tener 3 de la especie base (troll, bruja, vampiro y verdugo)', () => {
+    const { state, data } = world([
+      'lair',
+      'trainingRoom',
+      'library',
+      'workshop',
+      'graveyard',
+      'tortureChamber',
+    ]);
+    const rules = rulesOf(data);
+    const types = () =>
+      attractionCandidates(state, rules, 1, PORTAL_TILE).candidates.map((c) => c.type);
+    for (const t of ['troll', 'witch', 'vampire', 'executioner']) expect(types()).not.toContain(t);
+    const add = (type: string, n: number) => {
+      for (let i = 0; i < n; i++)
+        state.creatures.push(newCreature(state, rules, 1, type, PORTAL_TILE));
+    };
+    add('goblin', 2);
+    add('warlock', 2);
+    add('skeleton', 2);
+    add('torturer', 2);
+    for (const t of ['troll', 'witch', 'vampire', 'executioner']) expect(types()).not.toContain(t);
+    add('goblin', 1);
+    add('warlock', 1);
+    add('skeleton', 1);
+    add('torturer', 1);
+    for (const t of ['troll', 'witch', 'vampire', 'executioner']) expect(types()).toContain(t);
+  });
+
+  it('el Ángel caído: un Templo da 1 cupo y nunca hay más de uno', () => {
+    const { state, data } = world([
+      'lair',
+      'trainingRoom',
+      'library',
+      'tortureChamber',
+      'graveyard',
+      'temple',
+    ]);
+    const rules = rulesOf(data);
+    const types = () =>
+      attractionCandidates(state, rules, 1, PORTAL_TILE).candidates.map((c) => c.type);
+    expect(types()).toContain('fallenAngel');
+    state.creatures.push(newCreature(state, rules, 1, 'fallenAngel', PORTAL_TILE));
+    expect(types()).not.toContain('fallenAngel');
+  });
+
+  it('el reparto sigue los pesos 4, 3, 2 y 2 y es el mismo con la misma semilla', () => {
     const run1 = () => {
       const { state, data } = world(
         ['lair', 'trainingRoom', 'library', 'hatchery'],
@@ -177,13 +248,18 @@ describe('el Portal atrae criaturas', () => {
     };
     const a = run1();
     expect(run1()).toEqual(a);
+    // Con Guarida, Entrenamiento, Biblioteca y Criadero pueden llegar: Goblin 4, Warlock 3, Demonio 2, Caballero 2 (el Troll no: pide 3 goblins).
+    const total = 4 + 3 + 2 + 2;
     const share = (t: string) => (a[t] ?? 0) / 1200;
-    expect(share('goblin')).toBeGreaterThan(4 / 12 - 0.05);
-    expect(share('goblin')).toBeLessThan(4 / 12 + 0.05);
-    expect(share('troll')).toBeGreaterThan(3 / 12 - 0.05);
-    expect(share('warlock')).toBeGreaterThan(3 / 12 - 0.05);
-    expect(share('bileDemon')).toBeGreaterThan(2 / 12 - 0.05);
-    expect(share('bileDemon')).toBeLessThan(2 / 12 + 0.05);
+    expect(a['troll']).toBeUndefined();
+    expect(share('goblin')).toBeGreaterThan(4 / total - 0.05);
+    expect(share('goblin')).toBeLessThan(4 / total + 0.05);
+    expect(share('warlock')).toBeGreaterThan(3 / total - 0.05);
+    expect(share('warlock')).toBeLessThan(3 / total + 0.05);
+    expect(share('bileDemon')).toBeGreaterThan(2 / total - 0.05);
+    expect(share('bileDemon')).toBeLessThan(2 / total + 0.05);
+    expect(share('darkKnight')).toBeGreaterThan(2 / total - 0.05);
+    expect(share('darkKnight')).toBeLessThan(2 / total + 0.05);
   });
 
   it('el Demonio de bilis ocupa dos tiles de cama contiguos', () => {
@@ -214,7 +290,7 @@ describe('el Portal atrae criaturas', () => {
 
   it('respeta el máximo de criaturas por jugador', () => {
     const { state, data } = world(
-      ['lair'],
+      ['lair', 'hatchery', 'trainingRoom'],
       (d) => {
         d.global.maxCreaturesPerPlayer = 2;
       },
