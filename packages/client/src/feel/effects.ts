@@ -27,7 +27,8 @@ export type SoundName =
   | 'horn'
   | 'gameover'
   | 'trap'
-  | 'alarm';
+  | 'alarm'
+  | 'ability';
 
 export type Effect =
   | {
@@ -161,6 +162,24 @@ export function deriveEffects(
       if (!seesAt(x, z)) continue;
       burst(x, 0.3, z, DUST, 14, 1.8, 2.4, 0.18);
       out.push({ type: 'sound', sound: 'death', volume: 0.8 });
+      continue;
+    }
+    if (e.type === 'abilityUsed') {
+      if (!seesAt(e.x, e.y)) continue;
+      const def = data.abilities.find((a) => a.id === e.ability);
+      const color: RGB =
+        def?.effect.type === 'dive'
+          ? [0.85, 0.8, 1]
+          : def?.effect.type === 'charge'
+            ? [0.8, 0.8, 0.9]
+            : def?.effect.type === 'reassemble'
+              ? [0.9, 0.9, 0.75]
+              : def?.effect.type === 'status' && def.effect.status === 'weaken'
+                ? [0.6, 0.3, 0.8]
+                : [0.45, 0.8, 1];
+      burst(e.x, 0.7, e.y, color, 14, 1.8, 2.8, 0.13);
+      out.push({ type: 'floater', x: e.x, y: e.y, text: def?.name ?? e.ability, color: '#cfe4ff' });
+      out.push({ type: 'sound', sound: 'ability', volume: 0.8 });
       continue;
     }
     if (e.type === 'spellCast') {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { applyStatus, tickAbilityState } from '../sim/abilities';
 import { applyCommand } from '../sim/applyCommand';
 import { playBotMatch } from '../bot/match';
 import { createMatch } from '../sim/createMatch';
@@ -89,6 +90,45 @@ describe('vistas por jugador: lo que se ve', () => {
     expect(rec(mine.id)).toMatchObject({ m: 77, hu: 33 });
     expect(Object.keys(rec(enemy.id)).sort()).toEqual(['h', 'l', 'o', 't', 'x', 'y']);
     void f;
+  });
+
+  it('los estados (atada, ralentizada...) solo los ve su dueño y se borran al caducar', () => {
+    const { state, data: d } = duel();
+    state.imps = [];
+    const f = new Follower(1, state);
+    const enemy = spawn(state, d, 2, 'goblin', 5.5, 5.5);
+    const mine = spawn(state, d, 1, 'goblin', 3.5, 8.5);
+    applyStatus(state, rulesOf(d), mine, 'slow', -0.4, 5);
+    applyStatus(state, rulesOf(d), enemy, 'root', 0, 5);
+    f.update(state);
+    const mirrored = f.mirror.state.creatures.find((c) => c.id === mine.id)!;
+    expect(mirrored.statuses).toEqual([
+      { kind: 'slow', until: mine.statuses[0]!.until, value: -0.4 },
+    ]);
+    // El del rival no llega al cliente (solo las claves públicas) ni en el mismo mensaje.
+    const delta = computeDelta(state, d, 1, new ClientKnowledge(64 * 64));
+    expect(Object.keys(delta.set![`c:${enemy.id}`]!)).not.toContain('st');
+    // Al caducar, el espejo se queda sin estados.
+    state.tick += 100;
+    tickAbilityState(state);
+    f.update(state);
+    expect(f.mirror.state.creatures.find((c) => c.id === mine.id)!.statuses).toEqual([]);
+  });
+
+  it('el evento de habilidad solo llega si ocurre a la vista del jugador', () => {
+    const { state } = duel();
+    const vis = visibleMask(state, rules, 1);
+    const near = {
+      type: 'abilityUsed',
+      playerId: 2,
+      creatureId: 9,
+      ability: 'witchCurse',
+      x: 3.5,
+      y: 3.5,
+    } as const;
+    const far = { ...near, x: 40.5, y: 40.5 };
+    const out = eventsFor([near, far], state, 1, vis);
+    expect(out).toEqual([near]);
   });
 
   it('el Corazón enemigo solo muestra su vida si se ve', () => {

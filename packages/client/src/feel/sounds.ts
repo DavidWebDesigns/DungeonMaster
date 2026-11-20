@@ -61,6 +61,10 @@ export const SOUND_RECIPES: Readonly<Record<SoundName, readonly Layer[]>> = {
     { kind: 'tone', freq: [520, 520], wave: 'square', dur: 0.12, gain: 0.07 },
     { kind: 'tone', freq: [390, 390], wave: 'square', dur: 0.12, gain: 0.07, delay: 0.14 },
   ],
+  ability: [
+    { kind: 'tone', freq: [420, 760], wave: 'triangle', dur: 0.14, gain: 0.1 },
+    { kind: 'noise', dur: 0.08, gain: 0.07, lowpass: 2500 },
+  ],
   pickup: [{ kind: 'tone', freq: [500, 800], wave: 'sine', dur: 0.07, gain: 0.1 }],
   hit: [
     { kind: 'noise', dur: 0.07, gain: 0.16, lowpass: 1800 },

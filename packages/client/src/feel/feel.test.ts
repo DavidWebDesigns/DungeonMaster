@@ -473,3 +473,32 @@ describe('bofetada a un Imp', () => {
     expect(out.find((e) => e.type === 'floater')).toMatchObject({ x: imp.x, y: imp.y });
   });
 });
+
+describe('habilidades', () => {
+  const sb = new Sandbox(data, 1);
+  const fx = (events: SimEvent[], visible?: (x: number, y: number) => boolean) =>
+    deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER, visible);
+  const used: SimEvent = {
+    type: 'abilityUsed',
+    playerId: 2,
+    creatureId: 5,
+    ability: 'witchCurse',
+    x: 6.5,
+    y: 6.5,
+  };
+
+  it('una habilidad a la vista levanta un efecto, muestra su nombre y suena', () => {
+    const out = fx([used]);
+    expect(bursts(out)).toHaveLength(1);
+    expect(sounds(out)).toContain('ability');
+    expect(out.find((e) => e.type === 'floater')).toMatchObject({ text: 'Maldición' });
+  });
+
+  it('fuera de la vista del jugador no se dibuja ni suena', () => {
+    expect(fx([used], () => false)).toEqual([]);
+  });
+
+  it('cada receta de sonido existe, también la de habilidad', () => {
+    expect(SOUND_RECIPES['ability'].length).toBeGreaterThan(0);
+  });
+});

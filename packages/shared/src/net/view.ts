@@ -9,6 +9,7 @@
  * terreno y salas). El terreno visto queda recordado en el cliente. Las trampas y las tareas son siempre propias.
  */
 import type { DataSet } from '../data';
+import type { StatusKind } from '../schemas';
 import { visibleMask } from '../sim/fog';
 import { rulesOf } from '../sim/rules';
 import type { MatchResult, MatchState, PlayerId, SimEvent } from '../sim/types';
@@ -55,6 +56,9 @@ export class ClientKnowledge {
 
 const q2 = (n: number) => Math.round(n * 100) / 100;
 
+/** Orden fijo de los tipos de estado en la red. */
+export const STATUS_KINDS: readonly StatusKind[] = ['root', 'slow', 'stun', 'weaken'];
+
 function creatureRec(c: MatchState['creatures'][number], own: boolean): EntityRec {
   const r: EntityRec = {
     o: c.owner,
@@ -76,6 +80,12 @@ function creatureRec(c: MatchState['creatures'][number], own: boolean): EntityRe
     r['bd'] = c.beds;
     r['su'] = c.slapUntil;
     r['ha'] = c.hasteUntil;
+    // Estados (atada, ralentizada...) solo para su dueño; siempre se manda la lista (vacía incluida) para que se borre.
+    r['st'] = c.statuses.map((s) => [
+      STATUS_KINDS.indexOf(s.kind),
+      s.until,
+      Math.round(s.value * 100),
+    ]);
   }
   return r;
 }

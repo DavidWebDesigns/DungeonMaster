@@ -8,7 +8,7 @@ import { makeImp } from '../sim/createMatch';
 import { newCreature } from './../sim/portal';
 import { rulesOf } from '../sim/rules';
 import type { Creature, MatchState, PlayerId, PlayerState, Room, Task, Trap } from '../sim/types';
-import type { Delta, EntityRec } from './view';
+import { STATUS_KINDS, type Delta, type EntityRec } from './view';
 
 const num = (v: unknown, d = 0): number => (typeof v === 'number' ? v : d);
 const str = (v: unknown, d = ''): string => (typeof v === 'string' ? v : d);
@@ -191,6 +191,12 @@ export class Mirror {
         if ('bd' in rec) c.beds = [...(rec['bd'] as number[])];
         if ('su' in rec) c.slapUntil = num(rec['su']);
         if ('ha' in rec) c.hasteUntil = num(rec['ha']);
+        if ('st' in rec)
+          c.statuses = (rec['st'] as number[][]).map(([k, until, value]) => ({
+            kind: STATUS_KINDS[k as number] ?? 'slow',
+            until: until as number,
+            value: (value as number) / 100,
+          }));
         break;
       }
       case 'i': {
