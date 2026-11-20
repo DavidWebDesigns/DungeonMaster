@@ -135,15 +135,24 @@ const ownerAlive = (state: MatchState, owner: PlayerId) =>
 /** Enemigos (criaturas e Imps de otros jugadores en juego) a menos de `radius` tiles. */
 export function enemiesNear(state: MatchState, c: Creature, radius: number): Enemy[] {
   const out: Enemy[] = [];
+  // Descarte barato por distancia al cuadrado (con un pequeño margen) antes de lo caro; la distancia que se
+  // devuelve y con la que se decide sigue siendo Math.hypot, así que el resultado es idéntico.
+  const limit2 = radius * radius * (1 + 1e-9) + 1e-12;
   for (const o of state.creatures) {
+    const dx = o.x - c.x;
+    const dy = o.y - c.y;
+    if (dx * dx + dy * dy > limit2) continue;
     if (o.owner === c.owner || o.held || o.hp <= 0 || !ownerAlive(state, o.owner)) continue;
-    const dist = Math.hypot(o.x - c.x, o.y - c.y);
+    const dist = Math.hypot(dx, dy);
     if (dist <= radius)
       out.push({ kind: 'creature', id: o.id, owner: o.owner, x: o.x, y: o.y, dist });
   }
   for (const i of state.imps) {
+    const dx = i.x - c.x;
+    const dy = i.y - c.y;
+    if (dx * dx + dy * dy > limit2) continue;
     if (i.owner === c.owner || i.held || i.hp <= 0 || !ownerAlive(state, i.owner)) continue;
-    const dist = Math.hypot(i.x - c.x, i.y - c.y);
+    const dist = Math.hypot(dx, dy);
     if (dist <= radius) out.push({ kind: 'imp', id: i.id, owner: i.owner, x: i.x, y: i.y, dist });
   }
   return out;
