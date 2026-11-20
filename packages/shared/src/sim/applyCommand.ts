@@ -1,4 +1,5 @@
 import type { DataSet } from '../data';
+import { passive } from './abilities';
 import { createImpCost, getPlayer, impCount } from './economy';
 import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
@@ -349,7 +350,11 @@ function execute(
       }
       const c = state.creatures.find((k) => k.id === cmd.id);
       if (!c) break;
-      c.mood = Math.max(rules.data.mood.min, c.mood - rules.data.mood.slapMoodPenalty);
+      // Disfruta el dolor: la bofetada le sube el ánimo en vez de bajárselo.
+      const likes = passive(rules, c, 'moodOnSlap');
+      c.mood = likes
+        ? Math.min(rules.data.mood.max, c.mood + likes.effect.delta)
+        : Math.max(rules.data.mood.min, c.mood - rules.data.mood.slapMoodPenalty);
       c.slapUntil = state.tick + Math.round(g.slap.durationSeconds * g.tickRate);
       player.slapReadyTick = state.tick + Math.round(g.slap.cooldownSeconds * g.tickRate);
       events.push({ type: 'slapped', playerId: player.id, creatureId: c.id });

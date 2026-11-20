@@ -1,4 +1,5 @@
 import type { DataSet } from '../data';
+import { tickAbilityState } from './abilities';
 import { runQueuedCommands } from './applyCommand';
 import { updateCreatures } from './behavior';
 import { tickPayday, tickHatcheries } from './creatureEconomy';
@@ -33,6 +34,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
   tickPortals(state, rules, events);
   assignTasks(state, rules);
   tickNeeds(state, rules, events);
+  tickAbilityState(state);
   // Los cálculos de ruta por tick y jugador se reparten entre Imps y criaturas (los Imps primero).
   const budgets = new Map<number, number>();
   for (const p of state.players)

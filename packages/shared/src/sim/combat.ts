@@ -2,6 +2,7 @@
  * Combate (sección 6.11): daño, alcance, línea de visión, elección de objetivo, ataques a salas y al Corazón,
  * y muertes. Todo el azar sale del generador de la partida.
  */
+import { adjustDamage, applyLifesteal, isStunned, statusSpeedFactor } from './abilities';
 import { creatureMaxHp, moodBandOf, scaledStat } from './creatureStats';
 import { computeVisible } from './fog';
 import { resetImp } from './imps';
@@ -90,7 +91,11 @@ export function attackIntervalTicks(state: MatchState, rules: Rules, c: Creature
 /** Velocidad de movimiento en tiles por segundo (con el bonus de Acelerar). */
 export function moveSpeed(state: MatchState, rules: Rules, c: Creature): number {
   const def = rules.creatureDefs[c.type];
-  return (def?.base.speed ?? 0) * (1 + (isHasted(state, c) ? bonusOf(rules, 'moveSpeedBonus') : 0));
+  return (
+    (def?.base.speed ?? 0) *
+    (1 + (isHasted(state, c) ? bonusOf(rules, 'moveSpeedBonus') : 0)) *
+    statusSpeedFactor(state, c)
+  );
 }
 
 /** daño = dañoBase × mult(nivel) × modAnimo × aleatorio(0,9 a 1,1). */
@@ -335,8 +340,9 @@ function hitUnit(
   victim: Creature | Imp,
   events: SimEvent[],
 ): void {
-  const dmg = rollDamage(state, rules, attacker);
+  const dmg = adjustDamage(state, rules, attacker, victim, rollDamage(state, rules, attacker));
   victim.hp -= dmg;
+  applyLifesteal(rules, attacker, dmg);
   recordAttacker(victim, attacker, state.tick);
   events.push({
     type: 'hit',
@@ -395,7 +401,7 @@ function hitStructure(
 /** Paso 7 del tick: las criaturas en combate o asediando golpean cuando les toca. */
 export function updateCombat(state: MatchState, rules: Rules, events: SimEvent[]): void {
   for (const c of state.creatures) {
-    if (c.held || c.hp <= 0) continue;
+    if (c.held || c.hp <= 0 || isStunned(state, c)) continue;
     if (c.goal !== 'combat' && c.goal !== 'siege') continue;
     if (state.tick < c.attackReadyTick) continue;
 

@@ -27,6 +27,7 @@ import {
 } from './creatureStats';
 import { tileIndex, tileOfPosition } from './grid';
 import { moveAlongPath } from './movement';
+import { isStunned } from './abilities';
 import { findPath } from './pathfinding';
 import { nextFloat, nextInt } from './rng';
 import { secondsToTicks, type Rules } from './rules';
@@ -423,6 +424,8 @@ export function updateCreatures(
     const def = rules.creatureDefs[c.type];
     if (!def) continue;
 
+    // Aturdida: no hace nada hasta que pase el aturdimiento.
+    if (isStunned(state, c)) continue;
     // Furioso: detenida (el abandono lo decide el paso de necesidades).
     if (workSpeedFactor(state, rules, c) === 0) {
       stopCreature(c);
