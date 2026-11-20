@@ -53,6 +53,14 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - Cierra una pestaña a media partida y recarga: ¿vuelves a tu mazmorra?
 - Al terminar: ¿la tabla de resultados tiene sentido?
 
+## Cambios recientes que conviene probar
+
+- Las criaturas y los Imps solo se pueden soltar en terreno propio (el cursor se pone rojo en otro sitio); desde ahí las criaturas salen a asaltar al enemigo visible más cercano.
+- Con excavar, un clic (o arrastrar) sobre tiles ya marcados los desmarca.
+- **B** también abofetea a los Imps (+25 % de velocidad de trabajo).
+- Al soltar un Imp o una criatura, elige lo más cercano **andando**, no en línea recta.
+- Veta de diamantes (cian) en el centro del mapa: se marca y se mina como el oro, pero no se agota; desmárcala para dejar de minarla.
+
 ## Qué apuntar
 
 Una línea por cosa, con el momento ("minuto 6, tras el segundo día de pago"):

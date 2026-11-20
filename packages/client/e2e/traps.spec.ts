@@ -18,7 +18,9 @@ interface Hook {
         x: number;
         y: number;
         taskId: number;
+        slapUntil: number;
       }>;
+      tick: number;
       tasks: Array<{ id: number; kind: string }>;
     };
   };
@@ -122,4 +124,41 @@ test('se recoge un Imp con el ratón y al soltarlo va a la tarea marcada más ce
   const imp = await page.evaluate((i) => dm().sandbox.state.imps.find((k) => k.id === i)!, id);
   expect(imp.held).toBe(false);
   expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
+});
+
+test('un clic sobre un tile ya marcado para excavar lo desmarca', async ({ page }) => {
+  const a = await page.evaluate(() => dm().tileToScreen(11, 8, 1));
+  const digs = () =>
+    page.evaluate(() => dm().sandbox.state.tasks.filter((t) => t.kind === 'dig').length);
+  const before = await digs();
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await advance(page, 1);
+  expect(await digs()).toBe(before + 1);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await advance(page, 1);
+  expect(await digs()).toBe(before);
+});
+
+test('B sobre un Imp lo abofetea y trabaja más rápido durante un rato', async ({ page }) => {
+  const id = await page.evaluate(() => dm().sandbox.state.imps.find((i) => i.owner === 1)!.id);
+  await page.evaluate((i) => {
+    const imp = dm().sandbox.state.imps.find((k) => k.id === i)!;
+    imp.x = 3.5;
+    imp.y = 9.5;
+  }, id);
+  const at = await page.evaluate((i) => dm().impToScreen(i), id);
+  await page.mouse.move(at!.x, at!.y);
+  await page.waitForTimeout(150);
+  await page.keyboard.press('b');
+  await advance(page, 1);
+  const slapped = await page.evaluate((i) => {
+    const st = dm().sandbox.state;
+    return st.imps.find((k) => k.id === i)!.slapUntil > st.tick;
+  }, id);
+  expect(slapped).toBe(true);
+  await expect(page.locator('.floater')).toContainText('+25% velocidad');
 });
