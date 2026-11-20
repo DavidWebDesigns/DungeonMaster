@@ -22,6 +22,8 @@ const COLORS = {
 export interface OverlayTile {
   tile: Point;
   color: RGB;
+  /** Opacidad de 0 a 1 (por defecto 0,55). */
+  alpha?: number;
 }
 
 /** Convierte lo que prevé el modelo de entrada en tiles coloreados. */
@@ -57,12 +59,13 @@ export class OverlayView {
     scene: Scene,
     private readonly width: number,
     height: number,
+    name = 'overlay',
   ) {
     const max = width * height;
     this.matrices = new Float32Array(max * 16);
     this.colors = new Float32Array(max * 4);
-    const box = CreateBox('overlay', { size: 1 }, scene);
-    const mat = new StandardMaterial('overlayMat', scene);
+    const box = CreateBox(name, { size: 1 }, scene);
+    const mat = new StandardMaterial(`${name}Mat`, scene);
     // El color de cada instancia tiñe el difuso (no el emisivo): se deja un poco de emisivo para que se vea con poca luz.
     mat.diffuseColor = new Color3(1, 1, 1);
     mat.emissiveColor = new Color3(0.3, 0.3, 0.3);
@@ -79,14 +82,17 @@ export class OverlayView {
   }
 
   set(preview: Preview, styles: readonly TileStyle[]): void {
-    const tiles = overlayTiles(preview);
+    this.setTiles(overlayTiles(preview), styles);
+  }
+
+  setTiles(tiles: readonly OverlayTile[], styles: readonly TileStyle[]): void {
     if (tiles.length === 0 && this.lastCount === 0) return;
     const n = Math.min(tiles.length, this.matrices.length / 16);
     // Las instancias sobrantes se ocultan con matrices a cero. No se cambia thinInstanceCount: si valiera 0 al
     // compilar el material, este quedaría sin soporte de colores por instancia.
     this.matrices.fill(0, n * 16, Math.max(n, this.lastCount) * 16);
     for (let k = 0; k < n; k++) {
-      const { tile, color } = tiles[k] as OverlayTile;
+      const { tile, color, alpha } = tiles[k] as OverlayTile;
       const top = styles[tile.y * this.width + tile.x]?.height ?? 0.1;
       const m = k * 16;
       this.matrices.fill(0, m, m + 16);
@@ -100,7 +106,7 @@ export class OverlayView {
       this.colors[k * 4] = color[0];
       this.colors[k * 4 + 1] = color[1];
       this.colors[k * 4 + 2] = color[2];
-      this.colors[k * 4 + 3] = 0.55;
+      this.colors[k * 4 + 3] = alpha ?? 0.55;
     }
     this.lastCount = n;
     this.mesh.thinInstanceBufferUpdated('matrix');

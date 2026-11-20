@@ -12,6 +12,7 @@ import { InputModel, type HoverUnit } from './input/inputModel';
 import { localStatsRows, type EndStatsRow } from './ui/endStats';
 import { keyAction } from './input/keymap';
 import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
+import { FloaterList, floaterPose } from './feel/anim';
 import { errorMessage } from './input/messages';
 import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
 import {
@@ -49,6 +50,10 @@ export class Game {
   readonly particles = new ParticleSim();
   readonly audio = new AudioEngine();
   private screenFx = initialScreenFx();
+  /** Reloj de dibujo en segundos (el mismo que usa el renderer para las animaciones). */
+  private nowSeconds = 0;
+  private readonly floaters = new FloaterList();
+  private readonly floaterLayer: HTMLDivElement;
   private readonly alertEl: HTMLDivElement;
   private readonly dom: DomInput;
   private feelSnapshot: FeelSnapshot;
@@ -85,6 +90,9 @@ export class Game {
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'width:100%;height:100%;display:block;outline:none';
     host.appendChild(canvas);
+    this.floaterLayer = document.createElement('div');
+    this.floaterLayer.className = 'floaters';
+    host.appendChild(this.floaterLayer);
     this.alertEl = document.createElement('div');
     this.alertEl.className = 'heart-alert';
     host.appendChild(this.alertEl);
@@ -162,6 +170,7 @@ export class Game {
       if (!this.running) return;
       const dt = this.lastMs === 0 ? 0 : nowMs - this.lastMs;
       this.lastMs = nowMs;
+      this.nowSeconds = nowMs / 1000;
       this.feel(this.sandbox.advance(dt), dt / 1000);
       this.camera = updateCamera(
         { ...this.camera, aspect: this.renderer.aspect },
@@ -236,6 +245,17 @@ export class Game {
       for (const e of effects) {
         if (e.type === 'burst') this.particles.burst(e);
         else if (e.type === 'heartAlert') this.screenFx = heartHit(this.screenFx, e.strength);
+        else if (e.type === 'creatureAnim')
+          this.renderer.anims.trigger(e.creatureId, e.anim, this.nowSeconds);
+        else if (e.type === 'creatureKilled') this.renderer.anims.markKilled(e.creatureId);
+        else if (e.type === 'floater')
+          this.floaters.add({
+            x: e.x,
+            y: e.y,
+            text: e.text,
+            color: e.color,
+            born: this.nowSeconds,
+          });
         else this.playSound(e.sound, e.volume);
       }
       for (const a of adviceFor(events, state, this.data, this.me, (id) =>
@@ -248,6 +268,31 @@ export class Game {
     }
     this.particles.step(dtSeconds);
     this.applyScreenFx(dtSeconds);
+    this.drawFloaters();
+  }
+
+  /** Números flotantes: pequeños textos HTML que suben desde un punto del mapa y se desvanecen. */
+  private drawFloaters(): void {
+    this.floaters.prune(this.nowSeconds);
+    const layer = this.floaterLayer;
+    while (layer.childElementCount > this.floaters.items.length) layer.lastElementChild?.remove();
+    const r = this.renderer.canvas.getBoundingClientRect();
+    this.floaters.items.forEach((f, i) => {
+      let el = layer.children[i] as HTMLDivElement | undefined;
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'floater';
+        layer.appendChild(el);
+      }
+      const pose = floaterPose(this.nowSeconds - f.born);
+      const s = worldToScreen(this.camera, f.x, 1.1, f.y);
+      const x = ((s.nx + 1) / 2) * r.width;
+      const y = ((1 - s.ny) / 2) * r.height - pose.rise;
+      el.textContent = f.text;
+      el.style.color = f.color;
+      el.style.opacity = String(pose.opacity);
+      el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+    });
   }
 
   /** Temblor del lienzo y pulso rojo del borde (decoración: no cambia nada de la partida). */

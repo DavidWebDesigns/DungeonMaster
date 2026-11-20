@@ -13,6 +13,7 @@ import { rulesOf, visibleMask, type DataSet } from '@dm/shared';
 import type { GameSource } from '../sandbox/source';
 import { cameraPose, orthoBounds, type CameraState } from './cameraMath';
 import { EntitiesView } from './entitiesView';
+import { crackTiles } from './cracks';
 import { OverlayView } from './overlayView';
 import { ParticlesView } from './particlesView';
 import type { ParticleSim } from '../feel/particleSim';
@@ -28,6 +29,8 @@ export class Renderer {
   private readonly styles = new TerrainStyles();
   private readonly entities: EntitiesView;
   private readonly overlay: OverlayView;
+  /** Grietas de los muros que los Imps propios están excavando. */
+  private readonly cracks: OverlayView;
   private readonly particles: ParticlesView;
   private lastTick = -1;
   private visible: Uint8Array | null = null;
@@ -59,7 +62,13 @@ export class Renderer {
     this.terrain = new TerrainView(this.scene, data.map.width, data.map.height);
     this.entities = new EntitiesView(this.scene);
     this.overlay = new OverlayView(this.scene, data.map.width, data.map.height);
+    this.cracks = new OverlayView(this.scene, data.map.width, data.map.height, 'cracks');
     this.particles = new ParticlesView(this.scene);
+  }
+
+  /** Animaciones puntuales de las criaturas. */
+  get anims() {
+    return this.entities.anims;
   }
 
   /** Altura del bloque dibujado en un tile (para saber si es un muro al apuntar con el ratón). */
@@ -123,6 +132,10 @@ export class Renderer {
       hoverUnit,
     );
     this.overlay.set(preview, this.styles.styles);
+    this.cracks.setTiles(
+      crackTiles(sandbox.state, this.data, this.localPlayer),
+      this.styles.styles,
+    );
     this.particles.update(particles);
     this.scene.render();
   }

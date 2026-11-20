@@ -5,6 +5,7 @@
 import type { DataSet, MatchState, SimEvent } from '@dm/shared';
 import type { RGB } from '../render/palette';
 import { playerColor } from '../render/palette';
+import type { CreatureAnimKind } from './anim';
 
 export type SoundName =
   | 'click'
@@ -42,13 +43,21 @@ export type Effect =
     }
   | { type: 'sound'; sound: SoundName; volume: number }
   /** Atacan el Corazón del jugador local: temblor, pulso rojo y alarma. `strength` de 0 a 1. */
-  | { type: 'heartAlert'; strength: number };
+  | { type: 'heartAlert'; strength: number }
+  /** Aplastar, soltar o destellar a una criatura. */
+  | { type: 'creatureAnim'; creatureId: number; anim: CreatureAnimKind }
+  /** La criatura murió (para que su modelo caiga y se desvanezca en vez de desaparecer). */
+  | { type: 'creatureKilled'; creatureId: number }
+  /** Texto que sube sobre un punto del mapa (en tiles). */
+  | { type: 'floater'; x: number; y: number; text: string; color: string };
 
 /** Lo que hay que recordar de un tick al siguiente para detectar cambios. */
 export interface FeelSnapshot {
   terrain: number[];
   owner: number[];
   carry: Map<number, number>;
+  /** Criaturas que estaban en la mano: al dejar de estarlo, se han soltado. */
+  held: Set<number>;
 }
 
 export function takeSnapshot(state: MatchState): FeelSnapshot {
@@ -56,6 +65,7 @@ export function takeSnapshot(state: MatchState): FeelSnapshot {
     terrain: state.terrain.slice(),
     owner: state.owner.slice(),
     carry: new Map(state.imps.map((i) => [i.id, i.carry])),
+    held: new Set(state.creatures.filter((c) => c.held).map((c) => c.id)),
   };
 }
 
@@ -169,6 +179,7 @@ export function deriveEffects(
     }
     if (e.type === 'creatureDied' && e.cause !== 'starvation') {
       if (e.cause === 'eliminated') continue;
+      out.push({ type: 'creatureKilled', creatureId: e.creatureId });
       out.push({ type: 'sound', sound: 'death', volume: 0.7 });
       continue;
     }
@@ -254,13 +265,33 @@ export function deriveEffects(
       }
       case 'slapped': {
         const c = state.creatures.find((k) => k.id === e.creatureId);
-        if (c) burst(c.x, 0.8, c.y, [1, 1, 1], 8, 1.6, 2, 0.1);
+        if (c) {
+          burst(c.x, 0.8, c.y, [1, 1, 1], 8, 1.6, 2, 0.1);
+          out.push({ type: 'creatureAnim', creatureId: c.id, anim: 'slap' });
+          out.push({
+            type: 'floater',
+            x: c.x,
+            y: c.y,
+            text: `+${Math.round(data.global.slap.workSpeedBonus * 100)}% velocidad`,
+            color: '#ffe27a',
+          });
+        }
         out.push({ type: 'sound', sound: 'slap', volume: 1 });
         break;
       }
       case 'levelUp': {
         const c = state.creatures.find((k) => k.id === e.creatureId);
-        if (c) burst(c.x, 0.9, c.y, GOLD, 16, 1.4, 3.4, 0.12);
+        if (c) {
+          burst(c.x, 0.9, c.y, GOLD, 16, 1.4, 3.4, 0.12);
+          out.push({ type: 'creatureAnim', creatureId: c.id, anim: 'levelUp' });
+          out.push({
+            type: 'floater',
+            x: c.x,
+            y: c.y,
+            text: `¡Nivel ${e.level}!`,
+            color: '#ffd23a',
+          });
+        }
         out.push({ type: 'sound', sound: 'levelup', volume: 1 });
         break;
       }
@@ -273,6 +304,13 @@ export function deriveEffects(
       default:
         break;
     }
+  }
+
+  // Criatura que estaba en la mano y ya no: cae con un pequeño impacto y polvo.
+  for (const c of state.creatures) {
+    if (c.held || !prev.held.has(c.id)) continue;
+    burst(c.x, 0.15, c.y, DUST, 8, 1.3, 1.2, 0.12);
+    out.push({ type: 'creatureAnim', creatureId: c.id, anim: 'drop' });
   }
 
   // Día de pago: campanilla (no tiene jugador, es de toda la partida).

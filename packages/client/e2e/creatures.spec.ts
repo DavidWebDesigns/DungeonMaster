@@ -134,6 +134,8 @@ test('B abofetea a la criatura bajo el cursor y baja su ánimo', async ({ page }
     return st.creatures[0]!.slapUntil > st.tick;
   });
   expect(slapped).toBe(true);
+  // Y sale un número flotante con el bono.
+  await expect(page.locator('.floater')).toContainText('+25% velocidad');
 });
 
 test('el panel de criaturas centra la cámara al hacer clic en una', async ({ page }) => {

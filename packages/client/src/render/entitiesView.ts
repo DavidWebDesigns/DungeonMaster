@@ -19,6 +19,7 @@ import type { GameSource } from '../sandbox/source';
 import { playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
+import { AnimBoard, deathPose } from '../feel/anim';
 import { hpColor, hpFraction, lookOf, moodCloudOf, moodIconOf, trapLookOf } from './creatureStyle';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 
@@ -52,6 +53,9 @@ interface CreatureMesh {
 export class EntitiesView {
   private readonly imps = new Map<number, ImpMesh>();
   private readonly creatures = new Map<number, CreatureMesh>();
+  /** Animaciones puntuales de las criaturas (bofetada, soltar, subir de nivel, morir). */
+  readonly anims = new AnimBoard();
+  private readonly dying: Array<{ mesh: CreatureMesh; born: number }> = [];
   private propSignature = '';
   private props: AbstractMesh[] = [];
   private pulsing: Mesh[] = [];
@@ -146,6 +150,19 @@ export class EntitiesView {
     }
 
     this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog, hoverUnit, handIndex);
+    for (let i = this.dying.length - 1; i >= 0; i--) {
+      const d = this.dying[i]!;
+      const pose = deathPose(timeSeconds - d.born);
+      if (pose.done) {
+        d.mesh.body.dispose();
+        this.dying.splice(i, 1);
+        continue;
+      }
+      d.mesh.body.scaling.set(pose.sx, pose.sy, pose.sx);
+      d.mesh.body.position.y = 0.1 + (d.mesh.height * pose.sy) / 2;
+      const mat = d.mesh.body.material as StandardMaterial | null;
+      if (mat) mat.alpha = pose.alpha;
+    }
     this.updateTraps(state, localPlayer);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
@@ -248,9 +265,18 @@ export class EntitiesView {
       if (!c.held && hiddenByFog(c.owner, c.x, c.y)) m.body.setEnabled(false);
       // Bajo el cursor: más grande y brillante, para que se vea que se puede recoger.
       const hovered = hoverUnit?.kind === 'creature' && hoverUnit.id === c.id && !c.held;
-      m.body.scaling.setAll(hovered ? 1.3 : 1);
+      const anim = this.anims.sample(c.id, timeSeconds);
+      const base = hovered ? 1.3 : 1;
+      m.body.scaling.set(base * anim.sx, base * anim.sy, base * anim.sx);
       const bodyMat = m.body.material as StandardMaterial | null;
-      if (bodyMat) bodyMat.emissiveColor = hovered ? HOVER_GLOW : NO_GLOW;
+      if (bodyMat) {
+        const glow = hovered ? HOVER_GLOW : NO_GLOW;
+        bodyMat.emissiveColor = new Color3(
+          glow.r + anim.glow * 0.8,
+          glow.g + anim.glow * 0.7,
+          glow.b + anim.glow * 0.2,
+        );
+      }
       const frac = hpFraction(c, creatureMaxHp(rules, c));
       m.barBack.setEnabled(frac < 1);
       m.barFill.setEnabled(frac < 1);
@@ -268,8 +294,15 @@ export class EntitiesView {
     }
     for (const [id, m] of this.creatures) {
       if (!alive.has(id)) {
-        m.body.dispose();
         this.creatures.delete(id);
+        this.anims.forget(id);
+        if (this.anims.takeKilled(id) && m.body.isEnabled()) {
+          // Murió a la vista: cae y se desvanece (los modelos que solo salen de la vista desaparecen sin más).
+          m.mood.setEnabled(false);
+          m.barBack.setEnabled(false);
+          m.barFill.setEnabled(false);
+          this.dying.push({ mesh: m, born: timeSeconds });
+        } else m.body.dispose();
       }
     }
   }

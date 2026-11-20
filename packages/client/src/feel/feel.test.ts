@@ -398,3 +398,61 @@ describe('screenFx', () => {
     expect(Math.abs(o.y)).toBeLessThanOrEqual(MAX_SHAKE_PX);
   });
 });
+
+describe('animaciones de criaturas', () => {
+  const setup = () => {
+    const sb = new Sandbox(data, 1);
+    const rules = rulesOf(data);
+    const t = [...Array(sb.state.terrain.length).keys()].find(
+      (i) => rules.walkable[sb.state.terrain[i] as number] && sb.state.owner[i] === 1,
+    )!;
+    const c = newCreature(sb.state, rules, 1, 'goblin', t);
+    sb.state.creatures.push(c);
+    return { sb, c };
+  };
+  const fxFor = (sb: Sandbox, events: SimEvent[]) =>
+    deriveEffects(takeSnapshot(sb.state), sb.state, data, events, LOCAL_PLAYER);
+
+  it('la bofetada aplasta a la criatura y suelta un "+25% velocidad" flotante', () => {
+    const { sb, c } = setup();
+    const out = fxFor(sb, [{ type: 'slapped', playerId: 1, creatureId: c.id }]);
+    expect(out).toContainEqual({ type: 'creatureAnim', creatureId: c.id, anim: 'slap' });
+    const f = out.find((e) => e.type === 'floater') as { text: string };
+    expect(f.text).toBe(`+${Math.round(data.global.slap.workSpeedBonus * 100)}% velocidad`);
+  });
+
+  it('subir de nivel destella y muestra el nivel nuevo', () => {
+    const { sb, c } = setup();
+    const out = fxFor(sb, [{ type: 'levelUp', playerId: 1, creatureId: c.id, level: 3 }]);
+    expect(out).toContainEqual({ type: 'creatureAnim', creatureId: c.id, anim: 'levelUp' });
+    expect(out.find((e) => e.type === 'floater')).toMatchObject({ text: '¡Nivel 3!' });
+  });
+
+  it('al soltar una criatura de la mano cae con impacto y polvo', () => {
+    const { sb, c } = setup();
+    c.held = true;
+    const snap = takeSnapshot(sb.state);
+    expect(snap.held.has(c.id)).toBe(true);
+    c.held = false;
+    const out = deriveEffects(snap, sb.state, data, [], LOCAL_PLAYER);
+    expect(out).toContainEqual({ type: 'creatureAnim', creatureId: c.id, anim: 'drop' });
+    expect(bursts(out).length).toBeGreaterThan(0);
+    // Si sigue en la mano o nunca lo estuvo, nada.
+    expect(deriveEffects(takeSnapshot(sb.state), sb.state, data, [], LOCAL_PLAYER)).toEqual([]);
+  });
+
+  it('una muerte avisa para que el modelo caiga, salvo la de un jugador eliminado', () => {
+    const { sb, c } = setup();
+    const died = (cause: 'combat' | 'eliminated'): SimEvent => ({
+      type: 'creatureDied',
+      playerId: 1,
+      creatureId: c.id,
+      cause,
+    });
+    expect(fxFor(sb, [died('combat')])).toContainEqual({
+      type: 'creatureKilled',
+      creatureId: c.id,
+    });
+    expect(fxFor(sb, [died('eliminated')]).some((e) => e.type === 'creatureKilled')).toBe(false);
+  });
+});
