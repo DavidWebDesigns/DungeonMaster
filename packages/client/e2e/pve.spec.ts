@@ -79,3 +79,22 @@ test('F9 llena el maná y F10 alterna ver todo el mapa (trampas de pruebas del P
   await page.keyboard.press('F10');
   expect(await page.evaluate(() => (window as unknown as Dbg).__dm.sandbox.revealMap)).toBe(false);
 });
+
+test('resistencia: 90 s a velocidad ×4 contra 3 bots sin errores y con el reloj avanzando', async ({
+  page,
+}) => {
+  test.setTimeout(150_000);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  await page.goto('/?seed=3');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  await page.evaluate(() => ((window as unknown as { __dm: Hook }).__dm.sandbox.speed = 4));
+  await page.waitForTimeout(90_000);
+  const state = await page.evaluate(() => (window as unknown as { __dm: Hook }).__dm.sandbox.state);
+  // Mucho más de lo que daría ×1 en 90 s (900 ticks), aunque el WebGL por software vaya lento.
+  expect(state.tick).toBeGreaterThan(1500);
+  expect(errors).toEqual([]);
+});

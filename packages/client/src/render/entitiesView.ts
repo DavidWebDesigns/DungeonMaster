@@ -154,7 +154,7 @@ export class EntitiesView {
       const d = this.dying[i]!;
       const pose = deathPose(timeSeconds - d.born);
       if (pose.done) {
-        d.mesh.body.dispose();
+        d.mesh.body.dispose(false, true);
         this.dying.splice(i, 1);
         continue;
       }
@@ -302,7 +302,7 @@ export class EntitiesView {
           m.barBack.setEnabled(false);
           m.barFill.setEnabled(false);
           this.dying.push({ mesh: m, born: timeSeconds });
-        } else m.body.dispose();
+        } else m.body.dispose(false, true);
       }
     }
   }
