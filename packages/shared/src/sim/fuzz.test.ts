@@ -96,7 +96,6 @@ describe('comandos de basura', () => {
     (seed) => {
       const state = createMatch({ playerCount: 2 }, data, 11 + seed);
       const rng: RngHolder = { rng: 12345 * seed };
-      let ok = 0;
       let validated = 0;
       for (let i = 0; i < 3000; i++) {
         const cmd = randomCommand(rng);
@@ -108,7 +107,6 @@ describe('comandos de basura', () => {
         expect(() => (res = applyCommand(state, data, who, cmd))).not.toThrow();
         expect(typeof (res as unknown as { ok: boolean }).ok).toBe('boolean');
         const r = res as unknown as { ok: boolean; error?: string };
-        if (r.ok) ok++;
         if (r.error !== 'RATE_LIMIT') validated++;
         if (i % 20 === 0) expect(() => step(state, data)).not.toThrow();
       }
@@ -158,7 +156,7 @@ describe('comandos de basura', () => {
         try {
           res = applyCommand(state, data, 1, cmd as unknown as Command);
         } catch (e) {
-          throw new Error(`${JSON.stringify(cmd)}\n${(e as Error).stack}`);
+          throw new Error(`Lanzó con ${JSON.stringify(cmd)}`, { cause: e });
         }
         if ((res as unknown as { ok: boolean }).ok) ok++;
         if (i % 10 === 0) expect(() => step(state, data)).not.toThrow();
