@@ -340,12 +340,13 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
     const target = weakestVisibleEnemy(state, data) ?? advanceTarget(state, data, vis);
     if (!target) return;
 
-    // Las criaturas que lleva en la mano se sueltan en el tile visible y caminable más cercano al objetivo.
+    // Las criaturas que lleva en la mano se sueltan en el tile PROPIO y caminable más cercano al objetivo
+    // (solo se puede soltar en terreno conquistado); desde ahí asaltan al enemigo visible más cercano.
     if (p.hand.length > 0) {
       let best = -1;
       let bestD = Infinity;
       for (let i = 0; i < vis.length; i++) {
-        if (vis[i] !== 1 || !rules.walkable[state.terrain[i] as number]) continue;
+        if (state.owner[i] !== playerId || !rules.walkable[state.terrain[i] as number]) continue;
         const d = Math.abs(tileX(state, i) - target.x) + Math.abs(tileY(state, i) - target.y);
         if (d < bestD) {
           bestD = d;

@@ -228,9 +228,9 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       if (player.hand.length === 0 || !inBounds(state, cmd.tile.x, cmd.tile.y))
         return fail('INVALID_TARGET');
       const i = tileIndex(state, cmd.tile.x, cmd.tile.y);
-      // Cualquier tile transitable propio o que se vea ahora mismo, también en territorio enemigo.
+      // Solo en terreno ya conquistado y marcado como propio: desde ahí las criaturas salen a asaltar.
       if (!rules.walkable[state.terrain[i] as number]) return fail('INVALID_TARGET');
-      if (state.owner[i] !== pid && !isVisible(state, rules, pid, i)) return fail('INVALID_TARGET');
+      if (state.owner[i] !== pid) return fail('NOT_OWNER');
       return { ok: true, tiles: [i] };
     }
     case 'surrender':

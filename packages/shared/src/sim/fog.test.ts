@@ -51,7 +51,7 @@ describe('niebla de guerra', () => {
     expect(canSee(state, rulesOf(data), 1, 24.5, 20.5)).toBe(true);
   });
 
-  it('soltar una criatura en territorio enemigo solo vale en un tile que se ve', () => {
+  it('soltar una criatura solo vale en terreno propio: ni en el enemigo, aunque se vea', () => {
     const { state, data } = duel();
     const g = spawn(state, data, 1, 'goblin', 4.5, 8.5);
     applyCommand(state, data, 1, { type: 'pickUp', id: g.id });
@@ -60,11 +60,16 @@ describe('niebla de guerra', () => {
     const enemyFloor = { x: h.x - 1, y: h.y + 1 };
     expect(applyCommand(state, data, 1, { type: 'drop', tile: enemyFloor })).toEqual({
       ok: false,
-      error: 'INVALID_TARGET',
+      error: 'NOT_OWNER',
     });
-    // Otra criatura propia que ve ese lugar lo hace posible.
+    // Una criatura propia que ve ese lugar no cambia nada: el terreno enemigo no vale para soltar.
     spawn(state, data, 1, 'troll', enemyFloor.x + 0.5, enemyFloor.y + 1.5);
-    expect(applyCommand(state, data, 1, { type: 'drop', tile: enemyFloor }).ok).toBe(true);
+    expect(applyCommand(state, data, 1, { type: 'drop', tile: enemyFloor })).toEqual({
+      ok: false,
+      error: 'NOT_OWNER',
+    });
+    // Tampoco en suelo sin dueño, ni en un muro.
+    expect(applyCommand(state, data, 1, { type: 'drop', tile: { x: 0, y: 0 } }).ok).toBe(false);
   });
 
   it('en territorio propio se puede soltar siempre', () => {

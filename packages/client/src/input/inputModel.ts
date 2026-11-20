@@ -124,7 +124,9 @@ export class InputModel {
     if (!tile) return;
     const t = this.tool;
     if (TILE_TOOLS.has(t.kind) || t.kind === 'build') {
-      this.drag = { start: tile, cancelMode: shift && t.kind === 'dig' };
+      // Con excavar, pulsar sobre un tile ya marcado (o con Mayús) desmarca en vez de volver a marcar.
+      const marked = this.isMarkedForDig(tile);
+      this.drag = { start: tile, cancelMode: (shift || marked) && t.kind === 'dig' };
     } else if (t.kind === 'sell') {
       // Con una trampa propia en el tile, se desmonta la trampa; si no, se vende la sala.
       const i = tile.y * this.host.state.width + tile.x;
@@ -135,6 +137,13 @@ export class InputModel {
     } else if (t.kind === 'spell') {
       this.dispatch(this.spellCommand(t.spell, tile, unit?.kind === 'creature' ? unit.id : null));
     }
+  }
+
+  /** ¿El jugador ya tiene este tile marcado para excavar o minar? */
+  private isMarkedForDig(tile: Point): boolean {
+    const { state, player } = this.host;
+    const i = tile.y * state.width + tile.x;
+    return state.tasks.some((k) => k.owner === player && k.tile === i && k.kind === 'dig');
   }
 
   pointerUp(tile: Point | null): void {

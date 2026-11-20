@@ -52,6 +52,43 @@ describe('excavar arrastrando', () => {
     expect(sent[1]!.res.ok).toBe(true);
   });
 
+  it('hacer clic sobre un tile ya marcado lo desmarca', () => {
+    const { input, sent, sandbox } = setup();
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerUp(pt(12, 4));
+    sandbox.advance(100);
+    expect(sandbox.state.tasks.filter((k) => k.kind === 'dig')).toHaveLength(2);
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerUp(pt(11, 4));
+    expect(sent[1]!.cmd).toEqual({ type: 'cancelDig', tiles: [pt(11, 4)] });
+    expect(sent[1]!.res.ok).toBe(true);
+    sandbox.advance(100);
+    const left = sandbox.state.tasks.filter((k) => k.kind === 'dig').map((k) => k.tile);
+    expect(left).toEqual([4 * sandbox.state.width + 12]);
+  });
+
+  it('arrastrar desde un tile marcado desmarca el rectángulo y la vista previa lo avisa', () => {
+    const { input, sent, sandbox } = setup();
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerUp(pt(13, 4));
+    sandbox.advance(100);
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerMove(pt(13, 4));
+    const p = input.preview();
+    expect(p).toMatchObject({ kind: 'tiles', action: 'cancelDig' });
+    input.pointerUp(pt(13, 4));
+    expect(sent[1]!.cmd.type).toBe('cancelDig');
+    sandbox.advance(100);
+    expect(sandbox.state.tasks.filter((k) => k.kind === 'dig')).toHaveLength(0);
+  });
+
+  it('un clic sobre un tile sin marcar sigue marcándolo', () => {
+    const { input, sent } = setup();
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerUp(pt(11, 4));
+    expect(sent[0]!.cmd.type).toBe('dig');
+  });
+
   it('sin tocar la simulación mientras se arrastra: solo se envía al soltar', () => {
     const { input, sent } = setup();
     input.pointerDown(pt(11, 4), 0);

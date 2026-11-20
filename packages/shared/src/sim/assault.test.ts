@@ -78,15 +78,13 @@ describe('soltar con la mano = asalto al objetivo visible más cercano', () => {
   it('también marca salas y el Corazón enemigos que se vean', () => {
     const { state, data } = duel();
     noImps(state);
-    // Una criatura propia ve la base enemiga; otra se suelta junto a su Corazón.
+    // Una criatura propia ve la base enemiga; otra se suelta en terreno propio y sale a asaltar lo que se ve.
     const h = baseRoom(data, 2, 'heart');
     spawn(state, data, 1, 'troll', h.x - 1.5, h.y + 1.5);
     const g = spawn(state, data, 1, 'goblin', 3.5, 8.5);
     expect(applyCommand(state, data, 1, { type: 'pickUp', id: g.id }).ok).toBe(true);
     step(state, data);
-    expect(
-      applyCommand(state, data, 1, { type: 'drop', tile: { x: h.x - 1, y: h.y + 1 } }).ok,
-    ).toBe(true);
+    expect(applyCommand(state, data, 1, { type: 'drop', tile: { x: 3, y: 8 } }).ok).toBe(true);
     step(state, data);
     expect(['structure', 'creature', 'imp']).toContain(g.assaultKind);
     expect(g.assaultKind).not.toBe('none');
@@ -159,5 +157,27 @@ describe('soltar con la mano = asalto al objetivo visible más cercano', () => {
     step(state, data);
     expect(state.players[0]!.hand).toHaveLength(0);
     expect(crew.every((c) => !c.held && c.assaultId === enemy.id)).toBe(true);
+  });
+});
+
+describe('soltar solo en terreno propio', () => {
+  it('suelo sin dueño o de otro jugador se rechaza; el propio vale', () => {
+    const { state, data } = duel();
+    noImps(state);
+    const g = spawn(state, data, 1, 'goblin', 3.5, 8.5);
+    expect(applyCommand(state, data, 1, { type: 'pickUp', id: g.id }).ok).toBe(true);
+    step(state, data);
+    // Un tile caminable sin dueño: se excava uno y no se reclama.
+    const neutral = state.terrain.findIndex(
+      (t, i) => state.owner[i] === 0 && data.terrain[t]?.walkable === true,
+    );
+    if (neutral >= 0) {
+      const r = applyCommand(state, data, 1, {
+        type: 'drop',
+        tile: { x: neutral % state.width, y: Math.floor(neutral / state.width) },
+      });
+      expect(r).toEqual({ ok: false, error: 'NOT_OWNER' });
+    }
+    expect(applyCommand(state, data, 1, { type: 'drop', tile: { x: 3, y: 8 } }).ok).toBe(true);
   });
 });
