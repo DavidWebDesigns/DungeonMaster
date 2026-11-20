@@ -7,12 +7,14 @@ import {
   creatureMaxHp,
   impCount,
   manaRegenPerSecond,
+  missingRooms,
   rulesOf,
   treasuryCapacity,
   type DataSet,
   type MatchState,
 } from '@dm/shared';
 import type { Tool } from '../input/inputModel';
+import { roomHotkey, trapHotkey } from '../input/keymap';
 import { activityLabel, hpFraction, moodIconOf } from '../render/creatureStyle';
 import type { Notice } from './notices';
 
@@ -34,6 +36,10 @@ export interface RoomButton {
   minCost: number;
   minSize: string;
   affordable: boolean;
+  /** Nombres de las salas que faltan por construir antes de poder construir esta (vacío si ninguna). */
+  requires: string;
+  /** Ya se cumplen sus requisitos de salas. */
+  available: boolean;
   active: boolean;
 }
 
@@ -206,14 +212,17 @@ export function buildHudModel(
   const buildable = data.rooms.filter((r) => r.buildable);
   const rooms: RoomButton[] = buildable.map((r, i) => {
     const minTiles = r.minSize.w * r.minSize.h;
+    const missing = missingRooms(state, playerId, r.requiresRooms);
     return {
       id: r.id,
       name: r.name,
-      hotkey: String(i + 1),
+      hotkey: roomHotkey(i),
       costPerTile: r.goldPerTile,
       minCost: r.goldPerTile * minTiles,
       minSize: `${r.minSize.w}×${r.minSize.h}`,
       affordable: player.gold >= r.goldPerTile * minTiles,
+      requires: missing.map((id) => data.rooms.find((x) => x.id === id)?.name ?? id).join(' y '),
+      available: missing.length === 0,
       active: tool.kind === 'build' && tool.room === r.id,
     };
   });
@@ -221,7 +230,7 @@ export function buildHudModel(
   const traps: TrapButton[] = data.traps.map((t, i) => ({
     id: t.id,
     name: t.name,
-    hotkey: String(buildable.length + 1 + i),
+    hotkey: trapHotkey(i),
     cost: t.goldCost,
     requires: data.rooms.find((r) => r.id === t.requiresRoom)?.name ?? t.requiresRoom,
     available: state.rooms.some((r) => r.owner === playerId && r.type === t.requiresRoom),

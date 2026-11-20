@@ -32,21 +32,45 @@ describe('buildHudModel', () => {
     expect(buildHudModel(sb.state, data, 1, dig, []).goldFull).toBe(true);
   });
 
-  it('lista las 6 salas con tecla, coste mínimo y si alcanza el oro', () => {
+  it('lista las 9 salas con tecla, coste mínimo y si alcanza el oro', () => {
     const sb = fresh();
     const m = buildHudModel(sb.state, data, 1, dig, []);
     expect(m.rooms.map((r) => [r.hotkey, r.id, r.minCost])).toEqual([
       ['1', 'lair', 1200],
       ['2', 'hatchery', 1350],
       ['3', 'treasury', 900],
-      ['4', 'trainingRoom', 2250],
+      ['4', 'trainingRoom', 2700],
       ['5', 'library', 2250],
       ['6', 'tortureChamber', 3600],
+      ['7', 'workshop', 1800],
+      ['8', 'graveyard', 3150],
+      ['9', 'temple', 5400],
     ]);
-    expect(m.rooms.every((r) => r.affordable)).toBe(true);
+    // Con 5.000 de oro alcanza todo salvo el Templo (5.400).
+    expect(m.rooms.filter((r) => !r.affordable).map((r) => r.id)).toEqual(['temple']);
     sb.state.players[0]!.gold = 1000;
     const poor = buildHudModel(sb.state, data, 1, dig, []).rooms;
     expect(poor.filter((r) => r.affordable).map((r) => r.id)).toEqual(['treasury']);
+  });
+
+  it('las salas con requisitos salen bloqueadas y nombran lo que falta', () => {
+    const sb = fresh();
+    const rooms = buildHudModel(sb.state, data, 1, dig, []).rooms;
+    const by = (id: string) => rooms.find((r) => r.id === id)!;
+    expect(rooms.filter((r) => !r.available).map((r) => r.id)).toEqual([
+      'workshop',
+      'graveyard',
+      'temple',
+    ]);
+    expect(by('workshop').requires).toBe('Sala de entrenamiento');
+    expect(by('graveyard').requires).toBe('Biblioteca');
+    expect(by('temple').requires).toBe('Cámara de tortura y Cementerio');
+    expect(by('lair').requires).toBe('');
+    // Al construir el requisito, la sala se desbloquea.
+    sb.state.rooms.push({ id: 90, type: 'trainingRoom', owner: 1, tiles: [], timer: 0, stock: 0 });
+    const after = buildHudModel(sb.state, data, 1, dig, []).rooms;
+    expect(after.find((r) => r.id === 'workshop')!.available).toBe(true);
+    expect(after.find((r) => r.id === 'graveyard')!.available).toBe(false);
   });
 
   it('marca la herramienta activa', () => {
@@ -257,12 +281,12 @@ describe('hechizos y fin de partida en el HUD', () => {
 });
 
 describe('trampas en el HUD', () => {
-  it('lista las trampas con su tecla (después de las salas), coste y sala que piden', () => {
+  it('lista las trampas con su tecla (letras G H J K L N), coste y sala que piden', () => {
     const sb = fresh();
     const m = buildHudModel(sb.state, data, 1, dig, []);
     expect(m.traps.map((t) => [t.hotkey, t.id, t.cost, t.requires, t.available])).toEqual([
-      ['7', 'spikeTrap', 150, 'Cámara de tortura', false],
-      ['8', 'blastTrap', 400, 'Cámara de tortura', false],
+      ['G', 'spikeTrap', 150, 'Cámara de tortura', false],
+      ['H', 'blastTrap', 400, 'Cámara de tortura', false],
     ]);
   });
 

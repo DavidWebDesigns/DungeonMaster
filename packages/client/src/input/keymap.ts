@@ -14,19 +14,30 @@ export type KeyAction =
   | { type: 'speed'; step: 1 | -1 };
 
 /**
- * Atajos (docs/PLAN.md 10.2): 1 a 6 construyen salas y las teclas siguientes (7 y 8) colocan trampas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
+ * Atajos (docs/PLAN.md 10.2): 1 a 9 construyen salas, G H J K L N colocan trampas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
  * Tab salta a la siguiente criatura propia. M silencia o activa el sonido. P pausa y [ ] cambian la velocidad (solo en partidas locales). F refuerza, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
+/** Teclas de las trampas, en el orden de traps.json (las salas usan 1 a 9). */
+export const TRAP_KEYS = ['G', 'H', 'J', 'K', 'L', 'N'] as const;
+
+/** Etiqueta de la tecla de la sala número `index` (0 = la primera construible): 1 a 9. */
+export const roomHotkey = (index: number): string => (index < 9 ? String(index + 1) : '');
+
+/** Etiqueta de la tecla de la trampa número `index`. */
+export const trapHotkey = (index: number): string => TRAP_KEYS[index] ?? '';
+
 export function keyAction(key: string, data: DataSet): KeyAction | null {
   const buildable = data.rooms.filter((r) => r.buildable);
   const k = key.length === 1 ? key.toLowerCase() : key;
   if (/^[1-9]$/.test(k)) {
-    // Primero las salas construibles y a continuación las trampas, en el orden de los datos.
-    const n = Number(k) - 1;
-    const room = buildable[n];
-    if (room) return { type: 'tool', tool: { kind: 'build', room: room.id } };
-    const trap = data.traps[n - buildable.length];
+    // 1 a 9: las salas construibles, en el orden de los datos.
+    const room = buildable[Number(k) - 1];
+    return room ? { type: 'tool', tool: { kind: 'build', room: room.id } } : null;
+  }
+  const trapIndex = TRAP_KEYS.findIndex((t) => t.toLowerCase() === k);
+  if (trapIndex >= 0) {
+    const trap = data.traps[trapIndex];
     return trap ? { type: 'tool', tool: { kind: 'trap', trap: trap.id } } : null;
   }
   switch (k) {

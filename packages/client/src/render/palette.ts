@@ -23,6 +23,9 @@ export const ROOM_COLORS: Readonly<Record<string, RGB>> = {
   trainingRoom: [0.55, 0.28, 0.2],
   library: [0.22, 0.34, 0.6],
   tortureChamber: [0.42, 0.18, 0.3],
+  workshop: [0.36, 0.3, 0.27],
+  graveyard: [0.27, 0.33, 0.31],
+  temple: [0.46, 0.3, 0.52],
 };
 
 export const mix = (a: RGB, b: RGB, t: number): RGB => [

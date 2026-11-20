@@ -319,23 +319,35 @@ describe('hechizos con el ratón', () => {
 });
 
 describe('atajos de teclado', () => {
-  it('1 a 6 eligen las salas construibles y 7 y 8 las trampas, en el orden de los datos', () => {
-    const rooms = ['lair', 'hatchery', 'treasury', 'trainingRoom', 'library', 'tortureChamber'];
+  it('1 a 9 eligen las salas construibles y G H las trampas, en el orden de los datos', () => {
+    const rooms = [
+      'lair',
+      'hatchery',
+      'treasury',
+      'trainingRoom',
+      'library',
+      'tortureChamber',
+      'workshop',
+      'graveyard',
+      'temple',
+    ];
     rooms.forEach((room, i) => {
       expect(keyAction(String(i + 1), data)).toEqual({
         type: 'tool',
         tool: { kind: 'build', room },
       });
     });
-    expect(keyAction('7', data)).toEqual({
+    expect(keyAction('g', data)).toEqual({
       type: 'tool',
       tool: { kind: 'trap', trap: 'spikeTrap' },
     });
-    expect(keyAction('8', data)).toEqual({
+    expect(keyAction('H', data)).toEqual({
       type: 'tool',
       tool: { kind: 'trap', trap: 'blastTrap' },
     });
-    expect(keyAction('9', data)).toBeNull();
+    // Las teclas de trampas sin trampa y el 0 no hacen nada.
+    expect(keyAction('j', data)).toBeNull();
+    expect(keyAction('0', data)).toBeNull();
   });
 
   it('el resto de atajos', () => {

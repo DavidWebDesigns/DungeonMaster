@@ -70,7 +70,7 @@ test('la Cámara de tortura desbloquea las trampas, que se colocan y construyen 
   );
   await expect(page.locator('.panel.traps .btn.locked')).toHaveCount(0);
 
-  await page.keyboard.press('7'); // Trampa de pinchos
+  await page.keyboard.press('g'); // Trampa de pinchos
   await expect(page.locator('.panel.traps .btn.active')).toContainText('Trampa de pinchos');
   const spot = await page.evaluate(() => dm().tileToScreen(8, 15));
   await page.mouse.click(spot.x, spot.y);
@@ -86,7 +86,7 @@ test('la Cámara de tortura desbloquea las trampas, que se colocan y construyen 
 });
 
 test('sin Cámara, colocar una trampa avisa de lo que falta', async ({ page }) => {
-  await page.keyboard.press('7');
+  await page.keyboard.press('g');
   const spot = await page.evaluate(() => dm().tileToScreen(8, 15));
   await page.mouse.click(spot.x, spot.y);
   await advance(page, 1);
@@ -161,4 +161,47 @@ test('B sobre un Imp lo abofetea y trabaja más rápido durante un rato', async 
   }, id);
   expect(slapped).toBe(true);
   await expect(page.locator('.floater')).toContainText('+25% velocidad');
+});
+
+test('las salas con requisitos salen bloqueadas y se desbloquean al construir lo que piden', async ({
+  page,
+}) => {
+  // Taller (7), Cementerio (8) y Templo (9) empiezan bloqueados y dicen qué falta.
+  await expect(page.locator('.panel.rooms .btn.locked')).toHaveCount(3);
+  await expect(page.locator('.panel.rooms .btn.locked').first()).toContainText(
+    'Sala de entrenamiento',
+  );
+  await page.keyboard.press('7'); // Taller
+  await page.mouse.move(400, 300);
+  // Elegirla y soltar donde sea da el aviso con el nombre de lo que falta.
+  const spot = await page.evaluate(() => dm().tileToScreen(3, 12));
+  await page.mouse.move(spot.x, spot.y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await expect(page.locator('.notice').first()).toContainText(
+    'Te falta construir: Sala de entrenamiento',
+  );
+  // Con la Sala de entrenamiento construida, el Taller queda disponible.
+  await page.evaluate(() => {
+    const s = dm().sandbox.state;
+    (
+      s.rooms as Array<{
+        id: number;
+        type: string;
+        owner: number;
+        tiles: number[];
+        timer: number;
+        stock: number;
+      }>
+    ).push({
+      id: 998,
+      type: 'trainingRoom',
+      owner: 1,
+      tiles: [],
+      timer: 0,
+      stock: 0,
+    });
+  });
+  await page.waitForTimeout(400);
+  await expect(page.locator('.panel.rooms .btn.locked')).toHaveCount(2);
 });

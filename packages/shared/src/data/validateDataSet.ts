@@ -17,6 +17,9 @@ const REQUIRED_ROOM_FIELDS: Record<string, readonly string[]> = {
   ],
   library: [],
   tortureChamber: [],
+  workshop: [],
+  graveyard: [],
+  temple: [],
 };
 
 /** Terrenos que la simulación usa por id. */

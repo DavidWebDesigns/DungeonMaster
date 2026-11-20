@@ -209,7 +209,7 @@ test('el HUD muestra oro, maná y salas, y sus botones eligen la herramienta', a
   await expect(page.locator('.bar.gold')).toContainText('Oro 5000 / 9000');
   await expect(page.locator('.bar.mana')).toContainText('Maná');
   await expect(page.locator('.chip').first()).toContainText('Imps 4/12');
-  await expect(page.locator('.panel.rooms .btn')).toHaveCount(6);
+  await expect(page.locator('.panel.rooms .btn')).toHaveCount(9);
 
   await page.getByRole('button', { name: /Guarida/ }).click();
   expect(

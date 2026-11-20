@@ -91,6 +91,8 @@ function live(data: DataSet, seed: number) {
 
 describe('Puerta 3: una mazmorra con vida propia durante 10 minutos', () => {
   const data = loadData();
+  // Las tres salas juntas cuestan más que el oro inicial desde que la Sala de entrenamiento cuesta 300 por tile.
+  data.global.startingGold = 6000;
   const SLOW = 120_000;
 
   it(

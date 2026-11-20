@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGameData } from './data/loadGameData';
 import { CREATURE_LOOKS, TRAP_LOOKS } from './render/creatureStyle';
 import { ROOM_COLORS } from './render/palette';
-import { keyAction } from './input/keymap';
+import { keyAction, TRAP_KEYS } from './input/keymap';
 import { advisorKnowsCreatures } from './ui/advisor';
 
 const data = loadGameData();
@@ -36,14 +36,24 @@ describe('todo el contenido de /data tiene su parte en el cliente', () => {
     ).toEqual([]);
   });
 
-  it('cada sala construible y cada trampa tiene atajo de teclado (hasta 9 entre las dos)', () => {
+  it('cada sala construible tiene su atajo (1 a 9) y cada trampa el suyo (G H J K L N)', () => {
     const buildable = data.rooms.filter((r) => r.buildable);
     expect(
-      buildable.length + data.traps.length,
-      'hay más de 9 salas y trampas: hace falta otro sistema de atajos',
+      buildable.length,
+      'hay más de 9 salas construibles: hace falta otro sistema de atajos',
     ).toBeLessThanOrEqual(9);
-    for (let n = 1; n <= buildable.length + data.traps.length; n++)
-      expect(keyAction(String(n), data)).not.toBeNull();
+    for (let n = 1; n <= buildable.length; n++) expect(keyAction(String(n), data)).not.toBeNull();
+    expect(
+      data.traps.length,
+      `hay más de ${TRAP_KEYS.length} trampas: añade teclas en TRAP_KEYS (input/keymap.ts)`,
+    ).toBeLessThanOrEqual(TRAP_KEYS.length);
+    data.traps.forEach((_, i) => expect(keyAction(TRAP_KEYS[i]!, data)).not.toBeNull());
+  });
+
+  it('los requisitos de las salas son salas construibles', () => {
+    for (const r of data.rooms)
+      for (const req of r.requiresRooms ?? [])
+        expect(data.rooms.find((x) => x.id === req)?.buildable, `${r.id} pide ${req}`).toBe(true);
   });
 
   it('las criaturas que llegan por el Portal piden salas que existen y se pueden construir', () => {

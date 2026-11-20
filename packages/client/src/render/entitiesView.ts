@@ -497,6 +497,52 @@ export class EntitiesView {
           m.position.set(x, 0.55, z);
         }
         break;
+      case 'workshop':
+        // Yunques: un bloque oscuro con una base por tile.
+        for (const t of room.tiles) {
+          const [x, z] = tileXY(t);
+          const base = add(
+            CreateBox(
+              `anvilbase${room.id}_${t}`,
+              { width: 0.35, height: 0.3, depth: 0.3 },
+              this.scene,
+            ),
+          );
+          base.material = material(this.scene, [0.25, 0.22, 0.22]);
+          base.position.set(x, 0.2, z);
+          const top = add(
+            CreateBox(
+              `anviltop${room.id}_${t}`,
+              { width: 0.7, height: 0.18, depth: 0.32 },
+              this.scene,
+            ),
+          );
+          top.material = material(this.scene, [0.5, 0.52, 0.58]);
+          top.position.set(x, 0.43, z);
+        }
+        break;
+      case 'graveyard':
+        // Lápidas: una losa vertical por tile.
+        for (const t of room.tiles) {
+          const [x, z] = tileXY(t);
+          const m = add(
+            CreateBox(`tomb${room.id}_${t}`, { width: 0.45, height: 0.7, depth: 0.14 }, this.scene),
+          );
+          m.material = material(this.scene, [0.55, 0.58, 0.56]);
+          m.position.set(x, 0.45, z);
+        }
+        break;
+      case 'temple':
+        // Columnas: un cilindro claro por tile.
+        for (const t of room.tiles) {
+          const [x, z] = tileXY(t);
+          const m = add(
+            CreateCylinder(`column${room.id}_${t}`, { diameter: 0.4, height: 1.3 }, this.scene),
+          );
+          m.material = material(this.scene, [0.62, 0.55, 0.7]);
+          m.position.set(x, 0.75, z);
+        }
+        break;
     }
     void data;
   }

@@ -12,7 +12,9 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
    consejero diga "un Verdugo" / "una Torturadora"), `modelId`, `tier`, `jobClass`, `fightStyle`, `base` (vida, daño, intervalo, alcance,
    velocidad, sueldo, tiles de cama), `needs`, `attraction` (qué salas pide y su peso) y `flags`.
 2. **Cómo llega:** `attraction.requires` lista las salas que el jugador debe tener (cada una con `minTiles` opcional). El Portal la atrae si se cumplen
-   y hay cama libre. Una criatura sin `attraction` (`null`) no llega sola (como el Imp).
+   y hay cama libre. Una criatura sin `attraction` (`null`) no llega sola (como el Imp). Los **cupos** (`attraction.slots`) limitan cuántas puede
+   tener: `{ "fromRoom": "lair" }` = 1 por sala construida de ese tipo; `{ "fromCreature": "goblin", "unlockEvery": 3 }` = 1 por cada 3 goblins vivos;
+   `maxPerPlayer` es un tope duro. Una criatura sin cama (`lairTiles` 0) no puede dormir y debe pedir una sala que no exista al empezar.
 3. **`packages/client/src/render/creatureStyle.ts` → `CREATURE_LOOKS`**: color, radio y altura del placeholder. Hasta que haya modelo 3D (`modelId`
    en `assets/assetManifest.json`), se dibuja una cápsula.
 4. Nada más en el código. El estilo de pelea (`fightStyle`) ya lo usa el combate; si necesitas un comportamiento nuevo, va en
@@ -26,8 +28,10 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
    (Es la lista de salas que el juego da por obligatorias.)
 3. **`packages/client/src/render/palette.ts` → `ROOM_COLORS`**: su color. Opcional: accesorios en `render/entitiesView.ts` (`buildProps`).
 4. Si da un efecto (como el Criadero o la Sala de entrenamiento), el efecto es lógica nueva en `packages/shared/src/sim/` con sus pruebas.
-5. Atajos de teclado: las salas construibles toman `1`, `2`, ... en el orden del archivo y las trampas siguen. Hay sitio hasta el 9 (la prueba
-   avisa si te pasas).
+5. Atajos de teclado: las salas construibles toman `1`, `2`, ... en el orden del archivo (hay sitio hasta el 9; la prueba avisa si te pasas) y
+   las trampas las letras `G H J K L N` (`TRAP_KEYS` en `input/keymap.ts`).
+6. Progresión: `requiresRooms` lista las salas que el jugador debe tener antes (el HUD la muestra bloqueada y el aviso nombra lo que falta). Solo
+   las salas nuevas deberían llevarlo.
 
 ## Añadir una trampa
 

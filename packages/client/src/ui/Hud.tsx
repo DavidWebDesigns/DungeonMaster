@@ -168,12 +168,16 @@ export function Hud({
           {model.rooms.map((r) => (
             <button
               key={r.id}
-              class={`btn${r.active ? ' active' : ''}${r.affordable ? '' : ' poor'}`}
-              title={`${r.name}: ${fmt(r.costPerTile)} de oro por tile, mínimo ${r.minSize}`}
+              class={`btn${r.active ? ' active' : ''}${r.available ? '' : ' locked'}${r.affordable ? '' : ' poor'}`}
+              title={
+                r.available
+                  ? `${r.name}: ${fmt(r.costPerTile)} de oro por tile, mínimo ${r.minSize}`
+                  : `Requiere: ${r.requires}`
+              }
               onClick={() => onTool({ kind: 'build', room: r.id })}
             >
               <span class="name">{r.name}</span>
-              <span class="cost">{fmt(r.minCost)}</span>
+              <span class="cost">{r.available ? fmt(r.minCost) : `🔒 ${r.requires}`}</span>
               <kbd>{r.hotkey}</kbd>
             </button>
           ))}

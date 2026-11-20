@@ -68,7 +68,7 @@
     "name": "Sala de entrenamiento",
     "modelId": "room_training",
     "buildable": true,
-    "goldPerTile": 250,
+    "goldPerTile": 300,
     "minSize": {
       "w": 3,
       "h": 3
@@ -97,6 +97,45 @@
     "modelId": "room_torture",
     "buildable": true,
     "goldPerTile": 400,
+    "minSize": {
+      "w": 3,
+      "h": 3
+    },
+    "sellRefund": 0.5
+  },
+  {
+    "id": "workshop",
+    "name": "Taller",
+    "modelId": "room_workshop",
+    "buildable": true,
+    "goldPerTile": 200,
+    "requiresRooms": ["trainingRoom"],
+    "minSize": {
+      "w": 3,
+      "h": 3
+    },
+    "sellRefund": 0.5
+  },
+  {
+    "id": "graveyard",
+    "name": "Cementerio",
+    "modelId": "room_graveyard",
+    "buildable": true,
+    "goldPerTile": 350,
+    "requiresRooms": ["library"],
+    "minSize": {
+      "w": 3,
+      "h": 3
+    },
+    "sellRefund": 0.5
+  },
+  {
+    "id": "temple",
+    "name": "Templo",
+    "modelId": "room_temple",
+    "buildable": true,
+    "goldPerTile": 600,
+    "requiresRooms": ["tortureChamber", "graveyard"],
     "minSize": {
       "w": 3,
       "h": 3

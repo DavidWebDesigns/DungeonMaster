@@ -70,7 +70,7 @@ describe('previewRoom', () => {
     });
   });
 
-  it('cada una de las 5 salas construibles tiene su tamaño mínimo válido en algún hueco', () => {
+  it('cada sala construible sin requisitos tiene su tamaño mínimo válido y las demás avisan de lo que falta', () => {
     const state = createMatch({ playerCount: 1 }, data, 1);
     state.players[0]!.gold = 99999;
     // Se amplía el territorio propio para tener hueco libre y poder probar todas.
@@ -81,7 +81,13 @@ describe('previewRoom', () => {
       }
     for (const room of data.rooms.filter((r) => r.buildable)) {
       const rect = roomRectFromDrag(room.minSize, { x: 2, y: 11 }, { x: 2, y: 11 }, map);
-      expect(previewRoom(state, data, 1, room.id, rect).valid, room.id).toBe(true);
+      const res = previewRoom(state, data, 1, room.id, rect);
+      // Las salas con requisitos no se pueden construir en una partida nueva: lo dice la previsión.
+      if (room.requiresRooms?.length) {
+        expect(res, room.id).toMatchObject({ valid: false, error: 'REQUIRES_ROOM' });
+      } else {
+        expect(res.valid, room.id).toBe(true);
+      }
     }
   });
 });
