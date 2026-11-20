@@ -11,6 +11,7 @@ Juego de gestión de mazmorras multijugador para navegador. Lee docs/PLAN.md ant
 - Fase 4 (combate, victoria, niebla, bots): implementada y probada. Puerta 4 pendiente solo en el reparto por esquina (docs/DUDAS.md #46 y #61), a propósito hasta tener la plantilla final de criaturas.
 - Fase 5 (multijugador): implementada y probada con dos navegadores reales (lobby, partida, reconexión). Falta el Playtest #1 en red con 3 o 4 personas.
 - Modo PvE (fase 6, en curso): `pnpm dev` abre por defecto tu mazmorra contra 3 bots en dificultad normal (`data/mvp/pve.json`). `?rivals=0..3`, `?difficulty=easy|normal|hard`, `?mode=solo|online`. P pausa y `[` `]` cambian la velocidad; F9 llena maná y oro, F10 muestra el mapa entero (trampas de pruebas, solo en local). El tutorial queda para después del MVP.
+- Fase 6 (en curso): game feel casi completo, pantalla de fin con estadísticas, guía de despliegue (`docs/DESPLIEGUE.md`) y guía de playtest (`docs/PLAYTEST.md`). Faltan modelos .glb reales, balance final y menús conectados.
 - Siguiente: playtest de las fases 2 a 5 y fase 6 (pulido). Propón archivos y pruebas antes de escribir código.
 
 ## Reglas de arquitectura
