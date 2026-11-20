@@ -100,7 +100,7 @@ export class DomInput {
         if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
         const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
         this.held.add(k);
-        if (k === ' ' || k.startsWith('Arrow')) e.preventDefault();
+        if (k === ' ' || k === 'Tab' || k.startsWith('Arrow')) e.preventDefault();
         h.key(e.key);
       },
       opts,

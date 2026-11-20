@@ -61,6 +61,7 @@ export class Game {
   private readonly floaterLayer: HTMLDivElement;
   private readonly minimap: MinimapView;
   private minimapTick = -1;
+  private lastCycledId = 0;
   private readonly alertEl: HTMLDivElement;
   private readonly dom: DomInput;
   private feelSnapshot: FeelSnapshot;
@@ -482,8 +483,23 @@ export class Game {
     else if (action.type === 'slap') this.input.slapHovered();
     else if (action.type === 'pause') this.togglePause();
     else if (action.type === 'mute') this.toggleMute();
+    else if (action.type === 'cycleCreature') this.cycleCreature(action.step);
     else if (action.type === 'debug') this.debugAction(action.what);
     else if (action.type === 'speed') this.changeSpeed(action.step);
+  }
+
+  /** Tab: la cámara salta a la siguiente criatura propia (por orden de id) y la nombra. */
+  private cycleCreature(step: 1 | -1): void {
+    const mine = this.sandbox.state.creatures
+      .filter((c) => c.owner === this.me && !c.held)
+      .sort((a, b) => a.id - b.id);
+    if (mine.length === 0) return this.say('Aún no tienes criaturas.');
+    const at = mine.findIndex((c) => c.id === this.lastCycledId);
+    const next = mine[(at + step + mine.length * 2) % mine.length] ?? mine[0]!;
+    this.lastCycledId = next.id;
+    this.camera = centerOn(this.camera, { x: Math.floor(next.x), y: Math.floor(next.y) });
+    const def = this.data.creatures.find((d) => d.id === next.type);
+    this.say(`${def?.name ?? next.type}, nivel ${next.level}.`);
   }
 
   /** M: silencia o activa el sonido (se recuerda entre partidas). */

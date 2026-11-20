@@ -525,6 +525,10 @@ describe('atajos de partida local', () => {
     expect(keyAction('[', data)).toEqual({ type: 'speed', step: -1 });
   });
 
+  it('Tab salta a la siguiente criatura propia', () => {
+    expect(keyAction('Tab', loadGameData())).toEqual({ type: 'cycleCreature', step: 1 });
+  });
+
   it('M silencia o activa el sonido', () => {
     expect(keyAction('m', loadGameData())).toEqual({ type: 'mute' });
   });

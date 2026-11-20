@@ -201,3 +201,24 @@ test('se llevan varias criaturas y el clic derecho las suelta todas en el tile d
   expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
   await expect(page.locator('.chip.hand')).toHaveCount(0);
 });
+
+test('Tab salta a la siguiente criatura propia y centra la cámara en ella', async ({ page }) => {
+  await buildLair(page);
+  await advance(page, 31);
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 3.5;
+    c.y = 9.5;
+  });
+  await page.keyboard.press('Tab');
+  const seen = await page.evaluate(() => {
+    const g = (window as unknown as { __dm: { camera: { targetX: number; targetZ: number } } })
+      .__dm;
+    const c = dm().sandbox.state.creatures[0]!;
+    return { cam: g.camera, x: c.x, y: c.y };
+  });
+  // La criatura puede haber dado un paso desde que se centró: se compara con margen de un tile y medio.
+  expect(Math.abs(seen.cam.targetX - seen.x)).toBeLessThan(1.5);
+  expect(Math.abs(seen.cam.targetZ - seen.y)).toBeLessThan(1.5);
+  await expect(page.locator('.notice, .notices').first()).toContainText('nivel');
+});
