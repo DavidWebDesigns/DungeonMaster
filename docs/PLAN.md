@@ -15,7 +15,7 @@
 | Fase 3: criaturas vivas | **Implementada.** Puerta 3 cubierta por pruebas. Falta jugarla (playtest humano). |
 | Fase 4: combate, victoria y bots | **Implementada.** Falta cerrar la Puerta 4: el reparto de victorias por esquina se deja para cuando esté la plantilla final de criaturas (dudas 46 y 61). Falta el playtest humano. |
 | Fase 5: multijugador | **Implementada.** Criterios automáticos de la Puerta 5 cubiertos (rendimiento, ancho de banda y reconexión). **Falta el Playtest #1 con 3 o 4 personas reales en red.** |
-| Fase 6: pulido | **En curso.** Hecho: modo PvE por defecto, game feel de Corazón atacado y nubes de ánimo, pantalla de fin completa, guía de despliegue. Pendiente: resto del checklist 10.3 (se revisó solo parte), modelos .glb reales, balance, tutorial (aplazado tras el MVP), Puerta 6. |
+| Fase 6: pulido | **En curso.** Hecho: modo PvE por defecto (3 bots, 3 dificultades), checklist de game feel 10.3 completo salvo el vuelo de monedas al contador, pantalla de fin con estadísticas, minimapa, Tab para ciclar criaturas, sonido silenciable, trampas de pruebas, guías de despliegue y de playtest, endurecimiento del servidor (fuzzing, límites) y tick 3× más rápido. Pendiente: modelos .glb reales, balance final (y un Difícil realmente más difícil), menús conectados, tutorial (aplazado tras el MVP) y la prueba de diversión de la Puerta 6. |
 
 ### Qué dejó hecho la fase 0
 
