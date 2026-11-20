@@ -29,7 +29,7 @@ import { tileIndex, tileOfPosition } from './grid';
 import { moveAlongPath } from './movement';
 import { findPath } from './pathfinding';
 import { nextFloat, nextInt } from './rng';
-import type { Rules } from './rules';
+import { secondsToTicks, type Rules } from './rules';
 import type { Creature, CreatureGoal, MatchState, PlayerId, Room, SimEvent } from './types';
 import { levelUpIfReady } from './xp';
 
@@ -231,7 +231,7 @@ function attackPositions(
   px: number,
   py: number,
 ): Set<number> {
-  const reach = attackReach(rules, c) * 0.95;
+  const reach = attackReach(rules, c) * rules.data.global.combat.standoffFactor;
   const out = new Set<number>();
   const r = Math.ceil(reach);
   const cx = Math.floor(px);
@@ -430,7 +430,9 @@ export function updateCreatures(
     }
     // Durmiendo: no se la interrumpe hasta que termina de descansar (salvo que la ataquen).
     if (c.goal === 'bed' && c.mode === 'acting') {
-      const attacked = state.tick - c.attackedTick < 3;
+      const attacked =
+        state.tick - c.attackedTick <
+        secondsToTicks(rules, rules.data.global.combat.wakeOnAttackSeconds);
       if (!attacked) {
         c.actTimer += dt;
         if (c.actTimer >= rules.data.economy.sleep.restSeconds - EPS) {

@@ -88,6 +88,12 @@ export const GlobalConfig = z.strictObject({
     recoverHpFraction: Fraction,
     /** Distancia (en tiles, al borde del tile) a la que una criatura puede golpear una sala o el Corazón enemigo. */
     structureReach: PositiveNumber,
+    /** Segundos que una criatura recuerda a quien la atacó y le da prioridad como objetivo. */
+    retaliationSeconds: PositiveNumber,
+    /** Fracción del alcance a la que se coloca para atacar (menos de 1: se queda un poco dentro del alcance). */
+    standoffFactor: Fraction,
+    /** Ventana tras un golpe en la que una criatura dormida se considera atacada y se despierta. */
+    wakeOnAttackSeconds: PositiveNumber,
   }),
   tiebreak: z.array(z.enum(['heartHpFraction', 'creaturePower', 'gold'])).min(1),
 });

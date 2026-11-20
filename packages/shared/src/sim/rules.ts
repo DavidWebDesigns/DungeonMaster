@@ -63,3 +63,8 @@ export function rulesOf(data: DataSet): Rules {
   cache.set(data, rules);
   return rules;
 }
+
+/** Segundos de juego a ticks (redondeado): los datos hablan en segundos y la simulación en ticks. */
+export function secondsToTicks(rules: Rules, seconds: number): number {
+  return Math.round(seconds * rules.data.global.tickRate);
+}

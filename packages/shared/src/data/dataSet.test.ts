@@ -219,6 +219,18 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw), 'global.json', 'combat.structureReach');
   });
 
+  it('rechaza ajustes de combate que no tengan sentido', () => {
+    const raw = realRawData();
+    (raw.global as any).combat.retaliationSeconds = 0;
+    expectError(parseDataSet(raw), 'global.json', 'combat.retaliationSeconds');
+    const raw2 = realRawData();
+    (raw2.global as any).combat.standoffFactor = 1.5;
+    expectError(parseDataSet(raw2), 'global.json', 'combat.standoffFactor');
+    const raw3 = realRawData();
+    delete (raw3.global as any).combat.wakeOnAttackSeconds;
+    expectError(parseDataSet(raw3), 'global.json', 'combat.wakeOnAttackSeconds');
+  });
+
   it('rechaza límites de red que no sean positivos', () => {
     const raw = realRawData();
     (raw.global as any).connection.maxMessagesPerSecond = 0;

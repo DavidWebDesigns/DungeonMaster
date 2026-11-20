@@ -9,7 +9,7 @@ import { tileIndex } from './grid';
 import { removeCreature } from './needs';
 import { removeRoomTile } from './rooms';
 import { nextFloat } from './rng';
-import type { Rules } from './rules';
+import { secondsToTicks, type Rules } from './rules';
 import { removeTask } from './tasks';
 import type { Creature, Imp, MatchState, PlayerId, SimEvent } from './types';
 import { gainXp } from './xp';
@@ -178,7 +178,10 @@ export function chooseTarget(state: MatchState, rules: Rules, c: Creature): Enem
   if (enemies.length === 0) return null;
   const byDist = (a: Enemy, b: Enemy) =>
     a.dist - b.dist || (a.kind === b.kind ? a.id - b.id : a.kind === 'creature' ? -1 : 1);
-  if (c.attackedByKind !== 'none' && state.tick - c.attackedTick < 50) {
+  if (
+    c.attackedByKind !== 'none' &&
+    state.tick - c.attackedTick < secondsToTicks(rules, rules.data.global.combat.retaliationSeconds)
+  ) {
     const attacker = enemies.find((e) => e.kind === c.attackedByKind && e.id === c.attackedBy);
     if (attacker) return attacker;
   }
