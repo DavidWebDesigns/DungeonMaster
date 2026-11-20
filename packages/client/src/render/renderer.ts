@@ -71,6 +71,16 @@ export class Renderer {
     return this.entities.anims;
   }
 
+  /** Aspecto de cada tile (con la niebla ya aplicada), para el minimapa. */
+  get tileStyles() {
+    return this.styles.styles;
+  }
+
+  /** Tiles que se ven ahora (null sin niebla). */
+  get visibleMask() {
+    return this.visible;
+  }
+
   /** Altura del bloque dibujado en un tile (para saber si es un muro al apuntar con el ratón). */
   tileHeight(x: number, y: number): number | undefined {
     return this.styles.styles[y * this.data.map.width + x]?.height;

@@ -134,6 +134,22 @@ export function pickTile(
   return inMap(t) ? t : null;
 }
 
+/** Los cuatro puntos del suelo (x, z en tiles) que delimitan lo que se ve en pantalla, para dibujarlo en el minimapa. */
+export function groundFootprint(cam: CameraState): Array<{ x: number; z: number }> {
+  const out: Array<{ x: number; z: number }> = [];
+  for (const [nx, ny] of [
+    [-1, 1],
+    [1, 1],
+    [1, -1],
+    [-1, -1],
+  ] as const) {
+    const { origin, direction } = rayAt(cam, nx, ny);
+    const hit = hitPlane(origin, direction, 0);
+    if (hit) out.push(hit);
+  }
+  return out;
+}
+
 /** Inversa de `rayAt` para un punto del suelo (o de una altura): posición en pantalla normalizada. */
 export function worldToScreen(
   cam: CameraState,

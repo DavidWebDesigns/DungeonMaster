@@ -98,3 +98,31 @@ test('resistencia: 90 s a velocidad ×4 contra 3 bots sin errores y con el reloj
   expect(state.tick).toBeGreaterThan(1500);
   expect(errors).toEqual([]);
 });
+
+test('el minimapa se dibuja y un clic en él mueve la cámara a ese punto', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/?rivals=1');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  const mini = page.locator('canvas.minimap');
+  await expect(mini).toBeVisible();
+  type Cam = { __dm: { camera: { targetX: number; targetZ: number } } };
+  const countDigs = () =>
+    page.evaluate(
+      () =>
+        (
+          window as unknown as { __dm: { sandbox: { state: { tasks: Array<{ kind: string }> } } } }
+        ).__dm.sandbox.state.tasks.filter((t) => t.kind === 'dig').length,
+    );
+  const digsBefore = await countDigs();
+  const before = await page.evaluate(() => (window as unknown as Cam).__dm.camera.targetX);
+  const box = (await mini.boundingBox())!;
+  // Esquina inferior derecha del minimapa = esquina inferior derecha del mapa (64×64).
+  await page.mouse.click(box.x + box.width * 0.9, box.y + box.height * 0.9);
+  const after = await page.evaluate(() => (window as unknown as Cam).__dm.camera);
+  expect(after.targetX).toBeGreaterThan(before + 10);
+  expect(after.targetX).toBeGreaterThan(50);
+  expect(after.targetZ).toBeGreaterThan(50);
+  // El clic en el minimapa no marca nada para excavar en el mapa (las tareas de reclamar son automáticas de los Imps).
+  expect(await countDigs()).toBe(digsBefore);
+  await page.screenshot({ path: 'test-results/minimap.png' });
+});

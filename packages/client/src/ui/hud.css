@@ -356,3 +356,19 @@
     0 0 6px #000;
   white-space: nowrap;
 }
+
+/* Minimapa: arriba a la derecha, lejos del borde para que no active el desplazamiento de cámara. */
+.minimap {
+  position: absolute;
+  top: 44px;
+  right: 34px;
+  width: 176px;
+  height: 176px;
+  z-index: 5;
+  border: 2px solid #54405f;
+  border-radius: 6px;
+  background: #0d0a12;
+  cursor: crosshair;
+  image-rendering: pixelated;
+  touch-action: none;
+}

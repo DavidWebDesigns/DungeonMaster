@@ -13,11 +13,14 @@ import { localStatsRows, type EndStatsRow } from './ui/endStats';
 import { keyAction } from './input/keymap';
 import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { FloaterList, floaterPose } from './feel/anim';
+import { minimapPixels } from './ui/minimap';
+import { MinimapView } from './ui/minimapView';
 import { errorMessage } from './input/messages';
 import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
 import {
   centerOn,
   defaultCamera,
+  groundFootprint,
   pickTile,
   worldToScreen,
   type CameraState,
@@ -56,6 +59,8 @@ export class Game {
   private nowSeconds = 0;
   private readonly floaters = new FloaterList();
   private readonly floaterLayer: HTMLDivElement;
+  private readonly minimap: MinimapView;
+  private minimapTick = -1;
   private readonly alertEl: HTMLDivElement;
   private readonly dom: DomInput;
   private feelSnapshot: FeelSnapshot;
@@ -100,6 +105,9 @@ export class Game {
     } catch {
       // Sin almacenamiento: sonido activado por defecto.
     }
+    this.minimap = new MinimapView(host, data.map, (t) => {
+      this.camera = centerOn(this.camera, t);
+    });
     this.alertEl = document.createElement('div');
     this.alertEl.className = 'heart-alert';
     host.appendChild(this.alertEl);
@@ -187,6 +195,7 @@ export class Game {
       );
       this.input.pump();
       this.updateHud();
+      this.updateMinimap();
       const hover = this.input.hover;
       this.renderer.render(
         this.sandbox,
@@ -486,6 +495,23 @@ export class Game {
       // Sin almacenamiento (modo privado): solo vale para esta partida.
     }
     this.say(this.audio.muted ? 'Sonido desactivado (M para activarlo).' : 'Sonido activado.');
+  }
+
+  /** Minimapa: la imagen se rehace cada tick; el recuadro de lo que se ve, cada fotograma. */
+  private updateMinimap(): void {
+    const { state } = this.sandbox;
+    if (state.tick !== this.minimapTick) {
+      this.minimapTick = state.tick;
+      this.minimap.setPixels(
+        minimapPixels({
+          state,
+          tiles: this.renderer.tileStyles,
+          me: this.me,
+          visible: this.renderer.visibleMask,
+        }),
+      );
+    }
+    this.minimap.draw(groundFootprint({ ...this.camera, aspect: this.renderer.aspect }));
   }
 
   /** Trampas de pruebas: F9 llena maná y suma oro; F10 muestra u oculta la niebla. Solo en partidas locales. */
