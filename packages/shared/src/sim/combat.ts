@@ -2,7 +2,7 @@
  * Combate (sección 6.11): daño, alcance, línea de visión, elección de objetivo, ataques a salas y al Corazón,
  * y muertes. Todo el azar sale del generador de la partida.
  */
-import { adjustDamage, applyLifesteal, isStunned, statusSpeedFactor } from './abilities';
+import { adjustDamage, applyLifesteal, isStunned, passive, statusSpeedFactor } from './abilities';
 import { creatureMaxHp, moodBandOf, scaledStat } from './creatureStats';
 import { computeVisible } from './fog';
 import { resetImp } from './imps';
@@ -476,6 +476,37 @@ export function areaDamage(
  */
 export function processDeaths(state: MatchState, rules: Rules, events: SimEvent[]): void {
   for (const victim of state.creatures.filter((c) => c.hp <= 0)) {
+    // Rearmarse: una vez por vida, con cierta probabilidad vuelve con parte de la vida en vez de morir.
+    const re = passive(rules, victim, 'reassemble');
+    if (re && !victim.reassembled && nextFloat(state) < re.effect.chance) {
+      victim.reassembled = true;
+      victim.hp = Math.max(1, Math.floor(creatureMaxHp(rules, victim) * re.effect.hpFraction));
+      victim.statuses = [];
+      victim.attackedByKind = 'none';
+      events.push({
+        type: 'abilityUsed',
+        playerId: victim.owner,
+        creatureId: victim.id,
+        ability: re.ability.id,
+        x: victim.x,
+        y: victim.y,
+      });
+      continue;
+    }
+    // Inmortal: con la sala pedida y nivel de sobra, volverá a la vida pasado un rato con un nivel menos.
+    const un = passive(rules, victim, 'undying');
+    if (
+      un &&
+      victim.level > un.effect.levelLoss &&
+      state.rooms.some((r) => r.owner === victim.owner && r.type === un.effect.requiresRoom)
+    ) {
+      state.revives.push({
+        owner: victim.owner,
+        type: victim.type,
+        level: victim.level - un.effect.levelLoss,
+        at: state.tick + Math.round(un.effect.reviveSeconds * rules.data.global.tickRate),
+      });
+    }
     if (victim.attackedByKind === 'creature') {
       const killer = state.creatures.find((k) => k.id === victim.attackedBy && k.hp > 0);
       if (killer)

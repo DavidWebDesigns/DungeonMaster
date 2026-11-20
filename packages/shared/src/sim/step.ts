@@ -8,7 +8,7 @@ import { tickEconomy } from './economy';
 import { tickNeeds } from './needs';
 import { updateCombat, processDeaths } from './combat';
 import { updateSeen } from './fog';
-import { tickPortals } from './portal';
+import { tickPortals, tickRevives } from './portal';
 import { tickSpells } from './spells';
 import { updateTraps } from './traps';
 import { tickVictory } from './victory';
@@ -33,6 +33,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
   tickPayday(state, rules, events);
   tickHatcheries(state, rules);
   tickPortals(state, rules, events);
+  tickRevives(state, rules, events);
   assignTasks(state, rules);
   tickNeeds(state, rules, events);
   tickAbilityState(state);

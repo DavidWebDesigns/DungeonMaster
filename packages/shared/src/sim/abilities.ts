@@ -136,10 +136,22 @@ export function canStandOn(
   c: Pick<Creature, 'type' | 'level'>,
   tile: number,
 ): boolean {
-  const t = state.terrain[tile] as number;
-  if (rules.walkable[t]) return true;
+  return walkableFor(state, rules, c)(tile);
+}
+
+/** Función "¿se puede pisar este tile?" para una criatura, lista para usar en el cálculo de rutas (se prepara una vez). */
+export function walkableFor(
+  state: MatchState,
+  rules: Rules,
+  c: Pick<Creature, 'type' | 'level'>,
+): (tile: number) => boolean {
   const cross = passive(rules, c, 'crossTerrain');
-  return cross ? cross.effect.terrains.some((id) => rules.terrainIndex[id] === t) : false;
+  if (!cross) return (tile) => rules.walkable[state.terrain[tile] as number] === true;
+  const extra = new Set(cross.effect.terrains.map((id) => rules.terrainIndex[id]));
+  return (tile) => {
+    const t = state.terrain[tile] as number;
+    return rules.walkable[t] === true || extra.has(t);
+  };
 }
 
 /** Cada tick: caducan los estados y se cuentan los ticks seguidos sin moverse (Guardia). */

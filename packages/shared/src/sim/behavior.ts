@@ -27,7 +27,7 @@ import {
 } from './creatureStats';
 import { tileIndex, tileOfPosition } from './grid';
 import { moveAlongPath } from './movement';
-import { isStunned } from './abilities';
+import { isStunned, walkableFor } from './abilities';
 import { findPath } from './pathfinding';
 import { nextFloat, nextInt } from './rng';
 import { secondsToTicks, type Rules } from './rules';
@@ -312,7 +312,8 @@ function computePath(state: MatchState, rules: Rules, c: Creature): boolean {
   const goals = goalTiles(state, rules, c);
   if (goals.size === 0) return false;
   const start = tileOfPosition(state, c.x, c.y);
-  const walkable = (i: number) => rules.walkable[state.terrain[i] as number] === true;
+  // Quien cruza agua o lava (Vuelo, Hija de la lava) las incluye en su ruta.
+  const walkable = walkableFor(state, rules, c);
   if (!walkable(start)) return false;
   const { straightCost, diagonalCost } = rules.data.global.pathfinding;
   const path = findPath({

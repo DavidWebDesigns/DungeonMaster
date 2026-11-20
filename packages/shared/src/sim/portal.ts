@@ -217,3 +217,38 @@ export function tickPortals(state: MatchState, rules: Rules, events: SimEvent[])
     });
   }
 }
+
+/**
+ * Criaturas muertas que vuelven a la vida (Inmortal): cuando llega su hora reaparecen en el Cementerio con su nivel
+ * reducido. Si ya no hay Cementerio o el jugador está eliminado, se pierden; si la mazmorra está llena, esperan.
+ */
+export function tickRevives(state: MatchState, rules: Rules, events: SimEvent[]): void {
+  if (state.revives.length === 0) return;
+  const keep: MatchState['revives'] = [];
+  for (const r of state.revives) {
+    if (state.tick < r.at) {
+      keep.push(r);
+      continue;
+    }
+    const player = state.players.find((p) => p.id === r.owner);
+    if (!player || player.eliminated) continue;
+    const effect = rules.abilitiesOf[r.type]?.find((a) => a.effect.type === 'undying')?.effect;
+    if (!effect || effect.type !== 'undying') continue;
+    const room = state.rooms.find((x) => x.owner === r.owner && x.type === effect.requiresRoom);
+    if (!room) continue;
+    if (creatureCount(state, r.owner) >= rules.data.global.maxCreaturesPerPlayer) {
+      keep.push(r);
+      continue;
+    }
+    const tile = room.tiles[Math.floor(room.tiles.length / 2)] as number;
+    const c = newCreature(state, rules, r.owner, r.type, tile);
+    c.level = r.level;
+    c.hp = creatureMaxHp(rules, c);
+    const def = rules.creatureDefs[r.type];
+    if (def && def.base.lairTiles > 0)
+      c.beds = findBed(state, rules, r.owner, def.base.lairTiles, tile) ?? [];
+    state.creatures.push(c);
+    events.push({ type: 'creatureArrived', playerId: r.owner, creatureId: c.id, creature: r.type });
+  }
+  state.revives = keep;
+}
