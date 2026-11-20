@@ -52,6 +52,20 @@
     "blocksSight": true
   },
   {
+    "id": "diamondVein",
+    "name": "Veta de diamantes",
+    "char": "D",
+    "walkable": false,
+    "diggable": true,
+    "reinforceable": false,
+    "ownable": false,
+    "buildable": false,
+    "digSeconds": 2,
+    "infinite": true,
+    "becomesOnDig": "neutralFloor",
+    "blocksSight": true
+  },
+  {
     "id": "neutralFloor",
     "name": "Suelo sin reclamar",
     "char": "_",

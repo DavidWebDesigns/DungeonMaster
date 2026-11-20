@@ -2,7 +2,7 @@
  * Convierte lo que pasó en la simulación (eventos y cambios de estado) en efectos de "game feel":
  * partículas y sonidos. Pura: no dibuja ni suena nada, solo decide qué debe pasar.
  */
-import type { DataSet, MatchState, SimEvent } from '@dm/shared';
+import { isVeinTerrain, type DataSet, type MatchState, type SimEvent } from '@dm/shared';
 import type { RGB } from '../render/palette';
 import { playerColor } from '../render/palette';
 import type { CreatureAnimKind } from './anim';
@@ -71,6 +71,7 @@ export function takeSnapshot(state: MatchState): FeelSnapshot {
 
 const DIRT: RGB = [0.45, 0.3, 0.18];
 const GOLD: RGB = [0.98, 0.82, 0.2];
+const DIAMOND: RGB = [0.55, 0.95, 1];
 const STEEL: RGB = [0.5, 0.52, 0.62];
 const DUST: RGB = [0.6, 0.55, 0.5];
 const PURPLE: RGB = [0.7, 0.4, 1];
@@ -113,7 +114,7 @@ export function deriveEffects(
     const before = data.terrain[prev.terrain[e.tile] as number];
     const after = data.terrain[state.terrain[e.tile] as number];
     if (before && after && !before.walkable && after.walkable) {
-      const color = before.goldPerTile !== undefined ? GOLD : DIRT;
+      const color = isVeinTerrain(before) ? (before.infinite ? DIAMOND : GOLD) : DIRT;
       burst(x, 0.5, z, color, 14, 2.2, 2.5, 0.16);
       out.push({ type: 'sound', sound: 'dig', volume: 1 });
     } else if (before && after && !before.walkable && !after.walkable) {

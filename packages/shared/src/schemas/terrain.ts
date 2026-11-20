@@ -19,7 +19,10 @@ export const TerrainDef = z.strictObject({
   /** Tapa la línea de visión de los ataques a distancia (muros y rocas; no el agua ni la lava). */
   blocksSight: z.boolean(),
   digSeconds: PositiveNumber.optional(),
+  /** Oro que da una veta antes de agotarse. Una veta es cualquier terreno con esto o con `infinite`. */
   goldPerTile: NonNegativeInt.optional(),
+  /** Veta que nunca se agota (diamantes): da oro mientras haya un Imp minándola y quede sitio en la Tesorería. No lleva goldPerTile. */
+  infinite: z.boolean().optional(),
   becomesOnDig: Id.optional(),
   becomesOnReinforce: Id.optional(),
   becomesOnClaim: Id.optional(),

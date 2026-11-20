@@ -219,6 +219,19 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw), 'global.json', 'combat.structureReach');
   });
 
+  it('rechaza una veta infinita que también lleve oro finito o que no se pueda excavar', () => {
+    const raw = realRawData();
+    const t = (raw.terrain as any).find((x: any) => x.id === 'diamondVein');
+    t.goldPerTile = 600;
+    expectError(parseDataSet(raw), 'terrain.json', 'es infinita');
+    const raw2 = realRawData();
+    const t2 = (raw2.terrain as any).find((x: any) => x.id === 'diamondVein');
+    t2.diggable = false;
+    delete t2.digSeconds;
+    delete t2.becomesOnDig;
+    expectError(parseDataSet(raw2), 'terrain.json', 'tiene que ser excavable');
+  });
+
   it('rechaza ajustes de combate que no tengan sentido', () => {
     const raw = realRawData();
     (raw.global as any).combat.retaliationSeconds = 0;

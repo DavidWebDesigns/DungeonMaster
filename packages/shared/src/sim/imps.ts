@@ -205,13 +205,15 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
   if (isMining(state, rules, task)) {
     const carryMax = rules.data.economy.impCarryGold;
     const rate = rules.data.economy.miningGoldPerSecond * rules.dt * speed;
-    const left = state.goldLeft[task.tile] as number;
+    // Una veta infinita (diamantes) no se agota: no se descuenta nada y la tarea sigue hasta que se desmarque.
+    const infinite = rules.terrain[state.terrain[task.tile] as number]?.infinite === true;
+    const left = infinite ? Infinity : (state.goldLeft[task.tile] as number);
     const take = Math.min(rate, left, carryMax - imp.carry, goldRoom(state, rules, player));
     if (take > EPS) {
       imp.carry += take;
-      state.goldLeft[task.tile] = left - take;
+      if (!infinite) state.goldLeft[task.tile] = left - take;
     }
-    if ((state.goldLeft[task.tile] as number) <= EPS) {
+    if (!infinite && (state.goldLeft[task.tile] as number) <= EPS) {
       completeTask(state, rules, task, events);
       imp.taskId = 0;
       imp.goal = 'none';

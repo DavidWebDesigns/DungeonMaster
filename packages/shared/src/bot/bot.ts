@@ -19,7 +19,7 @@ import { freeLairTiles } from '../sim/lairs';
 import { visibleMask } from '../sim/fog';
 import { tileIndex, tileX, tileY } from '../sim/grid';
 import { nextFloat } from '../sim/rng';
-import { rulesOf } from '../sim/rules';
+import { isVeinTerrain, rulesOf } from '../sim/rules';
 import type { Command, MatchState, PlayerId, PlayerState } from '../sim/types';
 import { planDig } from './knowledge';
 
@@ -181,8 +181,7 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
     const pending = state.tasks.filter((t) => t.owner === playerId && t.kind === 'dig').length;
     if (pending >= 3) return;
     const cap = treasuryCapacity(state, rules, playerId);
-    const vein = (tile: number) =>
-      rules.terrain[state.terrain[tile] as number]?.goldPerTile !== undefined;
+    const vein = (tile: number) => isVeinTerrain(rules.terrain[state.terrain[tile] as number]);
     let path = null;
     // 1. Oro mientras haya sitio en la Tesorería.
     if (cap > 0 && p.gold < cap * 0.85) path = planDig(state, data, playerId, vein, tieSeed());

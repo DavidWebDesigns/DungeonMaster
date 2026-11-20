@@ -1,6 +1,6 @@
 import { inBounds, neighbors4, octile, tileIndex } from './grid';
 import { removeRoomTile } from './rooms';
-import type { Rules } from './rules';
+import { isVeinTerrain, type Rules } from './rules';
 import type { Imp, MatchState, PlayerId, SimEvent, Task, TaskKind } from './types';
 
 /** Prioridad de cada tipo de tarea (menor = antes). Sección 6.13: minar/excavar > reclamar > reforzar > reclamar cerca. */
@@ -126,10 +126,7 @@ export function isTaskValid(state: MatchState, rules: Rules, task: Task): boolea
 
 /** Una tarea de excavar sobre una veta es minar: se extrae oro en vez de esperar un tiempo fijo. */
 export function isMining(state: MatchState, rules: Rules, task: Task): boolean {
-  return (
-    task.kind === 'dig' &&
-    rules.terrain[state.terrain[task.tile] as number]?.goldPerTile !== undefined
-  );
+  return task.kind === 'dig' && isVeinTerrain(rules.terrain[state.terrain[task.tile] as number]);
 }
 
 /** Segundos de trabajo para tareas con duración fija. */

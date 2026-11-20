@@ -357,11 +357,11 @@
   white-space: nowrap;
 }
 
-/* Minimapa: arriba a la derecha, lejos del borde para que no active el desplazamiento de cámara. */
+/* Minimapa: arriba a la izquierda, bajo el botón de rendirse y lejos del borde (no activa el desplazamiento de cámara). La derecha es de la lista de criaturas. */
 .minimap {
   position: absolute;
-  top: 44px;
-  right: 34px;
+  top: 52px;
+  left: 34px;
   width: 176px;
   height: 176px;
   z-index: 5;

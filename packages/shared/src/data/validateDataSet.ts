@@ -118,6 +118,12 @@ export function validateDataSet(d: DataSet): DataError[] {
     if (t.reinforceable && t.becomesOnReinforce === undefined)
       err(F.terrain, `[${i}]`, `"${t.id}" es reforzable: necesita becomesOnReinforce`);
   });
+  d.terrain.forEach((t, i) => {
+    if (t.infinite && t.goldPerTile !== undefined)
+      err(F.terrain, `[${i}]`, `"${t.id}" es infinita: no puede llevar también goldPerTile`);
+    if (t.infinite && !t.diggable)
+      err(F.terrain, `[${i}]`, `"${t.id}" es una veta infinita: tiene que ser excavable`);
+  });
   const vein = d.terrain.find((t) => t.id === 'goldVein');
   if (vein && !vein.goldPerTile) err(F.terrain, '', 'goldVein necesita goldPerTile mayor que 0');
 

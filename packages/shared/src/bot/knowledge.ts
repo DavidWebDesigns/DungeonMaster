@@ -4,7 +4,7 @@
  */
 import type { DataSet } from '../data';
 import { DIRS4, tileIndex } from '../sim/grid';
-import { rulesOf } from '../sim/rules';
+import { isVeinTerrain, rulesOf } from '../sim/rules';
 import type { MatchState, PlayerId } from '../sim/types';
 
 /** Terreno (índice en data.terrain) que el jugador cree que hay en un tile: el visto, o el del plano inicial. */
@@ -41,7 +41,7 @@ function stepCost(
   if (def.walkable) return def.ownable && owner !== 0 && owner !== pid ? 0.4 : 0.15;
   if (!def.diggable) return Infinity;
   if (owner !== 0 && owner !== pid) return Infinity; // muro reforzado ajeno
-  return def.goldPerTile !== undefined ? 0.8 : 1;
+  return isVeinTerrain(def) ? 0.8 : 1;
 }
 
 /**

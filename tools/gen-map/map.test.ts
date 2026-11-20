@@ -95,7 +95,20 @@ describe('map-4p-01', () => {
 
   it('hay una gran mina central disputada', () => {
     const center = rectTiles({ x: 29, y: 29, w: 6, h: 6 });
-    expect(center.every((p) => tile(d, p.x, p.y).id === 'goldVein')).toBe(true);
+    const diamonds = rectTiles({ x: 31, y: 31, w: 2, h: 2 });
+    const isDiamond = (p: { x: number; y: number }) =>
+      diamonds.some((q) => q.x === p.x && q.y === p.y);
+    // Oro por todo el centro, salvo el corazón de la mina: una veta de diamantes infinita de 2×2.
+    expect(
+      center.filter((p) => !isDiamond(p)).every((p) => tile(d, p.x, p.y).id === 'goldVein'),
+    ).toBe(true);
+    expect(diamonds.every((p) => tile(d, p.x, p.y).id === 'diamondVein')).toBe(true);
+  });
+
+  it('solo hay diamantes en el centro (la única veta infinita es la disputada)', () => {
+    const all = rectTiles({ x: 0, y: 0, w: d.map.width, h: d.map.height });
+    const found = all.filter((p) => tile(d, p.x, p.y).id === 'diamondVein');
+    expect(found).toHaveLength(4);
   });
 
   it('desde cada base se puede excavar hasta el centro y hasta cada Corazón rival', () => {

@@ -144,3 +144,30 @@ test('P pausa la partida y el reloj lo indica; ] sube la velocidad y se ve en la
   await page.keyboard.press(']');
   await expect(page.locator('.chip.clock')).toContainText('×2');
 });
+
+test('el minimapa no tapa ningún otro panel de la interfaz', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/?rivals=1');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  const mini = (await page.locator('canvas.minimap').boundingBox())!;
+  const overlaps = (b: { x: number; y: number; width: number; height: number }) =>
+    b.x < mini.x + mini.width &&
+    b.x + b.width > mini.x &&
+    b.y < mini.y + mini.height &&
+    b.y + b.height > mini.y;
+  for (const sel of [
+    '.surrender',
+    '.creatures',
+    '.top',
+    '.tools',
+    '.rooms',
+    '.spells',
+    '.notices',
+  ]) {
+    for (const el of await page.locator(sel).all()) {
+      const b = await el.boundingBox();
+      if (b && b.width > 0 && b.height > 0)
+        expect(overlaps(b), `${sel} solapa el minimapa`).toBe(false);
+    }
+  }
+});

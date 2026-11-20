@@ -86,3 +86,10 @@ export function walkDistances(
     diagonalCost,
   });
 }
+
+/** ¿Este terreno es una veta (oro finito o veta infinita)? Es lo que se mina en vez de excavar con tiempo fijo. */
+export function isVeinTerrain(
+  def: { goldPerTile?: number; infinite?: boolean } | undefined,
+): boolean {
+  return def !== undefined && (def.goldPerTile !== undefined || def.infinite === true);
+}

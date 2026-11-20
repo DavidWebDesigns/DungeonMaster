@@ -17,6 +17,7 @@ const BASE: Readonly<Record<string, TileStyle>> = {
   earth: { height: WALL, color: [0.42, 0.28, 0.17] },
   reinforcedWall: { height: WALL, color: [0.36, 0.38, 0.46] },
   goldVein: { height: WALL, color: [0.82, 0.64, 0.12] },
+  diamondVein: { height: WALL, color: [0.45, 0.92, 0.98] },
   neutralFloor: { height: 0.08, color: [0.3, 0.26, 0.23] },
   claimedFloor: { height: 0.1, color: [0.24, 0.2, 0.2] },
   water: { height: 0.05, color: [0.15, 0.35, 0.7] },
