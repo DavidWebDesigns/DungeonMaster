@@ -135,6 +135,7 @@ describe('comandos de basura', () => {
         { type: 'castSpell', spell: 'createImp', target: { x: base.x, y: base.y } },
         { type: 'castSpell', spell: 'lightning', target: { x: base.x, y: base.y } },
         { type: 'buildTrap', trap: 'spikeTrap', tile: { x: base.x, y: base.y } },
+        { type: 'buildTrap', trap: 'basicDoor', tile: { x: base.x - 1, y: base.y + 2 } },
         { type: 'pickUp', id: 1, kind: 'imp' },
         { type: 'drop', tile: { x: base.x, y: base.y } },
         { type: 'slap', id: 1 },

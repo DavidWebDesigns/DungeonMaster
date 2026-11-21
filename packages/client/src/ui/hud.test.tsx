@@ -342,6 +342,17 @@ describe('trampas en el HUD', () => {
     ]);
   });
 
+  it('las puertas van aparte, con sus teclas O e I: la básica sin requisitos y la reforzada con Taller', () => {
+    const sb = fresh();
+    const m = buildHudModel(sb.state, data, 1, dig, []);
+    expect(m.doors.map((t) => [t.hotkey, t.id, t.cost, t.requires, t.available])).toEqual([
+      ['O', 'basicDoor', 250, '', true],
+      ['I', 'reinforcedDoor', 600, 'Taller', false],
+    ]);
+    // Y no se mezclan con las trampas.
+    expect(m.traps.map((t) => t.id)).not.toContain('basicDoor');
+  });
+
   it('quedan disponibles al construir sus salas y marcan la activa y las que no se pueden pagar', () => {
     const sb = fresh();
     for (const [i, type] of ['workshop', 'tortureChamber', 'library'].entries())

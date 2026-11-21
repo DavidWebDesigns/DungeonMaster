@@ -27,19 +27,30 @@ export const TrapEffect = z.discriminatedUnion('type', [
 ]);
 export type TrapEffect = z.infer<typeof TrapEffect>;
 
-/**
- * Una trampa (traps.json, ASSETS.md §6). Se coloca en un tile de suelo propio, como una sala, y la construyen los Imps.
- * Hace falta tener construidas todas las salas de `requiresRooms`. Todas tienen vida (`hp`): tras su primer disparo quedan
- * reveladas y los enemigos pueden atacarlas; los Imps las reparan. Dos familias: las **físicas** se desgastan con cada
- * disparo (`wearPerTrigger`); las **elementales** tienen `uses` usos y se consumen al gastarlos.
- */
-export const TrapDef = z.strictObject({
+/** Campos que comparten trampas y puertas. */
+const StructureFields = {
   id: Id,
   name: z.string().min(1),
   modelId: z.string().min(1),
   goldCost: NonNegativeInt,
   /** Segundos de trabajo de un Imp para dejarla lista. */
   buildSeconds: PositiveNumber,
+  /** Salas que hay que tener construidas (una puerta básica no pide ninguna). */
+  requiresRooms: z.array(Id),
+  /** Vida: los enemigos pueden atacarla una vez revelada y los Imps la reparan. */
+  hp: PositiveInt,
+  /** Parte del coste que se devuelve al venderla. */
+  sellRefund: Fraction,
+};
+
+/**
+ * Una trampa (traps.json, ASSETS.md §6). Se coloca en un tile de suelo propio, como una sala, y la construyen los Imps.
+ * Hace falta tener construidas todas las salas de `requiresRooms`. Todas tienen vida (`hp`): tras su primer disparo quedan
+ * reveladas y los enemigos pueden atacarlas; los Imps las reparan. Dos familias: las **físicas** se desgastan con cada
+ * disparo (`wearPerTrigger`); las **elementales** tienen `uses` usos y se consumen al gastarlos.
+ */
+export const ArmedTrapDef = z.strictObject({
+  ...StructureFields,
   requiresRooms: z.array(Id).min(1),
   family: z.enum(['physical', 'elemental']),
   /** Qué la dispara: un enemigo pisando el tile, uno a `triggerRadius` o menos, o uno en línea recta a esa distancia. */
@@ -48,17 +59,29 @@ export const TrapDef = z.strictObject({
   triggerRadius: PositiveNumber,
   /** Segundos hasta poder dispararse de nuevo. */
   cooldownSeconds: Seconds,
-  /** Vida de la trampa: los enemigos pueden atacarla una vez revelada y los Imps la reparan. */
-  hp: PositiveInt,
   /** Físicas: vida que pierde en cada disparo. */
   wearPerTrigger: PositiveInt.optional(),
   /** Elementales: usos antes de consumirse. */
   uses: PositiveInt.optional(),
-  /** Parte del coste que se devuelve al venderla. */
-  sellRefund: Fraction,
   effect: TrapEffect,
 });
+export type ArmedTrapDef = z.infer<typeof ArmedTrapDef>;
+
+/**
+ * Una puerta: se construye como una trampa (suelo propio, Imps, venta, reparación) pero no se dispara. Su dueño y los
+ * suyos la cruzan; los enemigos no pueden y la atacan hasta romperla. Nace revelada (se ve siempre que se vea su tile).
+ */
+export const DoorDef = z.strictObject({
+  ...StructureFields,
+  family: z.literal('door'),
+});
+export type DoorDef = z.infer<typeof DoorDef>;
+
+export const TrapDef = z.discriminatedUnion('family', [ArmedTrapDef, DoorDef]);
 export type TrapDef = z.infer<typeof TrapDef>;
+
+/** ¿Es una puerta? (estrecha el tipo para acceder a los datos de disparo en las demás). */
+export const isDoorDef = (def: TrapDef | undefined): def is DoorDef => def?.family === 'door';
 
 export const TrapsFile = z.array(TrapDef).min(1);
 export type TrapsFile = z.infer<typeof TrapsFile>;

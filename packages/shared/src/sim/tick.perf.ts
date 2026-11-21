@@ -7,6 +7,7 @@ import { applyCommand } from './applyCommand';
 import { createMatch } from './createMatch';
 import { step } from './step';
 import { newCreature } from './portal';
+import { syncDoors } from './doors';
 import { rulesOf } from './rules';
 import { loadData } from './testUtils';
 import { ClientKnowledge, computeDelta } from '../net/view';
@@ -38,6 +39,23 @@ describe('rendimiento del tick', () => {
       for (let k = 0; k < 2; k++)
         applyCommand(state, data, p.id, { type: 'dig', tiles: [{ x: 1, y: 1 }] });
     }
+    // Con puertas construidas (cada tile consulta doorAt en las rutas): unas 6 por jugador.
+    for (const p of state.players) {
+      const own = walk.filter((t) => state.owner[t] === p.id && state.roomAt[t] === 0);
+      for (let k = 0; k < 6 && own.length > 0; k++)
+        state.traps.push({
+          id: state.nextTrapId++,
+          type: 'basicDoor',
+          owner: p.id,
+          tile: own[(k * 11) % own.length]!,
+          built: true,
+          readyAt: 0,
+          hp: 1500,
+          usesLeft: 0,
+          revealed: true,
+        });
+    }
+    syncDoors(state, rules);
     const entities = state.creatures.length + state.imps.length;
     expect(entities).toBeGreaterThanOrEqual(780);
     // Calentamiento y medición.

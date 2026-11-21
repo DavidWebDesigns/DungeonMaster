@@ -180,6 +180,8 @@ export interface Creature {
   ignoring: boolean;
   /** Por tipo de objetivo: versión de mapa en la que no se encontró ruta. */
   blocked: Record<string, number>;
+  /** Tile de la puerta enemiga que le corta el paso y que va a atacar hasta romperla (-1 = ninguna). */
+  doorTarget: number;
   /** A quién ataca: una criatura, un Imp o un tile de sala (índice) / el Corazón (tile del Corazón). */
   targetKind: 'none' | 'creature' | 'imp' | 'structure';
   targetId: number;
@@ -259,6 +261,8 @@ export interface MatchState {
   goldLeft: number[];
   /** Id de la sala que cubre cada tile (0 = ninguna). */
   roomAt: number[];
+  /** Dueño de la puerta construida en cada tile (0 = no hay): una puerta solo deja pasar a su dueño (sim/doors.ts). */
+  doorAt: number[];
   players: PlayerState[];
   imps: Imp[];
   creatures: Creature[];

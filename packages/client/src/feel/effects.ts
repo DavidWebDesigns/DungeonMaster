@@ -210,7 +210,8 @@ export function deriveEffects(
     if (e.type === 'trapTriggered') {
       if (!seesAt(e.x, e.y)) continue;
       // El color y el tamaño salen del efecto de la trampa (los datos), no de su nombre.
-      const fx = data.traps.find((t) => t.id === e.trap)?.effect.type;
+      const trapDef = data.traps.find((t) => t.id === e.trap);
+      const fx = trapDef && trapDef.family !== 'door' ? trapDef.effect.type : undefined;
       const big = fx === 'areaDamage' || fx === 'crushingWalls' || fx === 'chainLightning';
       const color: RGB =
         e.trap === 'fireTrap'

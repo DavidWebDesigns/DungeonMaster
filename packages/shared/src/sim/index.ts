@@ -27,6 +27,7 @@ export * from './victory';
 export { castEffect } from './spells';
 export { gainXp } from './xp';
 export * from './traps';
+export * from './doors';
 export { dropImp } from './imps';
 export * from './stats';
 export * from './abilities';

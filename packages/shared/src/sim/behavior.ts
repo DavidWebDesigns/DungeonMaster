@@ -28,6 +28,7 @@ import {
 import { tileIndex, tileOfPosition } from './grid';
 import { moveAlongPath } from './movement';
 import { isStunned, walkableFor } from './abilities';
+import { doorBlocks } from './doors';
 import { findPath } from './pathfinding';
 import { nextFloat, nextInt } from './rng';
 import { secondsToTicks, type Rules } from './rules';
@@ -115,14 +116,20 @@ function decide(state: MatchState, rules: Rules, c: Creature): Desire {
     }
   }
 
-  // Asalto ordenado con la mano: va a por el objetivo marcado aunque esté lejos del radio de combate.
+  // La puerta que le cortaba el paso ya no está (rota o vendida): vuelve a su camino.
+  if (c.doorTarget >= 0 && !attackableTile(state, rules, c.owner, c.doorTarget)) c.doorTarget = -1;
+
+  // Asalto ordenado con la mano: va a por el objetivo marcado aunque esté lejos del radio de combate. Si una puerta
+  // enemiga le corta el paso (`doorTarget`), el asalto sigue en pie pero primero rompe la puerta (más abajo).
   if (c.assaultKind !== 'none') {
     const goal: CreatureGoal = c.assaultKind === 'structure' ? 'siege' : 'combat';
-    if (assaultValid(state, rules, c) && !blocked(goal)) {
+    if (c.doorTarget < 0 && assaultValid(state, rules, c) && !blocked(goal)) {
       return { goal, room: 0, targetKind: c.assaultKind, targetId: c.assaultId };
     }
-    c.assaultKind = 'none';
-    c.assaultId = 0;
+    if (c.doorTarget < 0 || !assaultValid(state, rules, c)) {
+      c.assaultKind = 'none';
+      c.assaultId = 0;
+    }
   }
 
   // 3. Combatir: enemigo a la vista (o que la ataca).
@@ -137,6 +144,10 @@ function decide(state: MatchState, rules: Rules, c: Creature): Desire {
     const enemy = chooseTarget(state, rules, c);
     if (enemy) return { goal: 'combat', room: 0, targetKind: enemy.kind, targetId: enemy.id };
   }
+
+  // Una puerta enemiga le corta el paso: la ataca hasta romperla (al caer, la ruta se rehace sola).
+  if (def.base.damage > 0 && c.doorTarget >= 0 && !blocked('siege'))
+    return { goal: 'siege', room: 0, targetKind: 'structure', targetId: c.doorTarget };
 
   // Asedio: en territorio enemigo, sin enemigos que combatir, golpea la sala o el Corazón más cercano.
   if (def.base.damage > 0 && inEnemyTerritory(state, c) && !blocked('siege')) {
@@ -240,7 +251,7 @@ function attackPositions(
   for (let y = Math.max(0, cy - r); y <= Math.min(state.height - 1, cy + r); y++) {
     for (let x = Math.max(0, cx - r); x <= Math.min(state.width - 1, cx + r); x++) {
       const i = tileIndex(state, x, y);
-      if (!rules.walkable[state.terrain[i] as number]) continue;
+      if (!rules.walkable[state.terrain[i] as number] || doorBlocks(state, i, c.owner)) continue;
       if (Math.hypot(x + 0.5 - px, y + 0.5 - py) > reach) continue;
       if (isRanged(rules, c) && !hasLineOfSight(state, rules, x + 0.5, y + 0.5, px, py)) continue;
       out.add(i);
@@ -250,7 +261,13 @@ function attackPositions(
 }
 
 /** Tiles caminables junto a una sala o al Corazón desde los que se puede golpear su tile. */
-function structurePositions(state: MatchState, rules: Rules, tile: number): Set<number> {
+function structurePositions(
+  state: MatchState,
+  rules: Rules,
+  tile: number,
+  /** Quien se va a colocar: una puerta ajena no es un sitio donde pararse. */
+  owner: number,
+): Set<number> {
   const reach = rules.data.global.combat.structureReach;
   const out = new Set<number>();
   const tx = tile % state.width;
@@ -258,7 +275,7 @@ function structurePositions(state: MatchState, rules: Rules, tile: number): Set<
   for (let y = Math.max(0, ty - 1); y <= Math.min(state.height - 1, ty + 1); y++) {
     for (let x = Math.max(0, tx - 1); x <= Math.min(state.width - 1, tx + 1); x++) {
       const i = tileIndex(state, x, y);
-      if (!rules.walkable[state.terrain[i] as number]) continue;
+      if (!rules.walkable[state.terrain[i] as number] || doorBlocks(state, i, owner)) continue;
       if (distToTileBox(state, x + 0.5, y + 0.5, tile) <= reach + EPS) out.add(i);
     }
   }
@@ -300,7 +317,7 @@ function goalTiles(state: MatchState, rules: Rules, c: Creature): Set<number> {
     }
     case 'siege':
       if (c.targetKind === 'structure')
-        structurePositions(state, rules, c.targetId).forEach((i) => tiles.add(i));
+        structurePositions(state, rules, c.targetId, c.owner).forEach((i) => tiles.add(i));
       break;
     default:
       break;
@@ -314,7 +331,8 @@ function computePath(state: MatchState, rules: Rules, c: Creature): boolean {
   const start = tileOfPosition(state, c.x, c.y);
   // Quien cruza agua o lava (Vuelo, Hija de la lava) las incluye en su ruta.
   const walkable = walkableFor(state, rules, c);
-  if (!walkable(start)) return false;
+  // El tile de salida se acepta aunque tenga una puerta ajena encima (si se la construyen, que pueda salir).
+  if (!walkable(start) && !doorBlocks(state, start, c.owner)) return false;
   const { straightCost, diagonalCost } = rules.data.global.pathfinding;
   const path = findPath({
     width: state.width,
@@ -331,6 +349,34 @@ function computePath(state: MatchState, rules: Rules, c: Creature): boolean {
   c.pathVersion = state.mapVersion;
   c.mode = 'moving';
   return true;
+}
+
+/**
+ * Si no hay ruta a su destino, ¿es por una puerta enemiga? Se vuelve a buscar la ruta sin contar las puertas ajenas; si
+ * existe, la primera puerta enemiga del camino es lo que hay que romper. Devuelve su tile o -1. Solo trabaja si hay
+ * puertas enemigas, así que no cuesta nada en una partida sin ellas.
+ */
+function findBlockingDoor(state: MatchState, rules: Rules, c: Creature): number {
+  if (!state.doorAt.some((d) => d !== 0 && d !== c.owner)) return -1;
+  const goals = goalTiles(state, rules, c);
+  if (goals.size === 0) return -1;
+  const start = tileOfPosition(state, c.x, c.y);
+  const own = walkableFor(state, rules, c);
+  // Igual que la ruta normal, pero las puertas ajenas cuentan como suelo.
+  const ignoringDoors = (tile: number) => own(tile) || doorBlocks(state, tile, c.owner);
+  const { straightCost, diagonalCost } = rules.data.global.pathfinding;
+  const path = findPath({
+    width: state.width,
+    height: state.height,
+    walkable: ignoringDoors,
+    start,
+    isGoal: (i) => goals.has(i),
+    heuristic: () => 0,
+    straightCost,
+    diagonalCost,
+  });
+  if (!path) return -1;
+  return path.find((tile) => doorBlocks(state, tile, c.owner)) ?? -1;
 }
 
 function arrive(state: MatchState, rules: Rules, c: Creature, events: SimEvent[]): void {
@@ -503,7 +549,14 @@ export function updateCreatures(
       budgets.set(c.owner, budget - 1);
       const p = c.goal === 'combat' || c.goal === 'siege' ? targetPoint(state, c) : null;
       if (!computePath(state, rules, c)) {
-        c.blocked[c.goal] = state.mapVersion;
+        // ¿Lo tapa una puerta enemiga? Entonces la rompe en vez de rendirse.
+        const door = findBlockingDoor(state, rules, c);
+        const hittingTheDoor =
+          c.goal === 'siege' && c.targetKind === 'structure' && c.targetId === door;
+        // Si es la puerta lo que lo bloquea, no se da el destino por perdido: primero se rompe la puerta. Si ni a la
+        // propia puerta se llega, entonces sí.
+        if (door >= 0 && !hittingTheDoor) c.doorTarget = door;
+        else c.blocked[c.goal] = state.mapVersion;
         stopCreature(c);
         continue;
       }

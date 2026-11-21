@@ -8,7 +8,8 @@ import { areaDamage, hasLineOfSight } from './combat';
 import { clampGold, missingRooms } from './rooms';
 import type { Rules } from './rules';
 import { removeTask, setTask } from './tasks';
-import type { TrapDef } from '../schemas';
+import { isDoorDef, type ArmedTrapDef } from '../schemas';
+import { syncDoors } from './doors';
 import type { Creature, ErrorCode, Imp, MatchState, PlayerState, SimEvent, Trap } from './types';
 
 export type TrapCheck = { ok: true; cost: number } | { ok: false; error: ErrorCode };
@@ -51,7 +52,7 @@ export function checkBuildTrap(
     return { ok: false, error: 'INVALID_TARGET' };
   }
   // Paredes aplastantes: solo en un pasillo de 1 tile (muro a dos lados opuestos).
-  if (def.effect.type === 'crushingWalls' && !isCorridor(state, rules, tile))
+  if (!isDoorDef(def) && def.effect.type === 'crushingWalls' && !isCorridor(state, rules, tile))
     return { ok: false, error: 'INVALID_TARGET' };
   if (player.gold < def.goldCost) return { ok: false, error: 'NO_GOLD' };
   return { ok: true, cost: def.goldCost };
@@ -77,8 +78,9 @@ export function placeTrapNow(
     built: false,
     readyAt: 0,
     hp: def.hp,
-    usesLeft: def.uses ?? 0,
-    revealed: false,
+    usesLeft: isDoorDef(def) ? 0 : (def.uses ?? 0),
+    // Una puerta se ve siempre; una trampa, solo tras su primer disparo.
+    revealed: isDoorDef(def),
   };
   state.traps.push(trap);
   setTask(state, player.id, 'buildTrap', tile);
@@ -97,6 +99,7 @@ export function sellTrapNow(
   if (def) player.gold += Math.floor(def.goldCost * (trap.built ? def.sellRefund : 1));
   clampGold(state, rules, player);
   state.traps = state.traps.filter((t) => t.id !== trap.id);
+  syncDoors(state, rules);
   for (const k of state.tasks.filter((k) => k.tile === trap.tile && k.owner === trap.owner)) {
     removeTask(state, k.id);
   }
@@ -104,8 +107,9 @@ export function sellTrapNow(
 }
 
 /** La trampa se destruye (daño, desgaste o último uso): desaparece con sus tareas y avisa. */
-export function destroyTrap(state: MatchState, trap: Trap, events: SimEvent[]): void {
+export function destroyTrap(state: MatchState, rules: Rules, trap: Trap, events: SimEvent[]): void {
   state.traps = state.traps.filter((t) => t.id !== trap.id);
+  syncDoors(state, rules);
   for (const k of state.tasks.filter((k) => k.tile === trap.tile && k.owner === trap.owner))
     removeTask(state, k.id);
   events.push({
@@ -166,7 +170,7 @@ function triggerer(
   state: MatchState,
   rules: Rules,
   trap: Trap,
-  def: TrapDef,
+  def: ArmedTrapDef,
   x: number,
   y: number,
 ) {
@@ -185,7 +189,7 @@ function fire(
   state: MatchState,
   rules: Rules,
   trap: Trap,
-  def: TrapDef,
+  def: ArmedTrapDef,
   x: number,
   y: number,
   who: Creature | Imp,
@@ -254,7 +258,7 @@ export function updateTraps(state: MatchState, rules: Rules, events: SimEvent[])
   for (const trap of state.traps.slice()) {
     if (!trap.built || state.tick < trap.readyAt) continue;
     const def = rules.data.traps.find((t) => t.id === trap.type);
-    if (!def) continue;
+    if (!def || isDoorDef(def)) continue;
     const owner = state.players.find((p) => p.id === trap.owner);
     if (!owner || owner.eliminated) continue;
     const x = (trap.tile % state.width) + 0.5;
@@ -267,7 +271,7 @@ export function updateTraps(state: MatchState, rules: Rules, events: SimEvent[])
     if (def.family === 'elemental') trap.usesLeft--;
     else trap.hp -= def.wearPerTrigger ?? 0;
     const gone = def.family === 'elemental' ? trap.usesLeft <= 0 : trap.hp <= 0;
-    if (gone) destroyTrap(state, trap, events);
+    if (gone) destroyTrap(state, rules, trap, events);
     else trap.readyAt = state.tick + Math.round(def.cooldownSeconds * rate);
   }
 }

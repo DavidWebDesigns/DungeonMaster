@@ -1,6 +1,7 @@
 /**
  * Eliminación, victoria, empate y desempate por tiempo (sección 6.3).
  */
+import { syncDoors } from './doors';
 import { creatureMaxHp } from './creatureStats';
 import { removeCreature } from './needs';
 import type { Rules } from './rules';
@@ -38,6 +39,7 @@ export function eliminatePlayer(
   state.tasks = state.tasks.filter((t) => t.owner !== player.id);
   state.rooms = state.rooms.filter((r) => r.owner !== player.id);
   state.traps = state.traps.filter((t) => t.owner !== player.id);
+  syncDoors(state, rules);
   const neutral = rules.neutralTerrain;
   for (let i = 0; i < state.owner.length; i++) {
     if (state.owner[i] !== player.id) continue;

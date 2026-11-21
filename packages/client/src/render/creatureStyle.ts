@@ -122,7 +122,7 @@ export function impActivityLabel(
 /** Aspecto de cada trampa (placeholder: una figura pequeña sobre el tile). */
 export interface TrapLook {
   color: RGB;
-  shape: 'spikes' | 'barrel';
+  shape: 'spikes' | 'barrel' | 'slab';
 }
 
 export const TRAP_LOOKS: Readonly<Record<string, TrapLook>> = {
@@ -132,6 +132,8 @@ export const TRAP_LOOKS: Readonly<Record<string, TrapLook>> = {
   frostTrap: { color: [0.55, 0.85, 1], shape: 'spikes' },
   fireTrap: { color: [0.95, 0.4, 0.1], shape: 'barrel' },
   lightningTrap: { color: [0.95, 0.9, 0.3], shape: 'barrel' },
+  basicDoor: { color: [0.55, 0.38, 0.2], shape: 'slab' },
+  reinforcedDoor: { color: [0.42, 0.45, 0.55], shape: 'slab' },
 };
 
 export const trapLookOf = (id: string): TrapLook =>

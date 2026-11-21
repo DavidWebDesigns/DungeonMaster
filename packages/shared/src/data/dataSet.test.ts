@@ -51,6 +51,8 @@ describe('datos reales de /data/mvp', () => {
       'frostTrap',
       'fireTrap',
       'lightningTrap',
+      'basicDoor',
+      'reinforcedDoor',
     ]);
   });
 

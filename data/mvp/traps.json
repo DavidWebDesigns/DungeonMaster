@@ -120,5 +120,27 @@
       "falloff": 0.25,
       "jumpRange": 3
     }
+  },
+  {
+    "id": "basicDoor",
+    "name": "Puerta básica",
+    "modelId": "door_basic",
+    "goldCost": 250,
+    "buildSeconds": 15,
+    "requiresRooms": [],
+    "family": "door",
+    "hp": 1500,
+    "sellRefund": 0.5
+  },
+  {
+    "id": "reinforcedDoor",
+    "name": "Puerta reforzada",
+    "modelId": "door_reinforced",
+    "goldCost": 600,
+    "buildSeconds": 30,
+    "requiresRooms": ["workshop"],
+    "family": "door",
+    "hp": 4000,
+    "sellRefund": 0.5
   }
 ]

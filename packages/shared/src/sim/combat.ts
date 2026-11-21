@@ -282,7 +282,7 @@ export function findAssaultTarget(
   const seen = (x: number, y: number) => vis[Math.floor(y) * state.width + Math.floor(x)] === 1;
   // "Más cercano" = a quien menos hay que andar para llegar (rodeando muros). Si ninguno es alcanzable
   // (todo tras muros), se cae a la distancia en línea recta, como antes.
-  const walk = walkDistances(state, rules, tile);
+  const walk = walkDistances(state, rules, tile, owner);
   const rank = { creature: 0, imp: 1, structure: 2 } as const;
   type Pick = { kind: 'creature' | 'imp' | 'structure'; id: number };
   let best: Pick | null = null;
@@ -394,7 +394,7 @@ function hitStructure(
       x: (tile % state.width) + 0.5,
       y: Math.floor(tile / state.width) + 0.5,
     });
-    if (trap.hp <= 0) destroyTrap(state, trap, events);
+    if (trap.hp <= 0) destroyTrap(state, rules, trap, events);
     return;
   }
   const cx = (tile % state.width) + 0.5;

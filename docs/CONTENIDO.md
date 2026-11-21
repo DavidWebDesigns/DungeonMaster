@@ -40,8 +40,12 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
    tener para colocarla), `family` (`physical` con `hp` y `wearPerTrigger`, o `elemental` con `uses`), `trigger` (`step`, `proximity` o `lineOfSight`),
    `triggerRadius`, `cooldownSeconds`, `sellRefund` y `effect`.
 2. **Efectos:** hay `areaDamage`, `freezeArea`, `rollingBoulder`, `chainLightning` y `crushingWalls`. Un efecto nuevo se añade a `schemas/traps.ts` y a `sim/traps.ts` (`updateTraps`).
-3. **`render/creatureStyle.ts` → `TRAP_LOOKS`**: forma (`spikes` o `barrel`) y color.
-4. Se coloca en un tile de suelo propio, la construyen los Imps (tarea `buildTrap`) y es invisible para el rival.
+3. **`render/creatureStyle.ts` → `TRAP_LOOKS`**: forma (`spikes`, `barrel` o `slab` para puertas) y color.
+4. Se coloca en un tile de suelo propio, la construyen los Imps (tarea `buildTrap`) y es invisible para el rival hasta su primer disparo.
+
+## Añadir una puerta
+
+Es una entrada de `data/mvp/traps.json` con `family: "door"` (solo `id`, `name`, `modelId`, `goldCost`, `buildSeconds`, `requiresRooms` —puede ir vacío—, `hp` y `sellRefund`; no lleva disparo ni efecto). Se construye, se vende y se repara como una trampa, pero cierra el paso a los demás jugadores (ver `sim/doors.ts`). Añade su forma en `TRAP_LOOKS` (`shape: 'slab'`) y su tecla en `DOOR_KEYS` (`input/keymap.ts`; hoy O e I).
 
 ## Añadir un nivel de muro reforzado
 

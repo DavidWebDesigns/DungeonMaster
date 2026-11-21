@@ -1,3 +1,4 @@
+import { doorBlocks } from './doors';
 import { getPlayer, goldRoom, treasuryCapacity } from './economy';
 import { octile, tileIndex, tileOfPosition, tileX, tileY } from './grid';
 import { findPath } from './pathfinding';
@@ -177,7 +178,9 @@ export function assignTasks(state: MatchState, rules: Rules): void {
 function computePath(state: MatchState, rules: Rules, imp: Imp): boolean {
   const { straightCost, diagonalCost } = rules.data.global.pathfinding;
   const start = tileOfPosition(state, imp.x, imp.y);
-  const walkable = (i: number) => rules.walkable[state.terrain[i] as number] === true;
+  const terrainWalkable = (i: number) => rules.walkable[state.terrain[i] as number] === true;
+  // Una puerta ajena le cierra el paso (la propia, no).
+  const walkable = (i: number) => terrainWalkable(i) && !doorBlocks(state, i, imp.owner);
   let isGoal: (i: number) => boolean;
   let heuristic: (i: number) => number = () => 0;
 
@@ -207,7 +210,8 @@ function computePath(state: MatchState, rules: Rules, imp: Imp): boolean {
     heuristic = (i) => Math.max(0, octile(state, i, task.tile, straightCost, diagonalCost) - slack);
   }
 
-  if (!walkable(start)) return false;
+  // El tile de salida solo mira el terreno: si le construyen una puerta ajena encima, que pueda salir.
+  if (!terrainWalkable(start)) return false;
   const path = findPath({
     width: state.width,
     height: state.height,
@@ -429,7 +433,7 @@ export function nearestTaskByWalk(
   const player = state.players.find((p) => p.id === imp.owner);
   if (!player) return undefined;
   const hasRoom = goldRoom(state, rules, player) > EPS;
-  const dist = walkDistances(state, rules, from);
+  const dist = walkDistances(state, rules, from, imp.owner);
   let best: Task | undefined;
   let bestKey: [number, number, number] | undefined;
   for (const t of state.tasks) {

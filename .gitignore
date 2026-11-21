@@ -11,3 +11,6 @@ Thumbs.db
 test-results/
 playwright-report/
 match-logs/
+
+# Skills de Blender de terceros (EL4CTEO/blender-skills), instaladas en local
+.claude/skills/

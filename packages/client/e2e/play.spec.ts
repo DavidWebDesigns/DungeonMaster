@@ -351,3 +351,46 @@ test('un Imp que holgazanea se anuncia en el HUD y B lo despierta', async ({ pag
   expect(woke).toBe(0);
   await expect(page.locator('.chip').first()).toContainText('1 holgazanean');
 });
+
+test('O coloca una puerta básica: los Imps la construyen y cierra el paso a los enemigos', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state;
+    const claimed = g.data.terrain.findIndex((t) => t.id === 'claimedFloor');
+    for (let y = 11; y < 20; y++)
+      for (let x = 2; x < 11; x++) {
+        s.terrain[y * s.width + x] = claimed;
+        (s as unknown as { owner: number[] }).owner[y * s.width + x] = 1;
+      }
+    s.mapVersion++;
+    s.players[0]!.gold = 5000;
+    (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
+      ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
+      targetX: 6,
+      targetZ: 14,
+    };
+  });
+  await page.waitForTimeout(300);
+  await page.keyboard.press('o');
+  const p = await page.evaluate(() =>
+    (window as unknown as { __dm: DmHook }).__dm.tileToScreen(5, 15),
+  );
+  await page.mouse.move(p.x, p.y);
+  await page.mouse.click(p.x, p.y);
+  await fastForward(page, 60);
+  const door = await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state as unknown as {
+      traps: Array<{ type: string; built: boolean; tile: number }>;
+      doorAt: number[];
+      width: number;
+    };
+    const t = s.traps.find((k) => k.type === 'basicDoor');
+    return t ? { built: t.built, owner: s.doorAt[t.tile] } : null;
+  });
+  expect(door).toEqual({ built: true, owner: 1 });
+  await expect(page.locator('.panel.doors .btn', { hasText: 'Puerta básica' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/door.png' });
+});

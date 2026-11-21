@@ -402,13 +402,28 @@ export class EntitiesView {
       if (!entry) {
         const look = trapLookOf(t.type);
         const mesh =
-          look.shape === 'barrel'
-            ? CreateCylinder(`trap${t.id}`, { diameter: 0.5, height: 0.45 }, this.scene)
-            : CreateCylinder(
-                `trap${t.id}`,
-                { diameterTop: 0, diameterBottom: 0.5, height: 0.5, tessellation: 4 },
-                this.scene,
-              );
+          look.shape === 'slab'
+            ? CreateBox(`trap${t.id}`, { width: 0.92, height: 0.8, depth: 0.22 }, this.scene)
+            : look.shape === 'barrel'
+              ? CreateCylinder(`trap${t.id}`, { diameter: 0.5, height: 0.45 }, this.scene)
+              : CreateCylinder(
+                  `trap${t.id}`,
+                  { diameterTop: 0, diameterBottom: 0.5, height: 0.5, tessellation: 4 },
+                  this.scene,
+                );
+        if (look.shape === 'slab') {
+          // La losa cruza el pasillo: si se camina en horizontal (a izquierda y derecha hay suelo), se gira.
+          const w = rulesOf(data).walkable;
+          const open = (dx: number, dy: number) => {
+            const x = (t.tile % state.width) + dx;
+            const y = Math.floor(t.tile / state.width) + dy;
+            return x >= 0 && y >= 0 && x < state.width && y < state.height
+              ? w[state.terrain[y * state.width + x] as number] === true
+              : false;
+          };
+          if (open(-1, 0) && open(1, 0) && !(open(0, -1) && open(0, 1)))
+            mesh.rotation.y = Math.PI / 2;
+        }
         // Las del rival llevan un tinte de su color para distinguirlas de las propias.
         const mat = material(
           this.scene,

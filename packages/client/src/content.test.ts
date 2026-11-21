@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { loadGameData } from './data/loadGameData';
 import { CREATURE_LOOKS, TRAP_LOOKS } from './render/creatureStyle';
 import { ROOM_COLORS } from './render/palette';
-import { keyAction, TRAP_KEYS } from './input/keymap';
+import { DOOR_KEYS, keyAction, TRAP_KEYS } from './input/keymap';
 import { advisorKnowsCreatures } from './ui/advisor';
 
 const data = loadGameData();
@@ -36,18 +36,35 @@ describe('todo el contenido de /data tiene su parte en el cliente', () => {
     ).toEqual([]);
   });
 
-  it('cada sala construible tiene su atajo (1 a 9) y cada trampa el suyo (G H J K L N)', () => {
+  it('cada sala construible tiene su atajo (1 a 9) y cada trampa (G H J K L N) y cada puerta (O I) el suyo', () => {
     const buildable = data.rooms.filter((r) => r.buildable);
     expect(
       buildable.length,
       'hay más de 9 salas construibles: hace falta otro sistema de atajos',
     ).toBeLessThanOrEqual(9);
     for (let n = 1; n <= buildable.length; n++) expect(keyAction(String(n), data)).not.toBeNull();
+    const armed = data.traps.filter((t) => t.family !== 'door');
+    const doors = data.traps.filter((t) => t.family === 'door');
     expect(
-      data.traps.length,
+      armed.length,
       `hay más de ${TRAP_KEYS.length} trampas: añade teclas en TRAP_KEYS (input/keymap.ts)`,
     ).toBeLessThanOrEqual(TRAP_KEYS.length);
-    data.traps.forEach((_, i) => expect(keyAction(TRAP_KEYS[i]!, data)).not.toBeNull());
+    armed.forEach((t, i) =>
+      expect(keyAction(TRAP_KEYS[i]!, data)).toEqual({
+        type: 'tool',
+        tool: { kind: 'trap', trap: t.id },
+      }),
+    );
+    expect(
+      doors.length,
+      `hay más de ${DOOR_KEYS.length} puertas: añade teclas en DOOR_KEYS (input/keymap.ts)`,
+    ).toBeLessThanOrEqual(DOOR_KEYS.length);
+    doors.forEach((t, i) =>
+      expect(keyAction(DOOR_KEYS[i]!, data)).toEqual({
+        type: 'tool',
+        tool: { kind: 'trap', trap: t.id },
+      }),
+    );
   });
 
   it('los requisitos de las salas son salas construibles', () => {

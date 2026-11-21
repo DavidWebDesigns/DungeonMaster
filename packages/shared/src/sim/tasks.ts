@@ -1,4 +1,5 @@
 import { inBounds, neighbors4, octile, tileIndex } from './grid';
+import { doorBlocks, syncDoors } from './doors';
 import { maxRoomLevel, removeRoomTile } from './rooms';
 import { isVeinTerrain, type Rules } from './rules';
 import type { Imp, MatchState, PlayerId, SimEvent, Task, TaskKind } from './types';
@@ -71,6 +72,8 @@ export function canClaim(state: MatchState, rules: Rules, tile: number, player: 
   if (owner === player) return false;
   if (owner === 0) return def.becomesOnClaim !== undefined;
   if (!def.walkable || !def.ownable) return false;
+  // Con una puerta enemiga construida encima no se reclama: hay que romperla primero.
+  if (doorBlocks(state, tile, player)) return false;
   const roomId = state.roomAt[tile] as number;
   if (!roomId) return true;
   const room = state.rooms.find((r) => r.id === roomId);
@@ -212,7 +215,9 @@ export function taskSeconds(state: MatchState, rules: Rules, task: Task): number
 export function workTiles(state: MatchState, rules: Rules, task: Task): number[] {
   if (task.kind === 'claim' || task.kind === 'buildTrap' || task.kind === 'repairTrap')
     return [task.tile];
-  return neighbors4(state, task.tile).filter((n) => rules.walkable[state.terrain[n] as number]);
+  return neighbors4(state, task.tile).filter(
+    (n) => rules.walkable[state.terrain[n] as number] && !doorBlocks(state, n, task.owner),
+  );
 }
 
 /** Aplica el resultado de una tarea terminada y la retira. */
@@ -233,6 +238,7 @@ export function completeTask(
     const trap = state.traps.find((t) => t.tile === i && t.owner === task.owner);
     if (trap) {
       trap.built = true;
+      syncDoors(state, rules); // una puerta terminada cambia las rutas
       events.push({
         type: 'trapBuilt',
         playerId: task.owner,
@@ -261,6 +267,7 @@ export function completeTask(
       if (state.owner[i] !== 0) removeRoomTile(state, rules, i);
       // Quien reclama un suelo enemigo se queda sin las trampas que había en él.
       state.traps = state.traps.filter((tr) => tr.tile !== i);
+      syncDoors(state, rules);
       const t = becomes(def.becomesOnClaim);
       if (t !== undefined) state.terrain[i] = t;
       state.owner[i] = task.owner;

@@ -395,6 +395,15 @@ Cada tirada convierte con una probabilidad de 10 % + 5 % × nivel de la Torturad
 }
 ```
 
+### 6.1 Puertas (familia `door`)
+
+Se construyen como una trampa (suelo propio, un Imp las levanta, se venden por la mitad, los Imps las reparan a 50 hp/s) pero **no se disparan**. Una puerta construida deja pasar a su dueño (criaturas e Imps) y **bloquea a todos los demás**; los enemigos la atacan hasta romperla y entonces siguen su camino. Nace revelada: un rival la ve en cuanto ve su tile. Mientras está sin terminar no cierra el paso.
+
+| Puerta | Oro | Construir | Vida | Requiere |
+|---|---|---|---|---|
+| Puerta básica (`basicDoor`, tecla **O**) | 250 | 15 s | 1.500 | nada |
+| Puerta reforzada (`reinforcedDoor`, tecla **I**) | 600 | 30 s | 4.000 | Taller |
+
 ## 7. Cómo llevar la Parte A a `/data/mvp`
 
 **Los cambios son aditivos: los datos del MVP-1 siguen validando y lo nuevo entra como campos y archivos opcionales hasta MVP-2.**

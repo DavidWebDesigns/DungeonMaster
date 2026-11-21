@@ -128,6 +128,7 @@ export function newCreature(
     slapUntil: 0,
     ignoring: false,
     blocked: {},
+    doorTarget: -1,
     targetKind: 'none',
     targetId: 0,
     attackReadyTick: 0,

@@ -16,7 +16,7 @@ import {
   type MatchState,
 } from '@dm/shared';
 import type { Tool } from '../input/inputModel';
-import { roomHotkey, trapHotkey } from '../input/keymap';
+import { doorHotkey, roomHotkey, trapHotkey } from '../input/keymap';
 import { activityLabel, hpFraction, moodIconOf } from '../render/creatureStyle';
 import type { Notice } from './notices';
 
@@ -120,6 +120,8 @@ export interface HudModel {
   tools: ToolButton[];
   rooms: RoomButton[];
   traps: TrapButton[];
+  /** Puertas (se construyen como trampas pero no se disparan). */
+  doors: TrapButton[];
   spells: SpellButton[];
   creatures: CreatureRow[];
   /** Resultado de la partida si ya terminó, desde el punto de vista del jugador local. */
@@ -293,10 +295,10 @@ export function buildHudModel(
     };
   });
 
-  const traps: TrapButton[] = data.traps.map((t, i) => ({
+  const trapButton = (t: DataSet['traps'][number], hotkey: string): TrapButton => ({
     id: t.id,
     name: t.name,
-    hotkey: trapHotkey(i),
+    hotkey,
     cost: t.goldCost,
     requires: joinNames(
       missingRooms(state, playerId, t.requiresRooms).map(
@@ -306,7 +308,11 @@ export function buildHudModel(
     available: missingRooms(state, playerId, t.requiresRooms).length === 0,
     affordable: player.gold >= t.goldCost,
     active: tool.kind === 'trap' && tool.trap === t.id,
-  }));
+  });
+  const armed = data.traps.filter((t) => t.family !== 'door');
+  const doorDefs = data.traps.filter((t) => t.family === 'door');
+  const traps: TrapButton[] = armed.map((t, i) => trapButton(t, trapHotkey(i)));
+  const doors: TrapButton[] = doorDefs.map((t, i) => trapButton(t, doorHotkey(i)));
 
   const SPELL_KEYS = ['Q', 'W', 'E', 'R', 'T'];
   const SPELL_HINTS: Record<string, string> = {
@@ -366,6 +372,7 @@ export function buildHudModel(
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
     rooms,
     traps,
+    doors,
     spells,
     creatures: rows,
     gameOver: gameOverInfo(state, playerId, data.global.tickRate),

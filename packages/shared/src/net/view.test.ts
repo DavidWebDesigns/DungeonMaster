@@ -109,6 +109,35 @@ describe('vistas por jugador: lo que se ve', () => {
     expect(f.mirror.state.imps.find((i) => i.id === mine.id)?.loafUntil).toBe(123);
   });
 
+  it('una puerta construida del rival llega en cuanto se ve el tile (nace revelada) y desaparece al perderla de vista', () => {
+    const { state, data: d } = duel();
+    state.imps = [];
+    const door = 12 * 64 + 9;
+    state.traps.push({
+      id: state.nextTrapId++,
+      type: 'basicDoor',
+      owner: 1,
+      tile: door,
+      built: true,
+      readyAt: 0,
+      hp: 1500,
+      usesLeft: 0,
+      revealed: true,
+    });
+    const watcher = spawn(state, d, 2, 'goblin', 9.5, 13.5);
+    const p2 = new Follower(2, state);
+    p2.update(state);
+    expect(p2.mirror.state.traps[0]).toMatchObject({ type: 'basicDoor', owner: 1, built: true });
+    // El espejo sabe que ahí hay una puerta ajena (lo usa para las vistas previas).
+    expect(p2.mirror.state.doorAt[door]).toBe(1);
+    watcher.x = 50.5;
+    watcher.y = 50.5;
+    step(state, d);
+    p2.update(state);
+    expect(p2.mirror.state.traps).toHaveLength(0);
+    expect(p2.mirror.state.doorAt[door]).toBe(0);
+  });
+
   describe('trampas reveladas', () => {
     /** Jugador 1 con una trampa armada en (9,12) y el rival con una criatura al lado (la ve). */
     function trapWorld() {

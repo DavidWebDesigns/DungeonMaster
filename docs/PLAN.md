@@ -275,6 +275,7 @@ Todos los números son **[PROPUESTO]**: valores iniciales que se ajustan con par
 - **Tipos:** roca sólida (indestructible), tierra (excavable), muro reforzado, veta de oro, suelo neutral, suelo reclamado (con dueño), agua y lava (intransitables en el MVP), sala (suelo reclamado con sala encima).
 - **Excavar** tierra: 2 s por tile, deja suelo neutral.
 - **Reclamar** suelo neutral: 1,5 s. Pasa a ser del jugador. Solo se construye en suelo reclamado propio.
+- **Puertas** (O básica, I reforzada): se construyen en suelo propio como una trampa; solo su dueño las cruza y los enemigos las rompen a golpes (ver ASSETS.md §6.1).
 - **Reforzar** un muro de tierra adyacente a suelo propio (nivel 1, 8 s; tecla F). **Reforzar II** (tecla V) mejora un muro propio de nivel 1 a nivel 2 (8 s) y exige un Taller de nivel 10. Cualquiera puede excavar un muro reforzado ajeno con sus Imps, pero despacio: 12 s el nivel 1 y 30 s el nivel 2 por Imp (el dueño recibe un aviso al caer).
 - **Reclamar suelo enemigo** sin sala: 3 s, solo si no hay criaturas del dueño a 3 tiles o menos. Si el tile tiene sala, la sala se destruye en ese tile (el oro de un tile de Tesorería se pierde, no se roba).
 - **Vender sala:** devuelve el 50 % del coste de los tiles.

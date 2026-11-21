@@ -55,6 +55,7 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     owner: new Array<number>(map.width * map.height).fill(0),
     goldLeft: new Array<number>(map.width * map.height).fill(0),
     roomAt: new Array<number>(map.width * map.height).fill(0),
+    doorAt: new Array<number>(map.width * map.height).fill(0),
     players: [],
     imps: [],
     creatures: [],

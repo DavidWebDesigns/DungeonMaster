@@ -438,6 +438,7 @@ export function validateDataSet(d: DataSet): DataError[] {
       else if (!room.buildable)
         err(F.traps, `[${i}].requiresRooms[${j}]`, `la sala "${req}" no se puede construir`);
     });
+    if (t.family === 'door') return; // las puertas no se disparan: no llevan nada de lo de abajo
     if (t.family === 'physical' && t.wearPerTrigger === undefined)
       err(F.traps, `[${i}].wearPerTrigger`, `"${t.id}" es física: necesita wearPerTrigger`);
     if (t.family === 'elemental' && t.wearPerTrigger !== undefined)

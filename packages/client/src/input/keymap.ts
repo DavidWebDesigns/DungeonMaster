@@ -14,7 +14,7 @@ export type KeyAction =
   | { type: 'speed'; step: 1 | -1 };
 
 /**
- * Atajos (docs/PLAN.md 10.2): 1 a 9 construyen salas, G H J K L N colocan trampas, Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
+ * Atajos (docs/PLAN.md 10.2): 1 a 9 construyen salas, G H J K L N colocan trampas y O I las puertas (básica y reforzada), Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
  * Tab salta a la siguiente criatura propia. M silencia o activa el sonido. P pausa y [ ] cambian la velocidad (solo en partidas locales). F refuerza (nivel 1), V mejora un muro a nivel 2, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
@@ -23,6 +23,12 @@ export const TRAP_KEYS = ['G', 'H', 'J', 'K', 'L', 'N'] as const;
 
 /** Etiqueta de la tecla de la sala número `index` (0 = la primera construible): 1 a 9. */
 export const roomHotkey = (index: number): string => (index < 9 ? String(index + 1) : '');
+
+/** Teclas de las puertas, en el orden de traps.json (básica, reforzada). */
+export const DOOR_KEYS = ['O', 'I'] as const;
+
+/** Etiqueta de la tecla de la puerta número `index`. */
+export const doorHotkey = (index: number): string => DOOR_KEYS[index] ?? '';
 
 /** Etiqueta de la tecla de la trampa número `index`. */
 export const trapHotkey = (index: number): string => TRAP_KEYS[index] ?? '';
@@ -37,8 +43,13 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
   }
   const trapIndex = TRAP_KEYS.findIndex((t) => t.toLowerCase() === k);
   if (trapIndex >= 0) {
-    const trap = data.traps[trapIndex];
+    const trap = data.traps.filter((t) => t.family !== 'door')[trapIndex];
     return trap ? { type: 'tool', tool: { kind: 'trap', trap: trap.id } } : null;
+  }
+  const doorIndex = DOOR_KEYS.findIndex((d) => d.toLowerCase() === k);
+  if (doorIndex >= 0) {
+    const door = data.traps.filter((t) => t.family === 'door')[doorIndex];
+    return door ? { type: 'tool', tool: { kind: 'trap', trap: door.id } } : null;
   }
   switch (k) {
     case 'q':

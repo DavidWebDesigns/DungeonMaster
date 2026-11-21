@@ -5,6 +5,7 @@
  */
 import type { AbilityDef, AbilityEffect, ImmunityKind, StatusKind } from '../schemas';
 import { creatureMaxHp } from './creatureStats';
+import { doorBlocks } from './doors';
 import type { Rules } from './rules';
 import type { Creature, Imp, MatchState, Status } from './types';
 
@@ -133,7 +134,7 @@ export function applyLifesteal(rules: Rules, attacker: Creature, dealt: number):
 export function canStandOn(
   state: MatchState,
   rules: Rules,
-  c: Pick<Creature, 'type' | 'level'>,
+  c: Pick<Creature, 'type' | 'level' | 'owner'>,
   tile: number,
 ): boolean {
   return walkableFor(state, rules, c)(tile);
@@ -143,14 +144,17 @@ export function canStandOn(
 export function walkableFor(
   state: MatchState,
   rules: Rules,
-  c: Pick<Creature, 'type' | 'level'>,
+  c: Pick<Creature, 'type' | 'level' | 'owner'>,
 ): (tile: number) => boolean {
   const cross = passive(rules, c, 'crossTerrain');
-  if (!cross) return (tile) => rules.walkable[state.terrain[tile] as number] === true;
+  // Una puerta ajena cierra el paso (la propia deja pasar).
+  if (!cross)
+    return (tile) =>
+      rules.walkable[state.terrain[tile] as number] === true && !doorBlocks(state, tile, c.owner);
   const extra = new Set(cross.effect.terrains.map((id) => rules.terrainIndex[id]));
   return (tile) => {
     const t = state.terrain[tile] as number;
-    return rules.walkable[t] === true || extra.has(t);
+    return (rules.walkable[t] === true || extra.has(t)) && !doorBlocks(state, tile, c.owner);
   };
 }
 

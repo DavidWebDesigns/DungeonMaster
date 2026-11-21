@@ -5,6 +5,7 @@
  */
 import type { DataSet } from '../data';
 import { makeImp } from '../sim/createMatch';
+import { syncDoors } from '../sim/doors';
 import { newCreature } from './../sim/portal';
 import { rulesOf } from '../sim/rules';
 import type { Creature, MatchState, PlayerId, PlayerState, Room, Task, Trap } from '../sim/types';
@@ -48,6 +49,7 @@ export class Mirror {
       owner: new Array<number>(n).fill(0),
       goldLeft: new Array<number>(n).fill(0),
       roomAt: new Array<number>(n).fill(0),
+      doorAt: new Array<number>(n).fill(0),
       players: [],
       imps: [],
       creatures: [],
@@ -131,6 +133,8 @@ export class Mirror {
     s.traps = [...this.traps.values()].sort((a, b) => a.id - b.id);
     s.tasks = [...this.tasks.values()].sort((a, b) => a.id - b.id);
     if (tilesChanged) s.mapVersion++;
+    // Las puertas que conoce este cliente (las suyas y las rivales a la vista) cierran el paso en sus vistas previas.
+    syncDoors(s, this.rules);
   }
 
   private applyScalars(sc: Record<string, unknown>): void {

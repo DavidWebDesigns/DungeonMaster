@@ -78,15 +78,20 @@ export function secondsToTicks(rules: Rules, seconds: number): number {
 
 /** Distancia de camino (andando) desde un tile a todos los demás, con los costes de los datos. */
 export function walkDistances(
-  state: { width: number; height: number; terrain: ArrayLike<number> },
+  state: { width: number; height: number; terrain: ArrayLike<number>; doorAt?: ArrayLike<number> },
   rules: Rules,
   from: number,
+  /** Quien anda: las puertas ajenas le cierran el paso (sin indicarlo, se ignoran las puertas). */
+  owner?: number,
 ): Float64Array {
   const { straightCost, diagonalCost } = rules.data.global.pathfinding;
+  const doors = owner === undefined ? undefined : state.doorAt;
   return distanceField({
     width: state.width,
     height: state.height,
-    walkable: (t) => rules.walkable[state.terrain[t] as number] === true,
+    walkable: (t) =>
+      rules.walkable[state.terrain[t] as number] === true &&
+      (doors === undefined || doors[t] === 0 || doors[t] === owner),
     start: from,
     straightCost,
     diagonalCost,
