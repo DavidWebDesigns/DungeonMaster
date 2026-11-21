@@ -69,6 +69,9 @@ test('sesión completa: excavar, minar, construir las 5 salas y mantener el rend
       }
     s.mapVersion++;
     s.players[0]!.gold = 30000;
+    // El HUD (9 salas en dos filas) tapa la parte baja del mapa: se centra la cámara en la zona de construcción.
+    const g = dm() as unknown as { camera: { targetX: number; targetZ: number } };
+    g.camera = { ...g.camera, targetX: 6, targetZ: 13 };
   });
   // El dibujo se pone al día en el siguiente tick: sin esta espera el ratón apuntaría a bloques que aún se ven como muros.
   await page.waitForTimeout(300);
