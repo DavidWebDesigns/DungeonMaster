@@ -6,7 +6,7 @@ interface DmHook {
     state: {
       tick: number;
       players: Array<{ gold: number; mana: number }>;
-      rooms: Array<{ type: string }>;
+      rooms: Array<{ type: string; tiles: number[] }>;
       imps: unknown[];
       terrain: number[];
       owner: number[];
@@ -102,6 +102,12 @@ test('las 5 salas se construyen con las teclas 1 a 5', async ({ page }) => {
       }
     s.mapVersion++;
     s.players[0]!.gold = 20000;
+    // El HUD (9 salas en dos filas) tapa la parte baja del mapa: se centra la cámara en la zona de construcción.
+    (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
+      ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
+      targetX: 6,
+      targetZ: 13,
+    };
   });
   const spots: Array<[string, string, [number, number]]> = [
     ['1', 'lair', [2, 11]],
@@ -235,4 +241,54 @@ test('un clic en el HUD no marca nada en el mapa', async ({ page }) => {
         .log.length,
   );
   expect(log).toBe(0);
+});
+
+test('arrastrar 12 tiles de Biblioteca da una sala de nivel 10 y otra de nivel 2; el texto lo anuncia', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state;
+    const claimed = g.data.terrain.findIndex((t) => t.id === 'claimedFloor');
+    for (let y = 11; y < 20; y++)
+      for (let x = 2; x < 11; x++) {
+        s.terrain[y * s.width + x] = claimed;
+        s.owner[y * s.width + x] = 1;
+      }
+    s.mapVersion++;
+    s.players[0]!.gold = 20000;
+    (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
+      ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
+      targetX: 6,
+      targetZ: 13,
+    };
+  });
+  await page.keyboard.press('5'); // Biblioteca
+  const at = (x: number, y: number) =>
+    page.evaluate(
+      ([tx, ty]) => (window as unknown as { __dm: DmHook }).__dm.tileToScreen(tx!, ty!),
+      [x, y] as const,
+    );
+  const a = await at(2, 11);
+  const b = await at(7, 12); // 6 × 2 = 12 tiles
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 6 });
+  await expect(page.locator('.infoline')).toContainText(
+    'sala nueva de nivel 10 + sala nueva de nivel 2',
+  );
+  await page.screenshot({ path: 'test-results/room-levels.png' });
+  await page.mouse.up();
+  await fastForward(page, 1);
+  const levels = await page.evaluate(() =>
+    (window as unknown as { __dm: DmHook }).__dm.sandbox.state.rooms
+      .filter((r) => r.type === 'library')
+      .map((r) => r.tiles.length)
+      .sort((x, y) => y - x),
+  );
+  expect(levels).toEqual([10, 2]);
+  // Con el cursor sobre la sala llena, la tarjeta muestra su nivel.
+  await page.keyboard.press('Escape');
+  await page.mouse.move(a.x, a.y);
+  await expect(page.locator('.infoline')).toContainText('Biblioteca · nivel 10/10 (completa)');
 });

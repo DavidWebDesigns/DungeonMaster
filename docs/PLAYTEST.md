@@ -61,6 +61,9 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - Al soltar un Imp o una criatura, elige lo más cercano **andando**, no en línea recta.
 - Veta de diamantes (cian) en el centro del mapa: se marca y se mina como el oro, pero no se agota; desmárcala para dejar de minarla.
 
+- **Salas con nivel:** arrastra para construir; el texto superior dice cuántas salas salen ("sala nueva de nivel 10 + sala nueva de nivel 2"). Pasa el cursor por una sala para ver su nivel. Un clic suelto construye 1 tile.
+- **Trampas:** tras su primer disparo el rival la ve y la puede atacar (también las elementales); tus Imps las reparan solos.
+
 ## Qué apuntar
 
 Una línea por cosa, con el momento ("minuto 6, tras el segundo día de pago"):

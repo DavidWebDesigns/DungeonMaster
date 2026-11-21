@@ -43,7 +43,11 @@ const asUnit = (u: number | HoverUnit | null): HoverUnit | null =>
 export type Preview =
   | { kind: 'none' }
   | { kind: 'tiles'; action: TileAction; valid: Point[]; invalid: Point[] }
-  | { kind: 'room'; room: RoomPreview }
+  | {
+      kind: 'room';
+      room: RoomPreview;
+      /** Ancho del mapa, para pasar de índice de tile a coordenadas. */ width: number;
+    }
   | { kind: 'target'; tile: Point; ok: boolean };
 
 export interface InputHost {
@@ -239,7 +243,11 @@ export class InputModel {
       const anchor = this.drag?.start ?? this.hover;
       if (!def || !anchor) return { kind: 'none' };
       const rect = roomRectFromDrag(def.minSize, anchor, this.hover ?? anchor, data.map);
-      return { kind: 'room', room: previewRoom(state, data, player, t.room, rect) };
+      return {
+        kind: 'room',
+        room: previewRoom(state, data, player, t.room, rect),
+        width: state.width,
+      };
     }
 
     if (!this.hover) return { kind: 'none' };

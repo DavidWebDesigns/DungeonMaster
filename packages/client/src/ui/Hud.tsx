@@ -17,6 +17,8 @@ export interface HudProps {
   surrenderArmed?: boolean;
   /** Indicador de pausa o velocidad (solo en partidas locales). */
   speedLabel?: string;
+  /** Línea de información de salas: lo que se va a construir o la sala bajo el cursor. */
+  infoLine?: string;
 }
 
 const fmt = (n: number) => n.toLocaleString('es');
@@ -40,6 +42,7 @@ export function Hud({
   surrenderArmed,
   endStats,
   speedLabel,
+  infoLine,
 }: HudProps) {
   return (
     <div class="hud">
@@ -118,6 +121,7 @@ export function Hud({
         </div>
       )}
 
+      {infoLine && <div class="infoline">{infoLine}</div>}
       <div class="notices">
         {model.notices.map((text, i) => (
           <div key={`${i}-${text}`} class="notice">
@@ -171,7 +175,7 @@ export function Hud({
               class={`btn${r.active ? ' active' : ''}${r.available ? '' : ' locked'}${r.affordable ? '' : ' poor'}`}
               title={
                 r.available
-                  ? `${r.name}: ${fmt(r.costPerTile)} de oro por tile, mínimo ${r.minSize}`
+                  ? `${r.name}: ${fmt(r.costPerTile)} de oro por tile. Hasta ${r.maxTiles} tiles conectados por sala (nivel ${r.maxTiles}); el siguiente abre otra sala.`
                   : `Requiere: ${r.requires}`
               }
               onClick={() => onTool({ kind: 'build', room: r.id })}

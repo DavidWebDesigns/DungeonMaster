@@ -60,10 +60,16 @@ test.beforeEach(async ({ page }) => {
   await page.waitForTimeout(300);
 });
 
+/** Arrastra una Guarida de 3×2 tiles (6 tiles = 3 cupos de Goblin); un clic suelto solo da 1 tile. */
 async function buildLair(page: Page, x = 2, y = 11) {
   await page.keyboard.press('1');
-  const p = await page.evaluate(([tx, ty]) => dm().tileToScreen(tx!, ty!), [x, y] as const);
-  await page.mouse.click(p.x, p.y);
+  const a = await page.evaluate(([tx, ty]) => dm().tileToScreen(tx!, ty!), [x, y] as const);
+  const b = await page.evaluate(([tx, ty]) => dm().tileToScreen(tx!, ty!), [x + 2, y + 1] as const);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move((a.x + b.x) / 2, (a.y + b.y) / 2, { steps: 4 });
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await page.mouse.up();
   await advance(page, 1);
   // Tras construir se sigue en modo construir; Esc vuelve a la herramienta de excavar (y de recoger criaturas).
   await page.keyboard.press('Escape');

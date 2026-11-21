@@ -59,6 +59,8 @@ export function styleForTile(
     if (room) {
       height = ROOM_HEIGHT;
       color = mix(ROOM_COLORS[room.type] ?? FALLBACK.color, playerColor(room.owner), 0.25);
+      // Dos salas del mismo tipo pegadas no tienen borde: se distinguen por un ligero cambio de tono según su id.
+      if (room.id % 2 === 0) color = mix(color, [1, 1, 1], 0.12);
     }
   } else if (owner !== 0) {
     // Suelo reclamado (o muro reforzado): lleva el color de su dueño.

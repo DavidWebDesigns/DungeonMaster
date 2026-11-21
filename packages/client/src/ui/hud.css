@@ -377,3 +377,21 @@
   color: #f0c84a;
   font-weight: 700;
 }
+
+/* Información de salas (niveles al construir o sala bajo el cursor). */
+.infoline {
+  position: absolute;
+  top: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  background: rgba(28, 20, 36, 0.9);
+  border: 1px solid #54405f;
+  border-radius: 6px;
+  color: #efe3cf;
+  font:
+    600 13px system-ui,
+    sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+}

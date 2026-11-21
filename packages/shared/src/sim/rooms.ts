@@ -116,11 +116,63 @@ export function removeRoomTile(state: MatchState, rules: Rules, tile: number): v
   if (owner) clampGold(state, rules, owner);
 }
 
+/** Una sala resultante de construir: una existente que se amplía (`roomId`) o una nueva (`null`), con todos sus tiles. */
+export interface RoomPiece {
+  roomId: number | null;
+  /** Tiles finales de la sala, ordenados. El nivel es `tiles.length`. */
+  tiles: number[];
+}
+
 /**
- * Construye una sala ya validada y cobra su coste (por tile). Las salas tienen como máximo `maxTiles` tiles conectados:
- * primero se rellenan las salas vecinas del mismo tipo que no estén llenas (por orden de id) y lo que sobra forma salas
- * nuevas de hasta `maxTiles` tiles, empezando por el tile de menor índice. Todo es determinista (solo depende de los
- * índices de tile y de los ids). Devuelve los ids de las salas creadas o ampliadas.
+ * Cómo se repartirá un rectángulo al construirlo (sin tocar el estado): primero se rellenan las salas vecinas del
+ * mismo tipo y dueño que no estén llenas (por orden de id) y lo que sobra forma salas nuevas de hasta `maxTiles`
+ * tiles, empezando por el tile de menor índice. Solo depende de los índices de tile y de los ids, así que es
+ * determinista. La simulación (`buildRoomNow`) y la vista previa del cliente usan esta misma función.
+ */
+export function planRoomBuild(
+  state: MatchState,
+  rules: Rules,
+  owner: number,
+  type: string,
+  rect: { x: number; y: number; w: number; h: number },
+): RoomPiece[] {
+  const max = roomMaxTiles(rules, type);
+  const pool = new Set<number>();
+  for (let y = rect.y; y < rect.y + rect.h; y++)
+    for (let x = rect.x; x < rect.x + rect.w; x++) pool.add(y * state.width + x);
+  const grown = new Map<number, number[]>();
+  // 1. Rellenar las salas vecinas del mismo tipo (hasta que ninguna crezca más).
+  let changed = true;
+  while (changed && pool.size > 0) {
+    changed = false;
+    for (const room of state.rooms) {
+      if (room.owner !== owner || room.type !== type) continue;
+      const tiles = grown.get(room.id) ?? [...room.tiles];
+      if (tiles.length >= max) continue;
+      if (growInto(state, tiles, pool, max)) {
+        changed = true;
+        grown.set(room.id, tiles);
+      }
+    }
+  }
+  const out: RoomPiece[] = [...grown].map(([roomId, tiles]) => ({
+    roomId,
+    tiles: tiles.sort((a, b) => a - b),
+  }));
+  // 2. Lo que sobra: salas nuevas de hasta `max` tiles conectados.
+  while (pool.size > 0) {
+    const seed = Math.min(...pool);
+    pool.delete(seed);
+    const tiles = [seed];
+    growInto(state, tiles, pool, max);
+    out.push({ roomId: null, tiles: tiles.sort((a, b) => a - b) });
+  }
+  return out;
+}
+
+/**
+ * Construye una sala ya validada y cobra su coste (por tile). Las salas tienen como máximo `maxTiles` tiles conectados
+ * (ver `planRoomBuild` para cómo se reparte el rectángulo).
  */
 export function buildRoomNow(
   state: MatchState,
@@ -132,44 +184,16 @@ export function buildRoomNow(
 ): void {
   const def = rules.roomDefs[type];
   if (!def) return;
-  const max = roomMaxTiles(rules, type);
-  const pool = new Set<number>();
-  for (let y = rect.y; y < rect.y + rect.h; y++)
-    for (let x = rect.x; x < rect.x + rect.w; x++) pool.add(y * state.width + x);
-  player.gold -= def.goldPerTile * pool.size;
+  player.gold -= def.goldPerTile * rect.w * rect.h;
   const touched: number[] = [];
-
-  // 1. Rellenar las salas vecinas del mismo tipo (hasta que ninguna crezca más).
-  let changed = true;
-  while (changed && pool.size > 0) {
-    changed = false;
-    for (const room of state.rooms) {
-      if (room.owner !== player.id || room.type !== type || room.tiles.length >= max) continue;
-      if (growInto(state, room.tiles, pool, max)) {
-        changed = true;
-        room.tiles.sort((a, b) => a - b);
-        for (const t of room.tiles) state.roomAt[t] = room.id;
-        if (!touched.includes(room.id)) touched.push(room.id);
-      }
+  for (const piece of planRoomBuild(state, rules, player.id, type, rect)) {
+    let room = piece.roomId === null ? undefined : getRoom(state, piece.roomId);
+    if (!room) {
+      room = { id: state.nextRoomId++, type, owner: player.id, tiles: [], timer: 0, stock: 0 };
+      state.rooms.push(room);
     }
-  }
-  // 2. Lo que sobra: salas nuevas de hasta `max` tiles conectados.
-  while (pool.size > 0) {
-    const seed = Math.min(...pool);
-    pool.delete(seed);
-    const tiles = [seed];
-    growInto(state, tiles, pool, max);
-    tiles.sort((a, b) => a - b);
-    const room: Room = {
-      id: state.nextRoomId++,
-      type,
-      owner: player.id,
-      tiles,
-      timer: 0,
-      stock: 0,
-    };
-    for (const t of tiles) state.roomAt[t] = room.id;
-    state.rooms.push(room);
+    room.tiles = piece.tiles;
+    for (const t of room.tiles) state.roomAt[t] = room.id;
     touched.push(room.id);
   }
   state.mapVersion++;

@@ -40,6 +40,8 @@ export interface RoomButton {
   /** Coste de la sala más pequeña posible. */
   minCost: number;
   minSize: string;
+  /** Tiles máximos por sala (su nivel máximo). */
+  maxTiles: number;
   affordable: boolean;
   /** Nombres de las salas que faltan por construir antes de poder construir esta (vacío si ninguna). */
   requires: string;
@@ -225,6 +227,7 @@ export function buildHudModel(
       costPerTile: r.goldPerTile,
       minCost: r.goldPerTile * minTiles,
       minSize: `${r.minSize.w}×${r.minSize.h}`,
+      maxTiles: r.maxTiles ?? 0,
       affordable: player.gold >= r.goldPerTile * minTiles,
       requires: joinNames(missing.map((id) => data.rooms.find((x) => x.id === id)?.name ?? id)),
       available: missing.length === 0,

@@ -17,6 +17,8 @@ const COLORS = {
   invalid: [1, 0.25, 0.25] as RGB,
   noGold: [1, 0.65, 0.15] as RGB,
   mark: [1, 0.95, 0.5] as RGB,
+  /** Tono alterno para distinguir salas contiguas en la previsión. */
+  validAlt: [0.25, 0.85, 0.95] as RGB,
 };
 
 export interface OverlayTile {
@@ -39,8 +41,18 @@ export function overlayTiles(preview: Preview): OverlayTile[] {
     case 'target':
       return [{ tile: preview.tile, color: preview.ok ? COLORS.valid : COLORS.invalid }];
     case 'room': {
-      const { rect, valid, error } = preview.room;
+      const { rect, valid, error, pieces } = preview.room;
       const color = valid ? COLORS.valid : error === 'NO_GOLD' ? COLORS.noGold : COLORS.invalid;
+      // Válida: cada sala resultante lleva un tono distinto, para ver dónde acaba una y empieza la siguiente.
+      if (valid && pieces.length > 1) {
+        const w = preview.width;
+        return pieces.flatMap((p, i) =>
+          p.tiles.map((t) => ({
+            tile: { x: t % w, y: Math.floor(t / w) },
+            color: (i % 2 === 0 ? COLORS.valid : COLORS.validAlt) as RGB,
+          })),
+        );
+      }
       const out: OverlayTile[] = [];
       for (let y = rect.y; y < rect.y + rect.h; y++)
         for (let x = rect.x; x < rect.x + rect.w; x++) out.push({ tile: { x, y }, color });

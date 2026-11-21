@@ -14,6 +14,7 @@ import { keyAction } from './input/keymap';
 import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { FloaterList, floaterPose } from './feel/anim';
 import { speedLabel } from './ui/speedLabel';
+import { roomHoverText, roomPreviewText } from './input/roomInfo';
 import { minimapPixels } from './ui/minimap';
 import { MinimapView } from './ui/minimapView';
 import { errorMessage } from './input/messages';
@@ -341,7 +342,8 @@ export class Game {
     this.checkTreasury();
     const armed = state.tick < this.surrenderArmedUntil;
     const speed = speedLabel(this.sandbox.paused, this.sandbox.speed);
-    const key = `${speed}|${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
+    const info = this.roomInfoLine();
+    const key = `${speed}|${info}|${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
     if (key === this.hudKey) return;
     this.hudKey = key;
     const model = buildHudModel(
@@ -361,6 +363,7 @@ export class Game {
         endStats: this.endStatsRows(),
         surrenderArmed: armed,
         speedLabel: speed,
+        infoLine: info,
         onSurrender: () => this.surrender(),
         onRestart: () => window.location.reload(),
         onSelectCreature: (id) => {
@@ -521,6 +524,24 @@ export class Game {
       // Sin almacenamiento (modo privado): solo vale para esta partida.
     }
     this.say(this.audio.muted ? 'Sonido desactivado (M para activarlo).' : 'Sonido activado.');
+  }
+
+  /** Qué se va a construir (con niveles y coste) o, con el cursor sobre una sala, su nivel. */
+  private roomInfoLine(): string {
+    const preview = this.input.preview();
+    if (preview.kind === 'room') {
+      const name =
+        this.data.rooms.find((r) => r.id === (this.input.tool as { room?: string }).room)?.name ??
+        '';
+      return roomPreviewText(preview.room, name);
+    }
+    const hover = this.input.hover;
+    if (!hover) return '';
+    return roomHoverText(
+      this.sandbox.state,
+      this.data,
+      hover.y * this.sandbox.state.width + hover.x,
+    );
   }
 
   /** Minimapa: la imagen se rehace cada tick; el recuadro de lo que se ve, cada fotograma. */

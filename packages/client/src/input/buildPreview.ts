@@ -3,7 +3,9 @@
  * Usa `previewCommand`, así que las reglas son exactamente las de la simulación.
  */
 import {
+  planRoomBuild,
   previewCommand,
+  rulesOf,
   type DataSet,
   type ErrorCode,
   type MatchState,
@@ -55,6 +57,20 @@ export interface RoomPreview {
   error?: ErrorCode;
   /** Coste total en oro. */
   cost: number;
+  /**
+   * Cómo se repartirá lo construido (la misma función que usa la simulación): una entrada por sala resultante, con su
+   * nivel final (= tiles) y si amplía una sala que ya existía. Vacío si no se puede construir.
+   */
+  pieces: RoomPiece[];
+}
+
+export interface RoomPiece {
+  /** Índices de tile de la sala resultante. */
+  tiles: number[];
+  /** Nivel final de la sala (su número de tiles). */
+  level: number;
+  /** Amplía una sala que ya existía en vez de abrir una nueva. */
+  extends: boolean;
 }
 
 export function previewRoom(
@@ -67,5 +83,11 @@ export function previewRoom(
   const def = data.rooms.find((r) => r.id === room);
   const cost = (def?.goldPerTile ?? 0) * rect.w * rect.h;
   const res = previewCommand(state, data, playerId, { type: 'buildRoom', room, rect });
-  return res.ok ? { rect, valid: true, cost } : { rect, valid: false, error: res.error, cost };
+  if (!res.ok) return { rect, valid: false, error: res.error, cost, pieces: [] };
+  const pieces = planRoomBuild(state, rulesOf(data), playerId, room, rect).map((p) => ({
+    tiles: p.tiles,
+    level: p.tiles.length,
+    extends: p.roomId !== null,
+  }));
+  return { rect, valid: true, cost, pieces };
 }

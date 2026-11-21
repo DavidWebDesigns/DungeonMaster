@@ -13,7 +13,7 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
    velocidad, sueldo, tiles de cama), `needs`, `attraction` (qué salas pide y su peso) y `flags`.
 2. **Cómo llega:** `attraction.requires` lista las salas que el jugador debe tener (cada una con `minTiles` opcional). El Portal la atrae si se cumplen
    y hay cama libre. Una criatura sin `attraction` (`null`) no llega sola (como el Imp). Los **cupos** (`attraction.slots`) limitan cuántas puede
-   tener: `{ "fromRoom": "lair" }` = 1 por sala construida de ese tipo; `{ "fromCreature": "goblin", "unlockEvery": 3 }` = 1 por cada 3 goblins vivos;
+   tener: `{ "fromRoom": "lair", "tilesPerSlot": 2 }` = 1 por cada 2 tiles de Guarida; `{ "fromCreature": "goblin", "unlockEvery": 10 }` = 1 por cada 10 goblins vivos;
    `maxPerPlayer` es un tope duro. Una criatura sin cama (`lairTiles` 0) no puede dormir y debe pedir una sala que no exista al empezar.
 3. **`packages/client/src/render/creatureStyle.ts` → `CREATURE_LOOKS`**: color, radio y altura del placeholder. Hasta que haya modelo 3D (`modelId`
    en `assets/assetManifest.json`), se dibuja una cápsula.
@@ -22,7 +22,7 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
 
 ## Añadir una sala
 
-1. **`data/mvp/rooms.json`**: `id`, `name`, `modelId`, `buildable`, `goldPerTile`, `minSize`, `sellRefund`. Los parámetros propios de la sala son
+1. **`data/mvp/rooms.json`**: `id`, `name`, `modelId`, `buildable`, `goldPerTile`, `minSize`, `maxTiles` (las construibles; 10 = nivel máximo), `sellRefund`. Los parámetros propios de la sala son
    campos opcionales de `schemas/rooms.ts` (por ejemplo `goldCapacityPerTile`).
 2. **`packages/shared/src/data/validateDataSet.ts` → `REQUIRED_ROOM_FIELDS`**: añade el `id` con los campos que la sala exige.
    (Es la lista de salas que el juego da por obligatorias.)
@@ -30,7 +30,8 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
 4. Si da un efecto (como el Criadero o la Sala de entrenamiento), el efecto es lógica nueva en `packages/shared/src/sim/` con sus pruebas.
 5. Atajos de teclado: las salas construibles toman `1`, `2`, ... en el orden del archivo (hay sitio hasta el 9; la prueba avisa si te pasas) y
    las trampas las letras `G H J K L N` (`TRAP_KEYS` en `input/keymap.ts`).
-6. Progresión: `requiresRooms` lista las salas que el jugador debe tener antes (el HUD la muestra bloqueada y el aviso nombra lo que falta). Solo
+6. Niveles: una sala son tiles conectados del mismo tipo y su nivel es su número de tiles (1 a `maxTiles`); el siguiente tile abre otra sala. Los cupos de una criatura salen de los tiles (`slots.fromRoom` + `tilesPerSlot`) y las superiores piden una sala de nivel 10 (`requires[].minLevel`) y 10 de la base (`unlockEvery`).
+7. Progresión: `requiresRooms` lista las salas que el jugador debe tener antes (el HUD la muestra bloqueada y el aviso nombra lo que falta). Solo
    las salas nuevas deberían llevarlo.
 
 ## Añadir una trampa
