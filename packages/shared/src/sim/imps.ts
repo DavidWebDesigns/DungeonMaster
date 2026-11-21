@@ -55,6 +55,14 @@ export function assignTasks(state: MatchState, rules: Rules): void {
   for (const t of state.tasks.slice()) {
     if (!isTaskValid(state, rules, t)) removeTask(state, t.id);
   }
+  // Toda trampa propia dañada pide reparación (una tarea por tile; los Imps la atienden por prioridad).
+  for (const trap of state.traps) {
+    if (!trap.built || state.tasks.some((k) => k.tile === trap.tile && k.owner === trap.owner))
+      continue;
+    const max = rules.data.traps.find((d) => d.id === trap.type)?.hp ?? 0;
+    if (trap.hp < max && state.players.some((p) => p.id === trap.owner && !p.eliminated))
+      setTask(state, trap.owner, 'repairTrap', trap.tile);
+  }
 
   for (const player of state.players) {
     if (player.eliminated) continue;
@@ -131,7 +139,10 @@ function computePath(state: MatchState, rules: Rules, imp: Imp): boolean {
     if (goals.size === 0) return false;
     isGoal = (i) => goals.has(i);
     // Los destinos están a 1 tile (recto) del tile de la tarea, salvo reclamar, que es el propio tile.
-    const slack = task.kind === 'claim' || task.kind === 'buildTrap' ? 0 : straightCost;
+    const slack =
+      task.kind === 'claim' || task.kind === 'buildTrap' || task.kind === 'repairTrap'
+        ? 0
+        : straightCost;
     heuristic = (i) => Math.max(0, octile(state, i, task.tile, straightCost, diagonalCost) - slack);
   }
 
@@ -225,6 +236,26 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
       const canHaul = imp.carry > 0 && imp.haulBlockedVersion !== state.mapVersion;
       resetImp(state, imp);
       if (canHaul) startHaul(imp);
+    }
+    return;
+  }
+
+  if (task.kind === 'repairTrap') {
+    // Reparar va por vida por segundo (con el bono de bofetada), hasta la vida máxima de la trampa.
+    const trap = state.traps.find((t) => t.tile === task.tile && t.owner === task.owner);
+    const max = rules.data.traps.find((d) => d.id === trap?.type)?.hp ?? 0;
+    if (trap)
+      trap.hp = Math.min(
+        max,
+        trap.hp + rules.data.global.work.trapRepairHpPerSecond * rules.dt * speed,
+      );
+    if (!trap || trap.hp >= max - EPS) {
+      if (trap) trap.hp = max;
+      completeTask(state, rules, task, events);
+      imp.taskId = 0;
+      imp.goal = 'none';
+      imp.mode = 'idle';
+      imp.work = 0;
     }
     return;
   }

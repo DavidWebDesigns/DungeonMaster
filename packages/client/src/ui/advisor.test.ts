@@ -78,6 +78,19 @@ describe('el consejero', () => {
     );
   });
 
+  it('avisa de que han destruido una trampa propia, con su nombre, y no de las ajenas', () => {
+    const e = {
+      type: 'trapDestroyed',
+      playerId: 1,
+      trap: 'spikeTrap',
+      tile: 7,
+      x: 1,
+      y: 1,
+    } as const;
+    expect(advise([e])[0]!.text).toBe('Han destruido tu trampa de pinchos.');
+    expect(advise([{ ...e, playerId: 2 }])).toEqual([]);
+  });
+
   it('avisa de que una trampa propia quedó lista y de que atrapó a alguien, con su nombre', () => {
     const ready = advise([
       { type: 'trapBuilt', playerId: 1, trapId: 3, trap: 'spikeTrap', tile: 5 },

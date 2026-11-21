@@ -29,8 +29,9 @@ export type TrapEffect = z.infer<typeof TrapEffect>;
 
 /**
  * Una trampa (traps.json, ASSETS.md §6). Se coloca en un tile de suelo propio, como una sala, y la construyen los Imps.
- * Hace falta tener construidas todas las salas de `requiresRooms`. Dos familias: las **físicas** tienen vida (`hp`) y se
- * desgastan con cada disparo; las **elementales** tienen `uses` usos y se consumen al gastarlos.
+ * Hace falta tener construidas todas las salas de `requiresRooms`. Todas tienen vida (`hp`): tras su primer disparo quedan
+ * reveladas y los enemigos pueden atacarlas; los Imps las reparan. Dos familias: las **físicas** se desgastan con cada
+ * disparo (`wearPerTrigger`); las **elementales** tienen `uses` usos y se consumen al gastarlos.
  */
 export const TrapDef = z.strictObject({
   id: Id,
@@ -47,8 +48,9 @@ export const TrapDef = z.strictObject({
   triggerRadius: PositiveNumber,
   /** Segundos hasta poder dispararse de nuevo. */
   cooldownSeconds: Seconds,
-  /** Físicas: vida y desgaste por disparo. */
-  hp: PositiveInt.optional(),
+  /** Vida de la trampa: los enemigos pueden atacarla una vez revelada y los Imps la reparan. */
+  hp: PositiveInt,
+  /** Físicas: vida que pierde en cada disparo. */
   wearPerTrigger: PositiveInt.optional(),
   /** Elementales: usos antes de consumirse. */
   uses: PositiveInt.optional(),

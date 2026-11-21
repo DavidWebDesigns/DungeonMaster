@@ -129,7 +129,13 @@ describe('colocar trampas', () => {
       hp: 1200,
       usesLeft: 0,
     });
-    expect(state.traps[1]).toMatchObject({ type: 'fireTrap', built: false, hp: 0, usesLeft: 5 });
+    expect(state.traps[1]).toMatchObject({
+      type: 'fireTrap',
+      built: false,
+      hp: 900,
+      usesLeft: 5,
+      revealed: false,
+    });
     expect(state.tasks.filter((t) => t.kind === 'buildTrap')).toHaveLength(2);
   });
 
@@ -185,9 +191,10 @@ describe('colocar trampas', () => {
   it('vender lo ajeno o lo que no existe falla', () => {
     const { state, data } = tw([...PHYSICAL]);
     trap(state, data, 'spikeTrap', 9, 12);
+    // Una trampa ajena y un tile sin trampa dan la MISMA respuesta (si no, se podrían sondear trampas ocultas).
     expect(applyCommand(state, data, 2, { type: 'sellTrap', tile: { x: 9, y: 12 } })).toEqual({
       ok: false,
-      error: 'NOT_OWNER',
+      error: 'INVALID_TARGET',
     });
     expect(applyCommand(state, data, 1, { type: 'sellTrap', tile: { x: 10, y: 12 } })).toEqual({
       ok: false,

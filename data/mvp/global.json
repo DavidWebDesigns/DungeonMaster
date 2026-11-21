@@ -35,7 +35,8 @@
     "enemyClaimSeconds": 3,
     "enemyClaimBlockRadius": 3,
     "reinforceSeconds": 4,
-    "autoClaimRadius": 10
+    "autoClaimRadius": 10,
+    "trapRepairHpPerSecond": 50
   },
   "connection": {
     "reconnectSeconds": 120,

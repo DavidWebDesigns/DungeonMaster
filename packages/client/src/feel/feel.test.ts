@@ -321,6 +321,36 @@ describe('efectos de trampas', () => {
     expect(bursts(blast)[0]).toMatchObject({ color: [1, 0.55, 0.2] });
   });
 
+  it('una trampa destruida levanta escombros y suena; fuera de la vista no', () => {
+    const e = {
+      type: 'trapDestroyed',
+      playerId: 1,
+      trap: 'spikeTrap',
+      tile: 5,
+      x: 8.5,
+      y: 15.5,
+    } as const;
+    const out = fx([e]);
+    expect(bursts(out)).toHaveLength(1);
+    expect(sounds(out)).toContain('death');
+    expect(fx([e], () => false)).toEqual([]);
+  });
+
+  it('un golpe a una trampa levanta polvo (como una sala), no chispas rojas', () => {
+    const out = fx([
+      {
+        type: 'hit',
+        attackerOwner: 2,
+        targetOwner: 1,
+        targetKind: 'trap',
+        damage: 50,
+        x: 8.5,
+        y: 15.5,
+      },
+    ]);
+    expect(bursts(out)[0]).toMatchObject({ color: [0.6, 0.55, 0.5] });
+  });
+
   it('no se ve lo que pasa fuera de la vista, y una trampa construida por el rival no suena', () => {
     expect(
       fx([{ type: 'trapTriggered', playerId: 2, trap: 'spikeTrap', x: 40, y: 40 }], () => false),

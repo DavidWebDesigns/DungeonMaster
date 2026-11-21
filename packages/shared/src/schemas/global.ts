@@ -47,6 +47,8 @@ export const GlobalConfig = z.strictObject({
     reinforceSeconds: PositiveNumber,
     /** Radio (en tiles) en que un Imp ocioso busca suelo sin dueño que reclamar por su cuenta. */
     autoClaimRadius: PositiveInt,
+    /** Vida que un Imp devuelve por segundo a una trampa dañada. */
+    trapRepairHpPerSecond: PositiveNumber,
   }),
   connection: z.strictObject({
     reconnectSeconds: Seconds,

@@ -420,8 +420,8 @@ describe('errores de referencias cruzadas', () => {
     const trap = (raw: ReturnType<typeof realRawData>, id: string) =>
       (raw.traps as any[]).find((t) => t.id === id);
     const raw = realRawData();
-    delete trap(raw, 'spikeTrap').hp;
-    expectError(parseDataSet(raw), 'traps.json', 'es física: necesita hp y wearPerTrigger');
+    delete trap(raw, 'spikeTrap').wearPerTrigger;
+    expectError(parseDataSet(raw), 'traps.json', 'es física: necesita wearPerTrigger');
     const raw2 = realRawData();
     delete trap(raw2, 'frostTrap').uses;
     expectError(parseDataSet(raw2), 'traps.json', 'es elemental: necesita uses');
@@ -429,8 +429,15 @@ describe('errores de referencias cruzadas', () => {
     trap(raw3, 'spikeTrap').uses = 5;
     expectError(parseDataSet(raw3), 'traps.json', 'es física: no lleva uses');
     const raw4 = realRawData();
-    trap(raw4, 'fireTrap').hp = 500;
-    expectError(parseDataSet(raw4), 'traps.json', 'no se puede atacar');
+    trap(raw4, 'fireTrap').wearPerTrigger = 100;
+    expectError(parseDataSet(raw4), 'traps.json', 'es elemental: se gasta por usos');
+    // Todas las trampas tienen vida (también las elementales: los enemigos pueden atacarlas).
+    const raw6 = realRawData();
+    delete trap(raw6, 'fireTrap').hp;
+    expectError(parseDataSet(raw6), 'traps.json', 'hp');
+    const raw7 = realRawData();
+    (raw7.global as any).work.trapRepairHpPerSecond = 0;
+    expectError(parseDataSet(raw7), 'global.json', 'work.trapRepairHpPerSecond');
     const raw5 = realRawData();
     trap(raw5, 'lightningTrap').effect.falloff = 2;
     expectError(parseDataSet(raw5), 'traps.json', 'falloff');

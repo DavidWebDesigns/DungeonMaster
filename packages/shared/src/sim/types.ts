@@ -33,7 +33,7 @@ export interface PlayerState {
   seen: number[];
 }
 
-export type TaskKind = 'dig' | 'claim' | 'reinforce' | 'buildTrap';
+export type TaskKind = 'dig' | 'claim' | 'reinforce' | 'buildTrap' | 'repairTrap';
 
 export interface Task {
   id: number;
@@ -218,10 +218,12 @@ export interface Trap {
   built: boolean;
   /** Tick a partir del cual puede volver a dispararse. */
   readyAt: number;
-  /** Físicas: vida que le queda (se desgasta con cada disparo). */
+  /** Vida que le queda (se desgasta al disparar las físicas y la dañan los enemigos una vez revelada). */
   hp: number;
   /** Elementales: usos que le quedan. */
   usesLeft: number;
+  /** Se ha disparado alguna vez: desde entonces los rivales la ven (si tienen el tile a la vista) y pueden atacarla. */
+  revealed: boolean;
 }
 
 export interface QueuedCommand {
@@ -339,11 +341,13 @@ export type SimEvent =
   | { type: 'trapBuilt'; playerId: PlayerId; trapId: number; trap: string; tile: number }
   | { type: 'trapTriggered'; playerId: PlayerId; trap: string; x: number; y: number }
   | { type: 'trapSold'; playerId: PlayerId; trap: string; tile: number }
+  | { type: 'trapDestroyed'; playerId: PlayerId; trap: string; tile: number; x: number; y: number }
+  | { type: 'trapDestroyed'; playerId: PlayerId; trap: string; tile: number; x: number; y: number }
   | {
       type: 'hit';
       attackerOwner: PlayerId;
       targetOwner: PlayerId;
-      targetKind: 'creature' | 'imp' | 'room' | 'heart';
+      targetKind: 'creature' | 'imp' | 'room' | 'heart' | 'trap';
       damage: number;
       x: number;
       y: number;

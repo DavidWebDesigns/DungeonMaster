@@ -33,6 +33,7 @@ const MARK: Readonly<Record<TaskKind, { color: RGB; amount: number }>> = {
   reinforce: { color: [0.45, 0.65, 1], amount: 0.42 },
   claim: { color: [1, 1, 1], amount: 0.3 },
   buildTrap: { color: [1, 0.55, 0.25], amount: 0.4 },
+  repairTrap: { color: [0.5, 1, 0.6], amount: 0.35 },
 };
 
 /** Cuánto se oscurece un tile según la niebla de guerra. */

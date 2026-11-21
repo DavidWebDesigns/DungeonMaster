@@ -242,12 +242,16 @@ export class Mirror {
             readyAt: 0,
             hp: 0,
             usesLeft: 0,
+            revealed: false,
           };
           this.traps.set(id, t);
         }
         if ('y' in rec) t.type = str(rec['y']);
         if ('i' in rec) t.tile = num(rec['i']);
         if ('b' in rec) t.built = rec['b'] === 1;
+        if ('o' in rec) t.owner = num(rec['o']);
+        if ('h' in rec) t.hp = num(rec['h']);
+        if ('rv' in rec) t.revealed = rec['rv'] === 1;
         break;
       }
       case 'k': {

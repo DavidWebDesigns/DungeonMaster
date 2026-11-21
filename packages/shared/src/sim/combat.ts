@@ -12,7 +12,8 @@ import { removeRoomTile } from './rooms';
 import { nextFloat } from './rng';
 import { secondsToTicks, walkDistances, type Rules } from './rules';
 import { removeTask } from './tasks';
-import type { Creature, Imp, MatchState, PlayerId, SimEvent } from './types';
+import { destroyTrap } from './traps';
+import type { Creature, Imp, MatchState, PlayerId, SimEvent, Trap } from './types';
 import { gainXp } from './xp';
 
 export type UnitKind = 'creature' | 'imp';
@@ -201,7 +202,19 @@ export function chooseTarget(state: MatchState, rules: Rules, c: Creature): Enem
   return enemies.sort(byDist)[0] as Enemy;
 }
 
-/** Sala o Corazón enemigo que se puede golpear (el Portal está protegido). */
+/** Trampa enemiga que se puede golpear: construida, ya revelada por un disparo y de un jugador en juego. */
+export function attackableTrap(state: MatchState, owner: PlayerId, tile: number): Trap | undefined {
+  const trap = state.traps.find((t) => t.tile === tile);
+  return trap &&
+    trap.built &&
+    trap.revealed &&
+    trap.owner !== owner &&
+    ownerAlive(state, trap.owner)
+    ? trap
+    : undefined;
+}
+
+/** Sala, Corazón o trampa revelada enemigos que se pueden golpear (el Portal está protegido). */
 export function attackableTile(
   state: MatchState,
   rules: Rules,
@@ -209,7 +222,8 @@ export function attackableTile(
   tile: number,
 ): boolean {
   const roomId = state.roomAt[tile] as number;
-  if (!roomId) return false;
+  // Una trampa nunca comparte tile con una sala, así que el tile identifica a uno u otro.
+  if (!roomId) return attackableTrap(state, owner, tile) !== undefined;
   const room = state.rooms.find((r) => r.id === roomId);
   if (!room || room.owner === owner || room.type === 'portal') return false;
   return ownerAlive(state, room.owner);
@@ -366,7 +380,23 @@ function hitStructure(
 ): void {
   const dmg = rollDamage(state, rules, attacker);
   const room = state.rooms.find((r) => r.id === state.roomAt[tile]);
-  if (!room) return;
+  if (!room) {
+    // Trampa revelada: pierde vida y puede destruirse. Golpearla no da experiencia (no se puede "entrenar" contra ella).
+    const trap = attackableTrap(state, attacker.owner, tile);
+    if (!trap) return;
+    trap.hp -= dmg;
+    events.push({
+      type: 'hit',
+      attackerOwner: attacker.owner,
+      targetOwner: trap.owner,
+      targetKind: 'trap',
+      damage: dmg,
+      x: (tile % state.width) + 0.5,
+      y: Math.floor(tile / state.width) + 0.5,
+    });
+    if (trap.hp <= 0) destroyTrap(state, trap, events);
+    return;
+  }
   const cx = (tile % state.width) + 0.5;
   const cy = Math.floor(tile / state.width) + 0.5;
   if (room.type === 'heart') {

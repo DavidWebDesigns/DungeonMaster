@@ -123,6 +123,13 @@ export function adviceFor(
           cooldownTicks: 100,
         });
         break;
+      case 'trapDestroyed':
+        out.push({
+          text: `Han destruido tu ${data.traps.find((t) => t.id === e.trap)?.name?.toLowerCase() ?? 'trampa'}.`,
+          key: `trapdead${e.tile}`,
+          cooldownTicks: 100,
+        });
+        break;
       case 'creatureLeft':
         out.push({
           text: `${cap(unOf(e.creatureId))} ha abandonado tu mazmorra.`,

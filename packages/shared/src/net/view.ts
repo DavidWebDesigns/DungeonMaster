@@ -6,7 +6,8 @@
  * vista por ese jugador; la reconexión es volver a empezar con conocimiento vacío.
  *
  * Qué ve un jugador: sus propias cosas siempre; del rival solo lo que cae dentro de su visión (criaturas, Imps,
- * terreno y salas). El terreno visto queda recordado en el cliente. Las trampas y las tareas son siempre propias.
+ * terreno y salas). El terreno visto queda recordado en el cliente. Las tareas son siempre propias; las trampas, también,
+ * salvo las del rival que ya se revelaron al dispararse y cuyo tile se ve ahora (una trampa sin revelar nunca se envía).
  */
 import type { DataSet } from '../data';
 import type { StatusKind } from '../schemas';
@@ -183,6 +184,10 @@ export function eventsFor(
       case 'tileDestroyed':
         if (vis[e.tile] === 1) out.push(e);
         break;
+      case 'trapDestroyed':
+        // Su dueño lo sabe siempre; un rival, solo si ve el tile (y la trampa ya estaba revelada).
+        if (e.playerId === pid || sees(e.x, e.y)) out.push(e);
+        break;
       default:
         if ('playerId' in e && e.playerId === pid) out.push(e);
     }
@@ -249,8 +254,20 @@ export function computeDelta(
     if (room.owner === pid || room.tiles.some((t) => vis[t] === 1))
       current.set(`r:${room.id}`, { t: room.type, o: room.owner });
   }
-  for (const t of state.traps)
-    if (t.owner === pid) current.set(`t:${t.id}`, { y: t.type, i: t.tile, b: t.built ? 1 : 0 });
+  for (const t of state.traps) {
+    // Las propias siempre. Las del rival solo si ya se revelaron (se dispararon), están construidas y su tile se ve
+    // ahora: una trampa sin revelar nunca sale del servidor.
+    const own = t.owner === pid;
+    if (!own && !(t.revealed && t.built && vis[t.tile] === 1)) continue;
+    current.set(`t:${t.id}`, {
+      y: t.type,
+      i: t.tile,
+      b: t.built ? 1 : 0,
+      o: t.owner,
+      h: Math.round(t.hp),
+      rv: t.revealed ? 1 : 0,
+    });
+  }
   for (const k of state.tasks)
     if (k.owner === pid) current.set(`k:${k.id}`, { k: k.kind, i: k.tile });
 

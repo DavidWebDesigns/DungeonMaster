@@ -69,6 +69,7 @@
     "trigger": "step",
     "triggerRadius": 0.6,
     "cooldownSeconds": 12,
+    "hp": 900,
     "uses": 5,
     "sellRefund": 0.5,
     "effect": {
@@ -89,6 +90,7 @@
     "trigger": "proximity",
     "triggerRadius": 3,
     "cooldownSeconds": 10,
+    "hp": 900,
     "uses": 5,
     "sellRefund": 0.5,
     "effect": {
@@ -108,6 +110,7 @@
     "trigger": "proximity",
     "triggerRadius": 4,
     "cooldownSeconds": 14,
+    "hp": 1000,
     "uses": 5,
     "sellRefund": 0.5,
     "effect": {

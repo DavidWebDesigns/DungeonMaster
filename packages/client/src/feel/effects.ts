@@ -147,7 +147,11 @@ export function deriveEffects(
         e.x,
         0.6,
         e.y,
-        heart ? [1, 0.2, 0.2] : e.targetKind === 'room' ? DUST : [0.95, 0.25, 0.2],
+        heart
+          ? [1, 0.2, 0.2]
+          : e.targetKind === 'room' || e.targetKind === 'trap'
+            ? DUST
+            : [0.95, 0.25, 0.2],
         heart ? 10 : 5,
         1.4,
         2,
@@ -218,6 +222,13 @@ export function deriveEffects(
               : [0.85, 0.85, 0.9];
       burst(e.x, 0.5, e.y, color, big ? 26 : 12, big ? 2.6 : 1.8, 3.2, big ? 0.18 : 0.12);
       out.push({ type: 'sound', sound: 'trap', volume: 1 });
+      continue;
+    }
+    if (e.type === 'trapDestroyed') {
+      // La ve su dueño siempre y el rival solo si tiene el tile a la vista (el servidor ya lo filtra).
+      if (!seesAt(e.x, e.y)) continue;
+      burst(e.x, 0.4, e.y, [0.75, 0.7, 0.65], 22, 2.2, 3, 0.16);
+      out.push({ type: 'sound', sound: 'death', volume: 0.8 });
       continue;
     }
     if (e.type === 'trapBuilt') {

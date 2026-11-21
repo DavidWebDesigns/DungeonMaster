@@ -349,8 +349,8 @@ Cada tirada convierte con una probabilidad de 10 % + 5 % × nivel de la Torturad
 
 - Toda trampa se encarga en el Taller (`goldCost` y `buildSeconds`) y un Imp la lleva a un tile reclamado propio.
 - Tras dispararse queda inactiva durante `cooldownSeconds`.
-- **Físicas** (`physical`): tienen `hp`. Una vez revelada, los enemigos que pasan a su lado la atacan como a una sala cuando no ven criaturas enemigas cerca. Con `hp` en 0 se destruye; los Imps propios la reparan como a un muro.
-- **Elementales** (`elemental`): tienen `uses` = 5 y no se pueden atacar. Al gastar el quinto uso se consumen y el tile queda libre.
+- **Físicas** (`physical`): tienen `hp` y pierden `wearPerTrigger` en cada disparo. Una vez revelada, los enemigos que pasan a su lado la atacan como a una sala cuando no ven criaturas enemigas cerca. Con `hp` en 0 se destruye; los Imps propios la reparan (50 de vida por segundo).
+- **Elementales** (`elemental`): tienen `uses` = 5 y también `hp` (900, 900 y 1.000 en la implementación): una vez reveladas se pueden atacar y reparar igual que las físicas, pero reparar no devuelve usos. Al gastar el quinto uso se consumen y el tile queda libre.
 - Los rivales no ven una trampa hasta su primer disparo o hasta que la detecta un Pícaro o un Troll enemigo a 2 tiles.
 - Paredes aplastantes solo se colocan en un tile con muro a dos lados opuestos (un pasillo de 1 tile).
 

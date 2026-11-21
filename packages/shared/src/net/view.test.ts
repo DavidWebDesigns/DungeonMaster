@@ -92,6 +92,104 @@ describe('vistas por jugador: lo que se ve', () => {
     void f;
   });
 
+  describe('trampas reveladas', () => {
+    /** Jugador 1 con una trampa armada en (9,12) y el rival con una criatura al lado (la ve). */
+    function trapWorld() {
+      const { state, data: d } = duel();
+      state.imps = [];
+      buildRooms(state, d, ['trainingRoom', 'workshop']);
+      state.players[0]!.gold = 9000;
+      applyCommand(state, d, 1, { type: 'buildTrap', trap: 'spikeTrap', tile: { x: 9, y: 12 } });
+      step(state, d);
+      state.traps[0]!.built = true;
+      state.tasks = [];
+      const watcher = spawn(state, d, 2, 'goblin', 9.5, 13.5);
+      return { state, d, watcher };
+    }
+
+    it('una trampa sin revelar nunca llega al rival, aunque la vea', () => {
+      const { state } = trapWorld();
+      const p2 = new Follower(2, state);
+      p2.update(state);
+      expect(p2.mirror.state.traps).toHaveLength(0);
+      expect(JSON.stringify(p2.mirror.state)).not.toContain('spikeTrap');
+      const delta = computeDelta(state, data, 2, new ClientKnowledge(64 * 64));
+      expect(Object.keys(delta.set ?? {}).some((k) => k.startsWith('t:'))).toBe(false);
+    });
+
+    it('revelada y a la vista, el rival la recibe con dueño, vida y marca de revelada', () => {
+      const { state } = trapWorld();
+      state.traps[0]!.revealed = true;
+      state.traps[0]!.hp = 700;
+      const p2 = new Follower(2, state);
+      p2.update(state);
+      expect(p2.mirror.state.traps).toHaveLength(1);
+      expect(p2.mirror.state.traps[0]).toMatchObject({
+        owner: 1,
+        hp: 700,
+        revealed: true,
+        built: true,
+      });
+      // Los campos secretos (usos, recarga) no viajan.
+      const delta = computeDelta(state, data, 2, new ClientKnowledge(64 * 64));
+      expect(Object.keys(delta.set!['t:' + state.traps[0]!.id]!).sort()).toEqual([
+        'b',
+        'h',
+        'i',
+        'o',
+        'rv',
+        'y',
+      ]);
+    });
+
+    it('al salir de su vista el rival deja de tenerla; sin construir tampoco se envía', () => {
+      const { state, d, watcher } = trapWorld();
+      state.traps[0]!.revealed = true;
+      const p2 = new Follower(2, state);
+      p2.update(state);
+      expect(p2.mirror.state.traps).toHaveLength(1);
+      // La visión se calcula una vez por tick: se avanza uno tras mover a la criatura.
+      watcher.x = 50.5;
+      watcher.y = 50.5;
+      run(state, d, 1);
+      p2.update(state);
+      expect(p2.mirror.state.traps).toHaveLength(0);
+      watcher.x = 9.5;
+      watcher.y = 13.5;
+      state.traps[0]!.built = false;
+      run(state, d, 1);
+      p2.update(state);
+      expect(p2.mirror.state.traps).toHaveLength(0);
+    });
+
+    it('el dueño siempre recibe sus trampas con su vida', () => {
+      const { state } = trapWorld();
+      state.traps[0]!.hp = 321;
+      const p1 = new Follower(1, state);
+      p1.update(state);
+      expect(p1.mirror.state.traps[0]).toMatchObject({ owner: 1, hp: 321, revealed: false });
+    });
+
+    it('el evento de trampa destruida llega al dueño siempre y al rival solo si ve el tile', () => {
+      const { state } = trapWorld();
+      const ev = {
+        type: 'trapDestroyed',
+        playerId: 1,
+        trap: 'spikeTrap',
+        tile: 12 * 64 + 9,
+        x: 9.5,
+        y: 12.5,
+      } as const;
+      const v1 = visibleMask(state, rules, 1);
+      const v2 = visibleMask(state, rules, 2);
+      expect(eventsFor([ev], state, 1, v1)).toEqual([ev]);
+      expect(eventsFor([ev], state, 2, v2)).toEqual([ev]);
+      const far = { ...ev, x: 40.5, y: 40.5 };
+      expect(eventsFor([far], state, 2, v2)).toEqual([]);
+      expect(eventsFor([far], state, 1, v1)).toEqual([far]);
+    });
+  });
+
   it('los estados (atada, ralentizada...) solo los ve su dueño y se borran al caducar', () => {
     const { state, data: d } = duel();
     state.imps = [];

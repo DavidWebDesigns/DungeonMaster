@@ -12,6 +12,7 @@ export function taskPriority(task: Task): number {
     case 'claim':
       return 1;
     case 'buildTrap':
+    case 'repairTrap':
       return 2;
     case 'reinforce':
       return 3;
@@ -121,6 +122,14 @@ export function isTaskValid(state: MatchState, rules: Rules, task: Task): boolea
         state.traps.some((t) => t.tile === task.tile && t.owner === task.owner && !t.built) &&
         isOwnGround(state, rules, task.tile, task.owner)
       );
+    case 'repairTrap': {
+      // La trampa sigue en pie, construida, dañada y en suelo propio.
+      const trap = state.traps.find((t) => t.tile === task.tile && t.owner === task.owner);
+      const max = rules.data.traps.find((d) => d.id === trap?.type)?.hp ?? 0;
+      return (
+        !!trap && trap.built && trap.hp < max && isOwnGround(state, rules, task.tile, task.owner)
+      );
+    }
   }
 }
 
@@ -143,12 +152,19 @@ export function taskSeconds(state: MatchState, rules: Rules, task: Task): number
       const trap = state.traps.find((t) => t.tile === task.tile && t.owner === task.owner);
       return rules.data.traps.find((d) => d.id === trap?.type)?.buildSeconds ?? 0;
     }
+    case 'repairTrap': {
+      // Reparar va por velocidad (vida por segundo): esto es solo lo que falta a ritmo normal.
+      const trap = state.traps.find((t) => t.tile === task.tile && t.owner === task.owner);
+      const max = rules.data.traps.find((d) => d.id === trap?.type)?.hp ?? 0;
+      return Math.max(0, max - (trap?.hp ?? max)) / w.trapRepairHpPerSecond;
+    }
   }
 }
 
 /** Tiles desde los que se puede trabajar la tarea: el propio tile (reclamar) o sus vecinos caminables. */
 export function workTiles(state: MatchState, rules: Rules, task: Task): number[] {
-  if (task.kind === 'claim' || task.kind === 'buildTrap') return [task.tile];
+  if (task.kind === 'claim' || task.kind === 'buildTrap' || task.kind === 'repairTrap')
+    return [task.tile];
   return neighbors4(state, task.tile).filter((n) => rules.walkable[state.terrain[n] as number]);
 }
 
@@ -160,6 +176,11 @@ export function completeTask(
   events: SimEvent[],
 ): void {
   const i = task.tile;
+  if (task.kind === 'repairTrap') {
+    // Reparar no toca el terreno: al terminar (vida completa) la tarea simplemente se retira.
+    removeTask(state, task.id);
+    return;
+  }
   if (task.kind === 'buildTrap') {
     // Una trampa terminada no cambia el terreno ni las rutas: solo queda armada.
     const trap = state.traps.find((t) => t.tile === i && t.owner === task.owner);

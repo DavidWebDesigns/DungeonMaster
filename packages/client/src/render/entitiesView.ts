@@ -16,7 +16,7 @@ import { CreatePlane } from '@babylonjs/core/Meshes/Builders/planeBuilder';
 import { Mesh as BabylonMesh } from '@babylonjs/core/Meshes/mesh';
 import { creatureMaxHp, rulesOf, type DataSet, type MatchState, type Room } from '@dm/shared';
 import type { GameSource } from '../sandbox/source';
-import { playerColor, ROOM_COLORS, type RGB } from './palette';
+import { mix, playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
 import { AnimBoard, deathPose } from '../feel/anim';
@@ -163,7 +163,7 @@ export class EntitiesView {
       const mat = d.mesh.body.material as StandardMaterial | null;
       if (mat) mat.alpha = pose.alpha;
     }
-    this.updateTraps(state, localPlayer);
+    this.updateTraps(state, data, localPlayer, visible);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
@@ -307,16 +307,26 @@ export class EntitiesView {
     }
   }
 
-  private readonly trapMeshes = new Map<number, { mesh: Mesh; built: boolean }>();
+  private readonly trapMeshes = new Map<
+    number,
+    { mesh: Mesh; built: boolean; barBack: Mesh; barFill: Mesh; fillMat: StandardMaterial }
+  >();
 
   /**
-   * Trampas: solo se dibujan las del jugador local (las del rival son invisibles). Una trampa sin terminar se ve
-   * pequeña y translúcida; una armada, entera.
+   * Trampas: las del jugador local siempre; las del rival solo cuando ya se revelaron (se dispararon) y su tile está
+   * a la vista. Una trampa sin terminar se ve pequeña y translúcida; una armada, entera; una dañada lleva barra de vida.
    */
-  private updateTraps(state: MatchState, localPlayer: number): void {
+  private updateTraps(
+    state: MatchState,
+    data: DataSet,
+    localPlayer: number,
+    visible: Uint8Array | null,
+  ): void {
     const alive = new Set<number>();
     for (const t of state.traps) {
-      if (t.owner !== localPlayer) continue;
+      const mine = t.owner === localPlayer;
+      if (!mine && !(t.revealed && t.built && (visible === null || visible[t.tile] === 1)))
+        continue;
       alive.add(t.id);
       let entry = this.trapMeshes.get(t.id);
       if (!entry) {
@@ -329,11 +339,43 @@ export class EntitiesView {
                 { diameterTop: 0, diameterBottom: 0.5, height: 0.5, tessellation: 4 },
                 this.scene,
               );
-        const mat = material(this.scene, look.color);
+        // Las del rival llevan un tinte de su color para distinguirlas de las propias.
+        const mat = material(
+          this.scene,
+          mine ? look.color : mix(look.color, playerColor(t.owner), 0.5),
+        );
         mesh.material = mat;
         mesh.isPickable = false;
-        entry = { mesh, built: !t.built };
+        const barBack = CreatePlane(`trapBarBack${t.id}`, { width: 0.7, height: 0.08 }, this.scene);
+        const backMat = new StandardMaterial(`trapBarBackMat${t.id}`, this.scene);
+        backMat.disableLighting = true;
+        backMat.emissiveColor = new Color3(0.08, 0.06, 0.1);
+        barBack.material = backMat;
+        barBack.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+        barBack.parent = mesh;
+        barBack.position.y = 0.55;
+        barBack.isPickable = false;
+        const fillMat = new StandardMaterial(`trapBarFillMat${t.id}`, this.scene);
+        fillMat.disableLighting = true;
+        const barFill = CreatePlane(`trapBarFill${t.id}`, { width: 0.7, height: 0.08 }, this.scene);
+        barFill.material = fillMat;
+        barFill.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+        barFill.parent = mesh;
+        barFill.position.y = 0.55;
+        barFill.renderingGroupId = 1;
+        barFill.isPickable = false;
+        entry = { mesh, built: !t.built, barBack, barFill, fillMat };
         this.trapMeshes.set(t.id, entry);
+      }
+      // Barra de vida: solo si está dañada.
+      const maxHp = data.traps.find((d) => d.id === t.type)?.hp ?? t.hp;
+      const frac = hpFraction({ hp: t.hp }, maxHp);
+      entry.barBack.setEnabled(frac < 1 && t.built);
+      entry.barFill.setEnabled(frac < 1 && t.built);
+      if (frac < 1) {
+        entry.barFill.scaling.x = Math.max(0.001, frac);
+        entry.barFill.position.x = -0.35 * (1 - frac);
+        entry.fillMat.emissiveColor = new Color3(...hpColor(frac));
       }
       if (entry.built !== t.built) {
         entry.built = t.built;

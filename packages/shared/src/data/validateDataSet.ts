@@ -381,14 +381,18 @@ export function validateDataSet(d: DataSet): DataError[] {
       else if (!room.buildable)
         err(F.traps, `[${i}].requiresRooms[${j}]`, `la sala "${req}" no se puede construir`);
     });
-    if (t.family === 'physical' && (t.hp === undefined || t.wearPerTrigger === undefined))
-      err(F.traps, `[${i}]`, `"${t.id}" es física: necesita hp y wearPerTrigger`);
+    if (t.family === 'physical' && t.wearPerTrigger === undefined)
+      err(F.traps, `[${i}].wearPerTrigger`, `"${t.id}" es física: necesita wearPerTrigger`);
+    if (t.family === 'elemental' && t.wearPerTrigger !== undefined)
+      err(
+        F.traps,
+        `[${i}].wearPerTrigger`,
+        `"${t.id}" es elemental: se gasta por usos, no lleva wearPerTrigger`,
+      );
     if (t.family === 'elemental' && t.uses === undefined)
       err(F.traps, `[${i}].uses`, `"${t.id}" es elemental: necesita uses`);
     if (t.family === 'physical' && t.uses !== undefined)
       err(F.traps, `[${i}].uses`, `"${t.id}" es física: no lleva uses`);
-    if (t.family === 'elemental' && t.hp !== undefined)
-      err(F.traps, `[${i}].hp`, `"${t.id}" es elemental: no se puede atacar, no lleva hp`);
     if (t.triggerRadius < 0.5)
       err(F.traps, `[${i}].triggerRadius`, 'debe ser al menos 0,5 tiles (la mitad de un tile)');
   });

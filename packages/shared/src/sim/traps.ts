@@ -76,8 +76,9 @@ export function placeTrapNow(
     tile,
     built: false,
     readyAt: 0,
-    hp: def.hp ?? 0,
+    hp: def.hp,
     usesLeft: def.uses ?? 0,
+    revealed: false,
   };
   state.traps.push(trap);
   setTask(state, player.id, 'buildTrap', tile);
@@ -96,12 +97,25 @@ export function sellTrapNow(
   if (def) player.gold += Math.floor(def.goldCost * (trap.built ? def.sellRefund : 1));
   clampGold(state, rules, player);
   state.traps = state.traps.filter((t) => t.id !== trap.id);
-  for (const k of state.tasks.filter(
-    (k) => k.kind === 'buildTrap' && k.tile === trap.tile && k.owner === trap.owner,
-  )) {
+  for (const k of state.tasks.filter((k) => k.tile === trap.tile && k.owner === trap.owner)) {
     removeTask(state, k.id);
   }
   events.push({ type: 'trapSold', playerId: player.id, trap: trap.type, tile: trap.tile });
+}
+
+/** La trampa se destruye (daño, desgaste o último uso): desaparece con sus tareas y avisa. */
+export function destroyTrap(state: MatchState, trap: Trap, events: SimEvent[]): void {
+  state.traps = state.traps.filter((t) => t.id !== trap.id);
+  for (const k of state.tasks.filter((k) => k.tile === trap.tile && k.owner === trap.owner))
+    removeTask(state, k.id);
+  events.push({
+    type: 'trapDestroyed',
+    playerId: trap.owner,
+    trap: trap.type,
+    tile: trap.tile,
+    x: (trap.tile % state.width) + 0.5,
+    y: Math.floor(trap.tile / state.width) + 0.5,
+  });
 }
 
 /** Daño directo de una trampa a una unidad (sin atacante: no da experiencia). */
@@ -248,11 +262,12 @@ export function updateTraps(state: MatchState, rules: Rules, events: SimEvent[])
     const who = triggerer(state, rules, trap, def, x, y);
     if (!who) continue;
     fire(state, rules, trap, def, x, y, who, events);
+    trap.revealed = true;
     events.push({ type: 'trapTriggered', playerId: trap.owner, trap: trap.type, x, y });
     if (def.family === 'elemental') trap.usesLeft--;
     else trap.hp -= def.wearPerTrigger ?? 0;
     const gone = def.family === 'elemental' ? trap.usesLeft <= 0 : trap.hp <= 0;
-    if (gone) state.traps = state.traps.filter((t) => t.id !== trap.id);
+    if (gone) destroyTrap(state, trap, events);
     else trap.readyAt = state.tick + Math.round(def.cooldownSeconds * rate);
   }
 }

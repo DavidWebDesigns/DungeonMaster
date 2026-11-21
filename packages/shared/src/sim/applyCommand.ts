@@ -223,8 +223,9 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       if (!inBounds(state, cmd.tile.x, cmd.tile.y)) return fail('INVALID_TARGET');
       const tile = tileIndex(state, cmd.tile.x, cmd.tile.y);
       const trap = trapAt(state, tile);
-      if (!trap) return fail('INVALID_TARGET');
-      return trap.owner === pid ? { ok: true, tiles: [tile] } : fail('NOT_OWNER');
+      // Ajena o inexistente da la misma respuesta: si no, se podrían sondear las trampas ocultas del rival.
+      if (!trap || trap.owner !== pid) return fail('INVALID_TARGET');
+      return { ok: true, tiles: [tile] };
     }
     case 'drop': {
       if (!isPoint(cmd.tile)) return fail('INVALID_COMMAND');
