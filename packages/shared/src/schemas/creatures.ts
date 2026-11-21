@@ -42,16 +42,26 @@ export const CreatureDef = z.strictObject({
   /** null = no llega por el Portal (el Imp se crea con un hechizo). */
   attraction: z
     .strictObject({
-      requires: z.array(z.strictObject({ room: Id, minTiles: PositiveInt.optional() })).min(1),
+      requires: z
+        .array(
+          z.strictObject({
+            room: Id,
+            minTiles: PositiveInt.optional(),
+            /** Hace falta una sala de ese tipo de al menos este nivel (tiles conectados; el máximo es su `maxTiles`). */
+            minLevel: PositiveInt.optional(),
+          }),
+        )
+        .min(1),
       attractWeight: PositiveNumber,
       /**
        * Cupos: cuántas criaturas vivas de esta especie puede tener el jugador. Sin `slots`, no hay límite.
-       * `fromRoom`: 1 cupo por cada sala construida de ese tipo. `fromCreature`: 1 cupo por cada `unlockEvery`
-       * criaturas vivas de la especie base (por ejemplo, un Troll por cada 3 Goblins).
+       * `fromRoom`: 1 cupo por cada `tilesPerSlot` tiles de salas de ese tipo (sumando todas, así una sala de 1 tile no
+       * regala cupos). `fromCreature`: 1 cupo por cada `unlockEvery` criaturas vivas de la especie base (por ejemplo, un
+       * Troll por cada 10 Goblins).
        */
       slots: z
         .union([
-          z.strictObject({ fromRoom: Id }),
+          z.strictObject({ fromRoom: Id, tilesPerSlot: PositiveInt }),
           z.strictObject({ fromCreature: Id, unlockEvery: PositiveInt }),
         ])
         .optional(),

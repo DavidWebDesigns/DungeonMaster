@@ -49,7 +49,7 @@ describe('Cámara de tortura', () => {
     expect(state.players[0]!.gold).toBe(9000 - 9 * 400 + 1800);
   });
 
-  it('atrae a la Torturadora (1 por Cámara) y al Verdugo solo con 3 torturadoras; sin más salas, a nadie más', () => {
+  it('atrae a la Torturadora (1 por 3 tiles de Cámara); el Verdugo pide 10 torturadoras y una Cámara de nivel 10', () => {
     const { state, data } = world(true);
     // Guarida para tener camas.
     applyCommand(state, data, 1, {
@@ -65,15 +65,14 @@ describe('Cámara de tortura', () => {
       for (const c of state.creatures.filter((k) => k.owner === 1)) types.add(c.type);
     }
     expect([...types].sort()).toEqual(['goblin', 'torturer']);
-    // Con 3 torturadoras vivas, el Portal ya puede traer un Verdugo.
+    // Con 3 torturadoras vivas aún no: el Verdugo pide 10 y una Cámara de nivel 10 (la de las pruebas tiene 9 tiles).
     const rules = rulesOf(data);
     for (let i = 0; i < 3; i++)
       state.creatures.push(newCreature(state, rules, 1, 'torturer', 9 * 64 + 9));
     const candidates = attractionCandidates(state, rules, 1, 9 * 64 + 9).candidates.map(
       (c) => c.type,
     );
-    expect(candidates).toContain('executioner');
-    expect(candidates).not.toContain('torturer');
+    expect(candidates).not.toContain('executioner');
   });
 
   it('el Verdugo y la Torturadora tienen estadísticas propias (provisionales)', () => {
@@ -83,7 +82,7 @@ describe('Cámara de tortura', () => {
     expect(ex.base.hp).toBeGreaterThan(to.base.hp);
     expect(ex.base.damage).toBeGreaterThan(to.base.damage);
     expect(to.base.speed).toBeGreaterThan(ex.base.speed);
-    expect(ex.attraction!.requires).toEqual([{ room: 'tortureChamber' }]);
+    expect(ex.attraction!.requires).toEqual([{ room: 'tortureChamber', minLevel: 10 }]);
   });
 });
 

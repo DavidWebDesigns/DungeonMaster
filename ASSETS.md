@@ -54,23 +54,23 @@ Haz clic en una sección para saltar a ella y editarla ahí mismo.
 | id | Nombre | Fase | Rol | modelId | Cómo llega |
 | --- | --- | --- | --- | --- | --- |
 | imp | Imp | MVP-1 | Obrero: excava, reclama, mina, refuerza | creature\_imp | Hechizo `createImp` |
-| goblin | Goblin | MVP-1 | Combatiente rápido de flanco | creature\_goblin | Portal, con `lair`; 1 cupo por Guarida |
-| troll | Troll | MVP-1 | Bloqueador lento y resistente | creature\_troll | Portal, con `lair`; 1 cupo por cada 3 goblins vivos (`unlockEvery`) |
-| warlock | Warlock | MVP-1 | Atacante a distancia | creature\_warlock | Portal, con `library`; 1 cupo por Biblioteca |
+| goblin | Goblin | MVP-1 | Combatiente rápido de flanco | creature\_goblin | Portal, con `lair`; cupos por tiles de Guarida |
+| troll | Troll | MVP-1 | Bloqueador lento y resistente | creature\_troll | Portal, con `lair`; 1 cupo por cada 10 goblins vivos y Guarida de nivel 10 |
+| warlock | Warlock | MVP-1 | Atacante a distancia | creature\_warlock | Portal, con `library`; cupos por tiles de Biblioteca |
 | bileDemon | Demonio de bilis | MVP-1 | Tanque pesado | creature\_bile\_demon | Portal, con `hatchery` y `trainingRoom` |
 | firefly | Luciérnaga | MVP-2 | Exploradora voladora | creature\_firefly | Portal, con `lair` |
-| salamander | Salamandra | Tanda salas | Flanqueadora que escupe fuego | creature\_salamander | Portal, con `workshop`; 1 cupo por Taller |
-| skeleton | Esqueleto | Tanda salas | Soldado no muerto, sin sueldo ni comida | creature\_skeleton | Portal, con `graveyard`; 1 cupo por Cementerio (sin cama, sueldo ni comida) |
+| salamander | Salamandra | Tanda salas | Flanqueadora que escupe fuego | creature\_salamander | Portal, con `workshop`; cupos por tiles de Taller |
+| skeleton | Esqueleto | Tanda salas | Soldado no muerto, sin sueldo ni comida | creature\_skeleton | Portal, con `graveyard`; cupos por tiles de Cementerio (sin cama, sueldo ni comida) |
 | rogue | Pícaro | MVP-2 | Ladrón y asesino invisible | creature\_rogue | Portal, con `treasury` de 25 tiles o más **\[PROPUESTO\]** |
-| torturer | Torturadora | MVP-2 | Duelista de látigo; convierte prisioneros | creature\_torturer | Portal, con `tortureChamber`; 1 cupo por Cámara |
-| executioner | Verdugo | MVP-2 | Rematador; ejecuta a los prisioneros que se resisten | creature\_executioner | Portal, con `tortureChamber`; 1 cupo por cada 3 torturadoras vivas |
+| torturer | Torturadora | MVP-2 | Duelista de látigo; convierte prisioneros | creature\_torturer | Portal, con `tortureChamber`; cupos por tiles de Cámara |
+| executioner | Verdugo | MVP-2 | Rematador; ejecuta a los prisioneros que se resisten | creature\_executioner | Portal, con `tortureChamber`; 1 cupo por cada 10 torturadoras vivas y Cámara de nivel 10 |
 | darkElf | Elfo oscuro | Post-MVP | Tirador ágil a distancia | creature\_dark\_elf | Portal, con `trainingRoom` de 25 tiles o más **\[PROPUESTO\]** |
-| witch | Bruja | Tanda salas | Apoyo: pociones y maldiciones | creature\_witch | Portal, con `library`; 1 cupo por cada 3 warlocks vivos |
-| vampire | Vampiro | Tanda salas | Pensador de élite que drena vida | creature\_vampire | Portal, con `graveyard`; 1 cupo por cada 3 esqueletos vivos |
-| darkKnight | Caballero negro | Tanda salas | Bloqueador pesado de élite | creature\_dark\_knight | Portal, con `trainingRoom`; 1 cupo por Sala de entrenamiento |
+| witch | Bruja | Tanda salas | Apoyo: pociones y maldiciones | creature\_witch | Portal, con `library`; 1 cupo por cada 10 warlocks vivos y Biblioteca de nivel 10 |
+| vampire | Vampiro | Tanda salas | Pensador de élite que drena vida | creature\_vampire | Portal, con `graveyard`; 1 cupo por cada 10 esqueletos vivos y Cementerio de nivel 10 |
+| darkKnight | Caballero negro | Tanda salas | Bloqueador pesado de élite | creature\_dark\_knight | Portal, con `trainingRoom`; cupos por tiles de Sala de entrenamiento |
 | maiden | Doncella | Post-MVP | Controladora con telarañas | creature\_maiden | Portal, con `prison` **\[PROPUESTO\]** |
 | ghost | Fantasma | Post-MVP | Hostigador incorpóreo | creature\_ghost | Nace en el `graveyard` con un cadáver de nivel 7 o más |
-| fallenAngel | Ángel caído | Tanda salas | Élite de asalto | creature\_fallen\_angel | Portal, con `temple`; 1 cupo por Templo y **máximo 1** por jugador |
+| fallenAngel | Ángel caído | Tanda salas | Élite de asalto | creature\_fallen\_angel | Portal, con `temple`; cupos por tiles de Templo y **máximo 1** por jugador |
 | dragon | Dragón | Post-MVP | Élite única, una por jugador | creature\_dragon | Portal, con cama de 2×2 libre y `treasury` de 50 tiles o más **\[PROPUESTO\]** |
 
 Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cementerio) y `temple` (Templo); `tortureChamber` ya está en `rooms.json`. `prison` y `combatPit` siguen pendientes. Las reglas de cupos y la progresión de salas están en la sección 1.1.
@@ -79,12 +79,13 @@ Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cem
 
 **Cada sala construida habilita al Portal a invocar su criatura, con cupos; las salas fuertes cuestan más y exigen tener antes otras.** Todo vive en `rooms.json` y `creatures.json`; las cifras son **\[PROPUESTO\]**.
 
-**Reglas de cupos**
+**Reglas de cupos y niveles de sala**
 
-- **Un cupo por sala construida** (cada construcción es una sala distinta; las del mismo tipo no se fusionan). El cupo limita cuántas criaturas **vivas** de la especie puede tener el jugador; las que ya llegaron no se van si baja el cupo.
-- **Criatura superior:** cada `unlockEvery` criaturas vivas de la especie base dan 1 cupo de la superior (Troll por goblins, Bruja por warlocks, Vampiro por esqueletos, Verdugo por torturadoras). El diseño pedía 10; queda en **3** para que sea alcanzable con 1 cupo por sala, y se ajusta en los datos.
-- **Guarida:** da camas (población neta de toda la mazmorra) y además 1 cupo de Goblin. La criatura sin cama (Esqueleto) no la necesita.
-- **Templo:** 1 cupo, y `maxPerPlayer: 1`: nunca más de un Ángel caído vivo.
+- **Nivel de sala:** una sala son tiles conectados del mismo tipo y su nivel es su número de tiles, de 1 a 10 (`maxTiles`, también en la Tesorería). El tile 11 pegado abre una sala nueva de nivel 1. Un rectángulo grande se reparte en salas de hasta 10 tiles; si desconectan una sala (ataque o reclamo), se parte en una sala por trozo. Cada tile se paga igual (coste por tile).
+- **Cupos:** una especie puede tener tantas criaturas vivas como indique su sala: 1 cupo por cada `tilesPerSlot` tiles de ese tipo (Goblin 2, el resto 3), sumando todas las salas. Las que ya llegaron no se van si baja el cupo.
+- **Criatura superior:** hacen falta **10 criaturas vivas de la especie base y una sala de ese tipo en nivel 10** (Troll por goblins y Guarida, Bruja por warlocks y Biblioteca, Vampiro por esqueletos y Cementerio, Verdugo por torturadoras y Cámara). 1 criatura superior por cada 10 de la base.
+- **Guarida:** da camas (población neta de toda la mazmorra) y además cupos de Goblin. La criatura sin cama (Esqueleto) no la necesita.
+- **Templo:** cupos de Ángel caído y `maxPerPlayer: 1`: nunca más de uno vivo.
 - El Criadero no invoca nada: solo produce pollos. El Demonio de bilis conserva su regla (Criadero + Sala de entrenamiento, sin cupo).
 
 | Sala | Nivel | Coste por tile (mínimo) | Requiere tener antes | Invoca |
@@ -101,7 +102,7 @@ Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cem
 
 Solo las salas nuevas llevan requisitos; las seis anteriores no, para que el inicio de la partida no cambie. Vender un requisito no destruye las salas que dependían de él.
 
-Campos nuevos (sección 7): `rooms.json` → `requiresRooms`; `creatures.json` → `attraction.slots` (`{ "fromRoom": "graveyard" }` o `{ "fromCreature": "skeleton", "unlockEvery": 3 }`), `attraction.maxPerPlayer` y `threat`.
+Campos nuevos (sección 7): `rooms.json` → `requiresRooms`; `creatures.json` → `attraction.slots` (`{ "fromRoom": "graveyard", "tilesPerSlot": 3 }` o `{ "fromCreature": "skeleton", "unlockEvery": 3 }`), `attraction.maxPerPlayer` y `threat`.
 
 ## 2. Estadísticas base (nivel 1)
 

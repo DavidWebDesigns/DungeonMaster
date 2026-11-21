@@ -59,11 +59,13 @@ export function adviceFor(
         const text =
           e.reason === 'noLair'
             ? 'Construye una Guarida para atraer criaturas.'
-            : e.reason === 'noSlots'
-              ? 'Ya tienes todas las criaturas que permiten tus salas: cada sala nueva da un cupo más.'
-              : e.reason === 'noRoom'
-                ? `Tus criaturas piden otras salas: ${attractingRooms(data)}.`
-                : 'Tu mazmorra no admite más criaturas por ahora.';
+            : e.reason === 'noLevel'
+              ? 'Para atraer a las criaturas superiores necesitas una sala de nivel 10: 10 tiles conectados del mismo tipo.'
+              : e.reason === 'noSlots'
+                ? 'Ya tienes todas las criaturas que permiten tus salas: más tiles de sala dan más cupos.'
+                : e.reason === 'noRoom'
+                  ? `Tus criaturas piden otras salas: ${attractingRooms(data)}.`
+                  : 'Tu mazmorra no admite más criaturas por ahora.';
         out.push({ text, key: `portal-${e.reason}`, cooldownTicks: (600 * rate) / 10 });
         break;
       }

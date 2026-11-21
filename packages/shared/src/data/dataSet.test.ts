@@ -270,10 +270,10 @@ describe('errores de referencias cruzadas', () => {
     const creature = (raw: ReturnType<typeof realRawData>, id: string) =>
       (raw.creatures as any[]).find((c) => c.id === id);
     const raw = realRawData();
-    creature(raw, 'goblin').attraction.slots = { fromRoom: 'inventada' };
+    creature(raw, 'goblin').attraction.slots = { fromRoom: 'inventada', tilesPerSlot: 2 };
     expectError(parseDataSet(raw), 'creatures.json', 'la sala "inventada" no existe');
     const raw2 = realRawData();
-    creature(raw2, 'goblin').attraction.slots = { fromRoom: 'library' };
+    creature(raw2, 'goblin').attraction.slots = { fromRoom: 'library', tilesPerSlot: 2 };
     expectError(
       parseDataSet(raw2),
       'creatures.json',
@@ -292,12 +292,21 @@ describe('errores de referencias cruzadas', () => {
     const raw6 = realRawData();
     creature(raw6, 'troll').attraction.slots = { fromCreature: 'goblin', unlockEvery: 0 };
     expectError(parseDataSet(raw6), 'creatures.json', 'unlockEvery');
+    const raw8 = realRawData();
+    creature(raw8, 'goblin').attraction.slots = { fromRoom: 'lair', tilesPerSlot: 0 };
+    expectError(parseDataSet(raw8), 'creatures.json', 'tilesPerSlot');
+    const raw9 = realRawData();
+    creature(raw9, 'troll').attraction.requires = [{ room: 'lair', minLevel: 11 }];
+    expectError(parseDataSet(raw9), 'creatures.json', 'supera el máximo de "lair" (10)');
+    const raw10 = realRawData();
+    creature(raw10, 'troll').attraction.requires = [{ room: 'lair', minLevel: 0 }];
+    expectError(parseDataSet(raw10), 'creatures.json', 'minLevel');
     const raw7 = realRawData();
     creature(raw7, 'goblin').attraction.maxPerPlayer = 0;
     expectError(parseDataSet(raw7), 'creatures.json', 'maxPerPlayer');
     // Cupos bien formados son válidos.
     const ok = realRawData();
-    creature(ok, 'goblin').attraction.slots = { fromRoom: 'lair' };
+    creature(ok, 'goblin').attraction.slots = { fromRoom: 'lair', tilesPerSlot: 4 };
     creature(ok, 'troll').attraction.slots = { fromCreature: 'goblin', unlockEvery: 3 };
     creature(ok, 'goblin').attraction.maxPerPlayer = 5;
     expect(parseDataSet(ok).ok).toBe(true);

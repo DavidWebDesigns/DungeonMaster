@@ -1,5 +1,6 @@
 import { findBed } from './lairs';
 import { creatureMaxHp } from './creatureStats';
+import { maxRoomLevel } from './rooms';
 import { nextFloat } from './rng';
 import type { Rules } from './rules';
 import type { CreatureDef } from '../schemas';
@@ -18,16 +19,9 @@ export function speciesCount(state: MatchState, owner: PlayerId, type: string): 
   return n;
 }
 
-/** Salas construidas de un tipo (cada construcción es una sala distinta; no se fusionan). */
-function roomCount(state: MatchState, owner: PlayerId, type: string): number {
-  let n = 0;
-  for (const r of state.rooms) if (r.owner === owner && r.type === type) n++;
-  return n;
-}
-
 /**
- * Cuántas criaturas vivas de esta especie permite hoy la progresión de salas: 1 por sala construida (`fromRoom`) o
- * 1 por cada `unlockEvery` criaturas vivas de la especie base (`fromCreature`), con el tope `maxPerPlayer`.
+ * Cuántas criaturas vivas de esta especie permite hoy la progresión de salas: 1 por cada `tilesPerSlot` tiles de salas
+ * de ese tipo (`fromRoom`) o 1 por cada `unlockEvery` criaturas vivas de la especie base (`fromCreature`), con el tope `maxPerPlayer`.
  * `Infinity` si la especie no tiene cupos.
  */
 export function slotCapacity(
@@ -41,7 +35,7 @@ export function slotCapacity(
   if (a.slots) {
     cap =
       'fromRoom' in a.slots
-        ? roomCount(state, owner, a.slots.fromRoom)
+        ? Math.floor(roomTiles(state, owner, a.slots.fromRoom) / a.slots.tilesPerSlot)
         : Math.floor(speciesCount(state, owner, a.slots.fromCreature) / a.slots.unlockEvery);
   }
   return a.maxPerPlayer !== undefined ? Math.min(cap, a.maxPerPlayer) : cap;
@@ -121,20 +115,30 @@ export function attractionCandidates(
   portalTile: number,
 ): {
   candidates: Array<{ type: string; weight: number }>;
-  why: 'noLair' | 'noRoom' | 'noSlots' | null;
+  why: 'noLair' | 'noRoom' | 'noSlots' | 'noLevel' | null;
 } {
   const candidates: Array<{ type: string; weight: number }> = [];
   let missingLair = false;
   let missingRoom = false;
   let slotsFull = false;
+  let lowLevel = false;
   for (const def of rules.data.creatures) {
     if (!def.attraction) continue;
-    const meets = def.attraction.requires.every(
+    const hasRooms = def.attraction.requires.every(
       (req) => roomTiles(state, owner, req.room) >= (req.minTiles ?? 1),
     );
-    if (!meets) {
+    if (!hasRooms) {
       if (def.attraction.requires.some((r) => r.room === 'lair')) missingLair = true;
       else missingRoom = true;
+      continue;
+    }
+    // Nivel: hace falta una sala de ese tipo con suficientes tiles conectados (por ejemplo, nivel 10).
+    if (
+      def.attraction.requires.some(
+        (req) => maxRoomLevel(state, owner, req.room) < (req.minLevel ?? 1),
+      )
+    ) {
+      lowLevel = true;
       continue;
     }
     // Cupos: ya tiene todas las que permite la progresión de salas.
@@ -157,9 +161,11 @@ export function attractionCandidates(
           ? 'noLair'
           : slotsFull
             ? 'noSlots'
-            : missingRoom
-              ? 'noRoom'
-              : null,
+            : lowLevel
+              ? 'noLevel'
+              : missingRoom
+                ? 'noRoom'
+                : null,
   };
 }
 

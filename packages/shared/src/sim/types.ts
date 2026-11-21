@@ -324,7 +324,11 @@ export type SimEvent =
   | { type: 'commandRejected'; playerId: PlayerId; error: ErrorCode }
   | { type: 'creatureArrived'; playerId: PlayerId; creatureId: number; creature: string }
   /** El Portal no atrajo a nadie: `reason` dice qué falta. */
-  | { type: 'portalIdle'; playerId: PlayerId; reason: 'noLair' | 'noRoom' | 'noSlots' | 'full' }
+  | {
+      type: 'portalIdle';
+      playerId: PlayerId;
+      reason: 'noLair' | 'noRoom' | 'noSlots' | 'noLevel' | 'full';
+    }
   | { type: 'payday'; tick: number }
   | { type: 'paid'; playerId: PlayerId; creatureId: number; amount: number; ok: boolean }
   | { type: 'moodBand'; playerId: PlayerId; creatureId: number; band: string }

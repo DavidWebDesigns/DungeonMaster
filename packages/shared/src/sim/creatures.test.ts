@@ -130,10 +130,10 @@ describe('el Portal atrae criaturas', () => {
     );
   });
 
-  it('con una sola Guarida solo llega 1 Goblin (1 cupo por sala) y el Portal avisa de que no hay cupos', () => {
+  it('con una Guarida de 8 tiles llegan 4 Goblins (1 cupo por 2 tiles) y el Portal avisa de que no hay más cupos', () => {
     const { state, data } = world(['lair'], undefined, true);
-    const events = run(state, data, 300 * 4);
-    expect(state.creatures.map((c) => c.type)).toEqual(['goblin']);
+    const events = run(state, data, 300 * 8);
+    expect(state.creatures.map((c) => c.type)).toEqual(['goblin', 'goblin', 'goblin', 'goblin']);
     expect(
       eventsOf(events, 'portalIdle').some((e) => e.type === 'portalIdle' && e.reason === 'noSlots'),
     ).toBe(true);
@@ -178,35 +178,6 @@ describe('el Portal atrae criaturas', () => {
       'darkKnight',
       'fallenAngel',
     ]);
-  });
-
-  it('las criaturas superiores aparecen al tener 3 de la especie base (troll, bruja, vampiro y verdugo)', () => {
-    const { state, data } = world([
-      'lair',
-      'trainingRoom',
-      'library',
-      'workshop',
-      'graveyard',
-      'tortureChamber',
-    ]);
-    const rules = rulesOf(data);
-    const types = () =>
-      attractionCandidates(state, rules, 1, PORTAL_TILE).candidates.map((c) => c.type);
-    for (const t of ['troll', 'witch', 'vampire', 'executioner']) expect(types()).not.toContain(t);
-    const add = (type: string, n: number) => {
-      for (let i = 0; i < n; i++)
-        state.creatures.push(newCreature(state, rules, 1, type, PORTAL_TILE));
-    };
-    add('goblin', 2);
-    add('warlock', 2);
-    add('skeleton', 2);
-    add('torturer', 2);
-    for (const t of ['troll', 'witch', 'vampire', 'executioner']) expect(types()).not.toContain(t);
-    add('goblin', 1);
-    add('warlock', 1);
-    add('skeleton', 1);
-    add('torturer', 1);
-    for (const t of ['troll', 'witch', 'vampire', 'executioner']) expect(types()).toContain(t);
   });
 
   it('el Ángel caído: un Templo da 1 cupo y nunca hay más de uno', () => {

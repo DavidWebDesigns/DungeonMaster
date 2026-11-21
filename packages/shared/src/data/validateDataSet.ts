@@ -248,6 +248,15 @@ export function validateDataSet(d: DataSet): DataError[] {
           `"${c.id}" no tiene cama y solo pide salas que ya existen al empezar: pediría nada y llegaría en el minuto 0`,
         );
     }
+    c.attraction?.requires.forEach((req, j) => {
+      const max = d.rooms.find((r) => r.id === req.room)?.maxTiles;
+      if (req.minLevel !== undefined && max !== undefined && req.minLevel > max)
+        err(
+          F.creatures,
+          `[${i}].attraction.requires[${j}].minLevel`,
+          `el nivel ${req.minLevel} supera el máximo de "${req.room}" (${max})`,
+        );
+    });
     const slots = c.attraction?.slots;
     if (slots && 'fromRoom' in slots) {
       if (!roomIds.has(slots.fromRoom))
