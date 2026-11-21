@@ -226,7 +226,7 @@ test('el HUD muestra oro, maná y salas, y sus botones eligen la herramienta', a
   });
   await expect(page.locator('.panel.rooms .btn.active')).toContainText('Guarida');
 
-  await page.getByRole('button', { name: /Reforzar/ }).click();
+  await page.getByRole('button', { name: /^Reforzar\s*F$/ }).click();
   expect(
     (await page.evaluate(() => (window as unknown as { __dm: DmHook }).__dm.input.tool)).kind,
   ).toBe('reinforce');
@@ -321,4 +321,33 @@ test('V mejora un muro reforzado a nivel 2 cuando hay un Taller de nivel 10', as
     return g.data.terrain[g.sandbox.state.terrain[4 * g.sandbox.state.width + 11] as number]?.id;
   });
   expect(id).toBe('reinforcedWall2');
+});
+
+test('un Imp que holgazanea se anuncia en el HUD y B lo despierta', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state as unknown as {
+      tick: number;
+      imps: Array<{ owner: number; loafUntil: number }>;
+    };
+    for (const i of s.imps.filter((k) => k.owner === 1).slice(0, 2)) i.loafUntil = s.tick + 600;
+  });
+  await expect(page.locator('.chip').first()).toContainText('2 holgazanean');
+  const woke = await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state as unknown as {
+      tick: number;
+      imps: Array<{ id: number; owner: number; loafUntil: number }>;
+    };
+    const imp = s.imps.find((k) => k.owner === 1 && k.loafUntil > s.tick)!;
+    (g.sandbox as unknown as { send(c: unknown): unknown }).send({
+      type: 'slap',
+      id: imp.id,
+      kind: 'imp',
+    });
+    g.sandbox.advance(200);
+    return imp.loafUntil;
+  });
+  expect(woke).toBe(0);
+  await expect(page.locator('.chip').first()).toContainText('1 holgazanean');
 });

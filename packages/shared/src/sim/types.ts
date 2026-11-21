@@ -50,7 +50,8 @@ export interface Task {
 }
 
 export type ImpMode = 'idle' | 'needPath' | 'moving' | 'working';
-export type ImpGoal = 'none' | 'task' | 'haul';
+/** `loaf`: pasea sin trabajo mientras holgazanea. */
+export type ImpGoal = 'none' | 'task' | 'haul' | 'loaf';
 
 export interface Imp {
   id: number;
@@ -76,6 +77,10 @@ export interface Imp {
   held: boolean;
   /** Hasta qué tick trabaja más rápido por una bofetada (0 = nunca). */
   slapUntil: number;
+  /** Hasta qué tick holgazanea sin coger trabajo (0 = no holgazanea). Una bofetada lo despierta. */
+  loafUntil: number;
+  /** Tile al que pasea mientras holgazanea (-1 = ninguno). */
+  loafTile: number;
   /** Criatura que lo atacó la última vez (0 = nadie) y cuándo. */
   attackedBy: number;
   attackedTick: number;

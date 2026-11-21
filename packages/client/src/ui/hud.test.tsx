@@ -59,6 +59,16 @@ describe('buildHudModel', () => {
     expect(find().hint).toContain('30 s');
   });
 
+  it('cuenta los Imps propios que holgazanean', () => {
+    const sb = fresh();
+    expect(buildHudModel(sb.state, data, 1, dig, []).impsLoafing).toBe(0);
+    const mine = sb.state.imps.filter((i) => i.owner === 1);
+    mine[0]!.loafUntil = sb.state.tick + 50;
+    mine[1]!.loafUntil = sb.state.tick + 50;
+    mine[2]!.loafUntil = sb.state.tick - 1; // ya se le pasó
+    expect(buildHudModel(sb.state, data, 1, dig, []).impsLoafing).toBe(2);
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

@@ -99,6 +99,8 @@ export function validateDataSet(d: DataSet): DataError[] {
       'combat.recoverHpFraction',
       'debe ser mayor que fleeHpFraction (si no, una criatura que huye nunca recupera)',
     );
+  if (g.imps.loaf.minSeconds > g.imps.loaf.maxSeconds)
+    err(F.global, 'imps.loaf', 'minSeconds no puede ser mayor que maxSeconds');
   if (duplicates(g.tiebreak).length > 0)
     err(F.global, 'tiebreak', 'criterios de desempate repetidos');
 

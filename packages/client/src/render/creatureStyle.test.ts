@@ -4,6 +4,7 @@ import {
   CREATURE_LOOKS,
   hpColor,
   hpFraction,
+  impActivityLabel,
   moodCloudOf,
   lookOf,
   MOOD_ICONS,
@@ -83,5 +84,17 @@ describe('ownerMarkOf', () => {
     expect(enemy.show).toBe(true);
     expect(enemy.color).toEqual(playerColor(2));
     expect(ownerMarkOf(3, 1).color).not.toEqual(enemy.color);
+  });
+});
+
+describe('impActivityLabel', () => {
+  const base = { held: false, goal: 'none', mode: 'idle', loafUntil: 0, carry: 0 } as const;
+  it('distingue mano, holgazanería, entrega, trabajo y libre', () => {
+    expect(impActivityLabel({ ...base, held: true }, 10)).toBe('En tu mano');
+    expect(impActivityLabel({ ...base, loafUntil: 50 }, 10)).toBe('Holgazaneando');
+    expect(impActivityLabel({ ...base, loafUntil: 5 }, 10)).toBe('Libre'); // ya se le pasó
+    expect(impActivityLabel({ ...base, goal: 'haul' }, 10)).toBe('Lleva oro a la Tesorería');
+    expect(impActivityLabel({ ...base, goal: 'task', mode: 'working' }, 10)).toBe('Trabajando');
+    expect(impActivityLabel({ ...base, goal: 'task', mode: 'moving' }, 10)).toBe('Va a trabajar');
   });
 });

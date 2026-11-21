@@ -15,6 +15,7 @@ import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { FloaterList, floaterPose } from './feel/anim';
 import { speedLabel } from './ui/speedLabel';
 import { roomHoverText, roomPreviewText } from './input/roomInfo';
+import { impActivityLabel } from './render/creatureStyle';
 import { minimapPixels } from './ui/minimap';
 import { MinimapView } from './ui/minimapView';
 import { errorMessage } from './input/messages';
@@ -405,7 +406,11 @@ export class Game {
       const band = rules.bands.find((b) => b.id === c.band)?.name ?? '';
       this.hoverCard.textContent = `${name} nv ${c.level} · ${band} · ${action} · B: bofetada`;
     } else {
-      this.hoverCard.textContent = `Imp · ${action} · al soltarlo va a la tarea marcada más cercana`;
+      const what = impActivityLabel(imp!, state.tick);
+      this.hoverCard.textContent =
+        imp!.loafUntil > state.tick
+          ? `Imp · ${what} · B: bofetada para que vuelva al trabajo · ${action}`
+          : `Imp · ${what} · ${action} · al soltarlo va a la tarea marcada más cercana`;
     }
     const r = canvas.getBoundingClientRect();
     this.hoverCard.style.display = 'block';

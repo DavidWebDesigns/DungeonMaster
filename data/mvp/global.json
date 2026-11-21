@@ -25,7 +25,11 @@
     "regenPerClaimedTilePerSecond": 0.1,
     "regenCapPerSecond": 25
   },
-  "imps": { "start": 4, "max": 12 },
+  "imps": {
+    "start": 4,
+    "max": 12,
+    "loaf": { "chance": 0.15, "minSeconds": 5, "maxSeconds": 15, "speedFactor": 0.4 }
+  },
   "maxCreaturesPerPlayer": 20,
   "heart": { "hp": 8000, "size": 3 },
   "roomTileHp": 1000,

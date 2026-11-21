@@ -48,6 +48,8 @@ interface ImpMesh {
   gold: Mesh;
   /** Símbolo de enemigo (solo en los Imps rivales). */
   mark?: Mesh;
+  /** Burbuja de «no hago nada» sobre un Imp propio que holgazanea. */
+  bubble: Mesh;
 }
 
 interface CreatureMesh {
@@ -130,7 +132,20 @@ export class EntitiesView {
         const mark = ownerMarkOf(imp.owner, localPlayer).show
           ? this.makeEnemyMark(`enemyMark${imp.id}i`, imp.owner, body, IMP_HEIGHT / 2 + 0.3)
           : undefined;
-        m = { body, gold, mark };
+        const bubble = CreateSphere(
+          `impLoaf${imp.id}`,
+          { diameter: 0.16, segments: 6 },
+          this.scene,
+        );
+        const bubbleMat = new StandardMaterial(`impLoafMat${imp.id}`, this.scene);
+        bubbleMat.disableLighting = true;
+        bubbleMat.emissiveColor = new Color3(0.9, 0.9, 1);
+        bubble.material = bubbleMat;
+        bubble.parent = body;
+        bubble.position.y = IMP_HEIGHT / 2 + 0.22;
+        bubble.isPickable = false;
+        bubble.setEnabled(false);
+        m = { body, gold, mark, bubble };
         this.imps.set(imp.id, m);
       }
       const prev = sandbox.previous.get(imp.id) ?? imp;
@@ -151,6 +166,11 @@ export class EntitiesView {
         m.gold.setEnabled(imp.carry > 0 && !hiddenByFog(imp.owner, imp.x, imp.y));
         m.body.setEnabled(!hiddenByFog(imp.owner, imp.x, imp.y));
       }
+      // Holgazanea (solo se sabe de los propios): se balancea y lleva una burbuja encima.
+      const lazy = imp.owner === localPlayer && imp.loafUntil > state.tick && !imp.held;
+      m.bubble.setEnabled(lazy);
+      m.bubble.position.y = IMP_HEIGHT / 2 + 0.22 + (lazy ? 0.04 * Math.sin(timeSeconds * 3) : 0);
+      m.body.rotation.z = lazy ? 0.25 * Math.sin(timeSeconds * 2.5 + imp.id) : 0;
       // Bajo el cursor: más grande y brillante (los Imps son pequeños: se agrandan más).
       const impHovered = hoverUnit?.kind === 'imp' && hoverUnit.id === imp.id && !imp.held;
       m.body.scaling.setAll(impHovered ? 1.7 : 1);

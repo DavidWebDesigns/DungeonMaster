@@ -92,6 +92,23 @@ describe('vistas por jugador: lo que se ve', () => {
     void f;
   });
 
+  it('que un Imp holgazanea solo lo sabe su dueño', () => {
+    const { state, data: d } = duel();
+    const mine = state.imps.find((i) => i.owner === 1)!;
+    const enemy = state.imps.find((i) => i.owner === 2)!;
+    mine.loafUntil = 123;
+    enemy.loafUntil = 456;
+    enemy.x = mine.x + 1; // a la vista de los dos
+    enemy.y = mine.y;
+    const delta = computeDelta(state, d, 1, new ClientKnowledge(64 * 64));
+    expect(delta.set![`i:${mine.id}`]).toMatchObject({ lu: 123 });
+    expect('lu' in delta.set![`i:${enemy.id}`]!).toBe(false);
+    // Y el espejo del cliente lo recibe.
+    const f = new Follower(1, state);
+    f.update(state);
+    expect(f.mirror.state.imps.find((i) => i.id === mine.id)?.loafUntil).toBe(123);
+  });
+
   describe('trampas reveladas', () => {
     /** Jugador 1 con una trampa armada en (9,12) y el rival con una criatura al lado (la ve). */
     function trapWorld() {

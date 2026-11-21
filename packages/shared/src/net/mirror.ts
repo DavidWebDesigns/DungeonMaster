@@ -218,6 +218,7 @@ export class Mirror {
         if ('c' in rec) imp.carry = num(rec['c']);
         if ('hd' in rec) imp.held = rec['hd'] === 1;
         if ('su' in rec) imp.slapUntil = num(rec['su']);
+        if ('lu' in rec) imp.loafUntil = num(rec['lu']);
         break;
       }
       case 'r': {

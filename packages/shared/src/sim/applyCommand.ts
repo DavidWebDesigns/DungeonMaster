@@ -5,7 +5,7 @@ import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
 import { stopCreature } from './behavior';
 import { findAssaultTarget } from './combat';
-import { dropImp, resetImp } from './imps';
+import { dropImp, resetImp, wakeImp } from './imps';
 import { checkBuildTrap, placeTrapNow, sellTrapNow, trapAt } from './traps';
 import { isVisible } from './fog';
 import { castEffect } from './spells';
@@ -359,6 +359,8 @@ function execute(
         const imp = state.imps.find((k) => k.id === cmd.id);
         if (!imp) break;
         imp.slapUntil = state.tick + Math.round(g.slap.durationSeconds * g.tickRate);
+        // Lo despierta si holgazaneaba y, si está libre, lo manda a la tarea pendiente más cercana.
+        wakeImp(state, rules, imp);
         player.slapReadyTick = state.tick + Math.round(g.slap.cooldownSeconds * g.tickRate);
         events.push({ type: 'impSlapped', playerId: player.id, impId: imp.id });
         break;

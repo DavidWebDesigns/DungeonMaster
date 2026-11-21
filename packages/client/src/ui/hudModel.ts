@@ -112,6 +112,8 @@ export interface HudModel {
   manaRegen: number;
   imps: number;
   impsMax: number;
+  /** Imps propios que holgazanean ahora (sin hacer nada hasta que se les abofetee). */
+  impsLoafing: number;
   /** Criaturas vivas y máximo actual (camas, Portal y tope global). */
   population: { count: number; max: number; full: boolean; hint: string };
   clock: string;
@@ -358,6 +360,7 @@ export function buildHudModel(
     manaRegen: manaRegenPerSecond(state, rules, playerId),
     imps: impCount(state, playerId),
     impsMax: data.global.imps.max,
+    impsLoafing: state.imps.filter((i) => i.owner === playerId && i.loafUntil > state.tick).length,
     population: populationModel(state, rules, playerId),
     clock: formatClock(state.tick, data.global.tickRate),
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),

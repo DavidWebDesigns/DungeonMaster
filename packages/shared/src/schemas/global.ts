@@ -32,7 +32,21 @@ export const GlobalConfig = z.strictObject({
     regenPerClaimedTilePerSecond: NonNegativeNumber,
     regenCapPerSecond: PositiveNumber,
   }),
-  imps: z.strictObject({ start: NonNegativeInt, max: PositiveInt }),
+  imps: z.strictObject({
+    start: NonNegativeInt,
+    max: PositiveInt,
+    /**
+     * Holgazanería: al terminar una tarea (o entregar oro) un Imp tiene esta probabilidad de quedarse un rato sin coger
+     * trabajo (paseando despacio). Una bofetada lo despierta. `chance` 0 = nunca.
+     */
+    loaf: z.strictObject({
+      chance: Fraction,
+      minSeconds: Seconds,
+      maxSeconds: Seconds,
+      /** Fracción de la velocidad normal con la que pasea mientras holgazanea. */
+      speedFactor: PositiveNumber,
+    }),
+  }),
   maxCreaturesPerPlayer: PositiveInt,
   heart: z.strictObject({ hp: PositiveInt, size: PositiveInt }),
   roomTileHp: PositiveInt,

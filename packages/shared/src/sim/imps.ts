@@ -1,12 +1,14 @@
 import { getPlayer, goldRoom, treasuryCapacity } from './economy';
-import { octile, tileOfPosition, tileX, tileY } from './grid';
+import { octile, tileIndex, tileOfPosition, tileX, tileY } from './grid';
 import { findPath } from './pathfinding';
+import { nextFloat } from './rng';
 import { walkDistances, type Rules } from './rules';
 import {
   completeTask,
   findAutoClaimTile,
   getTask,
   isMining,
+  isOwnGround,
   isTaskValid,
   removeTask,
   setTask,
@@ -29,6 +31,58 @@ export function resetImp(state: MatchState, imp: Imp): void {
   imp.taskId = 0;
   imp.path = [];
   imp.work = 0;
+}
+
+/**
+ * Tras terminar una tarea o entregar oro, el Imp puede decidir holgazanear un rato: no coge trabajo y pasea despacio
+ * por su territorio hasta que pase el tiempo (o lo despierten con una bofetada). Solo se sortea en estas transiciones
+ * (nunca en cada tick ocioso) y con `chance` 0 no gasta números aleatorios.
+ */
+export function maybeLoaf(state: MatchState, rules: Rules, imp: Imp): void {
+  const loaf = rules.data.global.imps.loaf;
+  if (loaf.chance <= 0 || imp.carry > 0 || imp.held) return;
+  if (nextFloat(state) >= loaf.chance) return;
+  const seconds = loaf.minSeconds + nextFloat(state) * (loaf.maxSeconds - loaf.minSeconds);
+  imp.loafUntil = state.tick + Math.max(1, Math.round(seconds * rules.data.global.tickRate));
+  imp.loafTile = pickLoafTile(state, rules, imp);
+  if (imp.loafTile >= 0) {
+    imp.goal = 'loaf';
+    imp.mode = 'needPath';
+    imp.path = [];
+  }
+}
+
+/** Un tile de suelo propio al azar dentro del radio de paseo (-1 si no hay ninguno). */
+function pickLoafTile(state: MatchState, rules: Rules, imp: Imp): number {
+  const radius = Math.floor(rules.data.economy.wanderRadius);
+  const cx = Math.floor(imp.x);
+  const cy = Math.floor(imp.y);
+  const options: number[] = [];
+  for (let y = Math.max(0, cy - radius); y <= Math.min(state.height - 1, cy + radius); y++)
+    for (let x = Math.max(0, cx - radius); x <= Math.min(state.width - 1, cx + radius); x++) {
+      const i = tileIndex(state, x, y);
+      if (isOwnGround(state, rules, i, imp.owner) && state.roomAt[i] === 0) options.push(i);
+    }
+  if (options.length === 0) return -1;
+  return options[Math.floor(nextFloat(state) * options.length)] as number;
+}
+
+/** ¿Está holgazaneando ahora mismo? */
+export const isLoafing = (state: MatchState, imp: Imp): boolean => imp.loafUntil > state.tick;
+
+/**
+ * Una bofetada despierta al Imp: deja de holgazanear y, si está libre y sin oro, va a la tarea pendiente más cercana
+ * (por camino). Si ya trabaja o va a una tarea no se le cambia nada (solo va más rápido, por `slapUntil`).
+ */
+export function wakeImp(state: MatchState, rules: Rules, imp: Imp): void {
+  if (isLoafing(state, imp)) {
+    imp.loafUntil = 0;
+    imp.loafTile = -1;
+    resetImp(state, imp);
+  }
+  if (imp.mode !== 'idle' || imp.held || imp.carry > 0) return;
+  const best = nearestTaskByWalk(state, rules, imp, tileOfPosition(state, imp.x, imp.y));
+  if (best) startTask(imp, best);
 }
 
 function startHaul(imp: Imp): void {
@@ -69,6 +123,8 @@ export function assignTasks(state: MatchState, rules: Rules): void {
     const capacity = treasuryCapacity(state, rules, player.id);
     for (const imp of state.imps) {
       if (imp.owner !== player.id || imp.mode !== 'idle' || imp.held) continue;
+      // Holgazanea: ni coge trabajo ni reclama suelo hasta que pase su tiempo (o lo abofeteen).
+      if (isLoafing(state, imp)) continue;
 
       if (imp.carry > 0 && capacity > 0 && imp.haulBlockedVersion !== state.mapVersion) {
         startHaul(imp);
@@ -125,7 +181,12 @@ function computePath(state: MatchState, rules: Rules, imp: Imp): boolean {
   let isGoal: (i: number) => boolean;
   let heuristic: (i: number) => number = () => 0;
 
-  if (imp.goal === 'haul') {
+  if (imp.goal === 'loaf') {
+    if (imp.loafTile < 0) return false;
+    const target = imp.loafTile;
+    isGoal = (i) => i === target;
+    heuristic = (i) => octile(state, i, target, straightCost, diagonalCost);
+  } else if (imp.goal === 'haul') {
     const treasuries = new Set<number>();
     for (const r of state.rooms) {
       if (r.owner === imp.owner && rules.roomDefs[r.type]?.goldCapacityPerTile !== undefined)
@@ -179,6 +240,13 @@ function arrive(state: MatchState, rules: Rules, imp: Imp, events: SimEvent[]): 
   if (imp.goal === 'haul') {
     deposit(state, rules, imp, events);
     resetImp(state, imp);
+    maybeLoaf(state, rules, imp);
+    return;
+  }
+  if (imp.goal === 'loaf') {
+    // Llegó a donde iba a pasear: se queda ahí quieto hasta que se le pase la holgazanería.
+    imp.loafTile = -1;
+    resetImp(state, imp);
     return;
   }
   imp.mode = 'working';
@@ -186,7 +254,10 @@ function arrive(state: MatchState, rules: Rules, imp: Imp, events: SimEvent[]): 
 }
 
 function move(state: MatchState, rules: Rules, imp: Imp): void {
-  let left = rules.imp.base.speed * rules.dt;
+  // Tras una bofetada anda más rápido (mismo bono que trabaja); holgazaneando pasea despacio.
+  const slap = state.tick < imp.slapUntil ? 1 + rules.data.global.slap.workSpeedBonus : 1;
+  const loaf = imp.goal === 'loaf' ? rules.data.global.imps.loaf.speedFactor : 1;
+  let left = rules.imp.base.speed * rules.dt * slap * loaf;
   while (left > 0 && imp.path.length > 0) {
     const next = imp.path[0] as number;
     const tx = tileX(state, next) + 0.5;
@@ -230,6 +301,7 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
       imp.goal = 'none';
       imp.mode = 'idle';
       imp.work = 0;
+      maybeLoaf(state, rules, imp);
     } else if (imp.carry >= carryMax - EPS || take <= EPS) {
       // Carga llena (o la Tesorería no admite más): suelta la veta para que otro Imp tome el relevo
       // mientras este lleva el oro. La reserva dura solo mientras se mina.
@@ -256,6 +328,7 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
       imp.goal = 'none';
       imp.mode = 'idle';
       imp.work = 0;
+      maybeLoaf(state, rules, imp);
     }
     return;
   }
@@ -267,6 +340,7 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
     imp.goal = 'none';
     imp.mode = 'idle';
     imp.work = 0;
+    maybeLoaf(state, rules, imp);
   }
 }
 
@@ -332,13 +406,30 @@ export function dropImp(state: MatchState, rules: Rules, imp: Imp, tile: number)
   imp.held = false;
   imp.x = (tile % state.width) + 0.5;
   imp.y = Math.floor(tile / state.width) + 0.5;
+  // Soltarlo en la mano también lo despierta si holgazaneaba.
+  imp.loafUntil = 0;
+  imp.loafTile = -1;
   resetImp(state, imp);
   if (imp.carry > 0) return;
+  const best = nearestTaskByWalk(state, rules, imp, tile);
+  if (best) startTask(imp, best);
+}
+
+/**
+ * La tarea libre de este Imp que menos hay que andar desde `from` (rodeando muros, no en línea recta; a igual
+ * distancia, la de mejor prioridad y luego la de menor id). Ignora las que no tienen camino y las de minar sin sitio en
+ * la Tesorería.
+ */
+export function nearestTaskByWalk(
+  state: MatchState,
+  rules: Rules,
+  imp: Imp,
+  from: number,
+): Task | undefined {
   const player = state.players.find((p) => p.id === imp.owner);
-  if (!player) return;
+  if (!player) return undefined;
   const hasRoom = goldRoom(state, rules, player) > EPS;
-  // "Más cercana" = la que menos hay que andar desde donde cae (rodeando muros), no la de línea recta.
-  const dist = walkDistances(state, rules, tile);
+  const dist = walkDistances(state, rules, from);
   let best: Task | undefined;
   let bestKey: [number, number, number] | undefined;
   for (const t of state.tasks) {
@@ -361,5 +452,5 @@ export function dropImp(state: MatchState, rules: Rules, imp: Imp, tile: number)
       bestKey = key;
     }
   }
-  if (best) startTask(imp, best);
+  return best;
 }

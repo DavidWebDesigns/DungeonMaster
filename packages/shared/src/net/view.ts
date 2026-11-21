@@ -97,6 +97,8 @@ function impRec(i: MatchState['imps'][number], own: boolean): EntityRec {
     r['c'] = Math.round(i.carry);
     r['hd'] = i.held ? 1 : 0;
     r['su'] = i.slapUntil;
+    // Solo su dueño sabe que holgazanea (hasta qué tick).
+    r['lu'] = i.loafUntil;
   }
   return r;
 }

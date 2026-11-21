@@ -2,7 +2,7 @@
  * Aspecto de cada criatura (placeholders por rol, sin modelos 3D todavía): color, tamaño, icono de ánimo
  * y barra de vida. Puro y probado.
  */
-import type { Creature } from '@dm/shared';
+import type { Creature, Imp } from '@dm/shared';
 import { playerColor, type RGB } from './palette';
 
 export interface CreatureLook {
@@ -105,6 +105,18 @@ export function activityLabel(c: Pick<Creature, 'held' | 'goal' | 'mode'>): stri
     default:
       return 'Descansando';
   }
+}
+
+/** Lo que hace un Imp, en palabras para la tarjeta al pasar el cursor. */
+export function impActivityLabel(
+  imp: Pick<Imp, 'held' | 'goal' | 'mode' | 'loafUntil' | 'carry'>,
+  tick: number,
+): string {
+  if (imp.held) return 'En tu mano';
+  if (imp.loafUntil > tick) return 'Holgazaneando';
+  if (imp.goal === 'haul') return 'Lleva oro a la Tesorería';
+  if (imp.goal === 'task') return imp.mode === 'working' ? 'Trabajando' : 'Va a trabajar';
+  return 'Libre';
 }
 
 /** Aspecto de cada trampa (placeholder: una figura pequeña sobre el tile). */

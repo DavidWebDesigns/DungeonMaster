@@ -37,6 +37,8 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - ¿Se entiende por qué una criatura está contenta o enfadada (nube sobre la cabeza, panel)?
 - Día de pago (cada 2 minutos): ¿el aviso y la campanilla se notan?
 - Bofetada (**B** sobre la criatura): ¿se siente? ¿sale el "+25 % velocidad"?
+- **Imps holgazanes:** de vez en cuando uno se queda paseando con una burbuja encima (el chip de Imps dice cuántos). Una bofetada (**B**) lo despierta y lo manda a la tarea más cercana. ¿Se nota demasiado o muy poco? (probabilidad en `global.json` → `imps.loaf`).
+- **Muros:** **F** refuerza (nivel 1) y **V** mejora a nivel 2 (pide un Taller de 10 tiles). Los rivales pueden derribarlos con Imps, despacio; ¿hace falta algo más para defenderlos?
 - Recoger criaturas con el ratón (hasta 10) y soltarlas con clic derecho: ¿es natural? ¿Van al objetivo marcado más cercano?
 
 **Fase 4, combate (`/` o `/?rivals=1`)**

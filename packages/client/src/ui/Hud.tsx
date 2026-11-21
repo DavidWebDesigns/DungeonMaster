@@ -59,8 +59,16 @@ export function Hud({
           max={model.manaMax}
           label={`Maná ${fmt(model.mana)} (+${model.manaRegen.toFixed(1)}/s)`}
         />
-        <div class="chip" title="Imps">
+        <div
+          class="chip"
+          title={
+            model.impsLoafing > 0
+              ? 'Imps. Los que holgazanean no cogen trabajo: abofetéalos (B) para despertarlos.'
+              : 'Imps'
+          }
+        >
           Imps {model.imps}/{model.impsMax}
+          {model.impsLoafing > 0 && <span class="speed"> · {model.impsLoafing} holgazanean</span>}
         </div>
         <div class={model.population.full ? 'chip full' : 'chip'} title={model.population.hint}>
           Criaturas {model.population.count}/{model.population.max}
