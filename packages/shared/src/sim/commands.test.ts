@@ -196,11 +196,8 @@ describe('buildRoom / sellRoom', () => {
     const { state, data } = matchAtCorner0();
     const bad = (room: string, rect: { x: number; y: number; w: number; h: number }) =>
       applyCommand(state, data, 1, { type: 'buildRoom', room, rect });
-    expect(bad('lair', { x: 6, y: 2, w: 1, h: 2 })).toEqual({ ok: false, error: 'INVALID_TARGET' });
-    expect(bad('hatchery', { x: 6, y: 2, w: 2, h: 2 })).toEqual({
-      ok: false,
-      error: 'INVALID_TARGET',
-    });
+    // Sin tamaño mínimo (nivel 1 = 1 tile): una sala pequeña sí es válida; las vacías o con dimensiones raras, no.
+    expect(bad('lair', { x: 6, y: 2, w: 0, h: 2 })).toEqual({ ok: false, error: 'INVALID_TARGET' });
     expect(bad('lair', { x: 5, y: 5, w: 2, h: 2 })).toEqual({ ok: false, error: 'INVALID_TARGET' });
     expect(bad('lair', { x: 11, y: 2, w: 2, h: 2 })).toEqual({
       ok: false,

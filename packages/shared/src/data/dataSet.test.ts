@@ -377,6 +377,26 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw3), 'global.json', 'combat.wakeOnAttackSeconds');
   });
 
+  it('rechaza un máximo de tiles ausente, en salas que no se construyen o menor que el tamaño mínimo', () => {
+    const room = (raw: ReturnType<typeof realRawData>, id: string) =>
+      (raw.rooms as any[]).find((r) => r.id === id);
+    const raw = realRawData();
+    delete room(raw, 'lair').maxTiles;
+    expectError(parseDataSet(raw), 'rooms.json', 'necesita maxTiles');
+    const raw2 = realRawData();
+    room(raw2, 'heart').maxTiles = 10;
+    expectError(parseDataSet(raw2), 'rooms.json', 'no lleva maxTiles');
+    const raw3 = realRawData();
+    room(raw3, 'trainingRoom').minSize = { w: 4, h: 4 };
+    expectError(parseDataSet(raw3), 'rooms.json', 'menor que el tamaño mínimo');
+    const raw4 = realRawData();
+    room(raw4, 'treasury').maxTiles = 8; // las Tesorerías iniciales del mapa tienen 9 tiles
+    expectError(parseDataSet(raw4), 'maps/map-4p-01.json', 'más que su máximo (8)');
+    const raw5 = realRawData();
+    room(raw5, 'lair').maxTiles = 0;
+    expectError(parseDataSet(raw5), 'rooms.json', 'maxTiles');
+  });
+
   it('rechaza límites de red que no sean positivos', () => {
     const raw = realRawData();
     (raw.global as any).connection.maxMessagesPerSecond = 0;

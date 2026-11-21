@@ -36,21 +36,26 @@ describe('buildHudModel', () => {
     const sb = fresh();
     const m = buildHudModel(sb.state, data, 1, dig, []);
     expect(m.rooms.map((r) => [r.hotkey, r.id, r.minCost])).toEqual([
-      ['1', 'lair', 1200],
-      ['2', 'hatchery', 1350],
-      ['3', 'treasury', 900],
-      ['4', 'trainingRoom', 2700],
-      ['5', 'library', 2250],
-      ['6', 'tortureChamber', 3600],
-      ['7', 'workshop', 1800],
-      ['8', 'graveyard', 3150],
-      ['9', 'temple', 5400],
+      ['1', 'lair', 300],
+      ['2', 'hatchery', 150],
+      ['3', 'treasury', 100],
+      ['4', 'trainingRoom', 300],
+      ['5', 'library', 250],
+      ['6', 'tortureChamber', 400],
+      ['7', 'workshop', 200],
+      ['8', 'graveyard', 350],
+      ['9', 'temple', 600],
     ]);
-    // Con 5.000 de oro alcanza todo salvo el Templo (5.400).
-    expect(m.rooms.filter((r) => !r.affordable).map((r) => r.id)).toEqual(['temple']);
-    sb.state.players[0]!.gold = 1000;
+    // El coste mínimo es el de 1 tile: con 5.000 de oro alcanza todo.
+    expect(m.rooms.every((r) => r.affordable)).toBe(true);
+    sb.state.players[0]!.gold = 250;
     const poor = buildHudModel(sb.state, data, 1, dig, []).rooms;
-    expect(poor.filter((r) => r.affordable).map((r) => r.id)).toEqual(['treasury']);
+    expect(poor.filter((r) => r.affordable).map((r) => r.id)).toEqual([
+      'hatchery',
+      'treasury',
+      'library',
+      'workshop',
+    ]);
   });
 
   it('las salas con requisitos salen bloqueadas y nombran lo que falta', () => {

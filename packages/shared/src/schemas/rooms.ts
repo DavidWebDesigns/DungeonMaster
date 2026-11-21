@@ -16,6 +16,11 @@ export const RoomDef = z.strictObject({
   /** Salas que el jugador debe tener construidas antes de poder construir esta (progresión). */
   requiresRooms: z.array(Id).optional(),
   minSize: Size,
+  /**
+   * Tiles conectados máximos de una sala de este tipo = su nivel máximo. El tile siguiente abre una sala nueva de
+   * nivel 1. Obligatorio en las salas construibles; el Corazón y el Portal no lo llevan.
+   */
+  maxTiles: PositiveInt.optional(),
   sellRefund: Fraction,
   /** Tesorería: oro que cabe por tile. */
   goldCapacityPerTile: PositiveInt.optional(),

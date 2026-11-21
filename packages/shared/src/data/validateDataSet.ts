@@ -155,6 +155,19 @@ export function validateDataSet(d: DataSet): DataError[] {
       '',
       `el tamaño del Corazón debe coincidir con global.heart.size (${g.heart.size})`,
     );
+  // Niveles de sala: las construibles llevan un máximo de tiles (≥ su tamaño mínimo); el resto, no.
+  d.rooms.forEach((room, idx) => {
+    if (room.buildable && room.maxTiles === undefined)
+      err(F.rooms, `[${idx}].maxTiles`, `la sala construible "${room.id}" necesita maxTiles`);
+    if (!room.buildable && room.maxTiles !== undefined)
+      err(F.rooms, `[${idx}].maxTiles`, `"${room.id}" no se construye: no lleva maxTiles`);
+    if (room.maxTiles !== undefined && room.minSize.w * room.minSize.h > room.maxTiles)
+      err(
+        F.rooms,
+        `[${idx}].maxTiles`,
+        `maxTiles (${room.maxTiles}) es menor que el tamaño mínimo de la sala`,
+      );
+  });
   // Progresión: requisitos entre salas (existen, son construibles, no se piden a sí mismas y no hay ciclos).
   d.rooms.forEach((room, idx) => {
     room.requiresRooms?.forEach((req, j) => {
@@ -507,6 +520,12 @@ export function validateDataSet(d: DataSet): DataError[] {
       const def = d.rooms.find((x) => x.id === r.type);
       if (def && (r.rect.w < def.minSize.w || r.rect.h < def.minSize.h))
         err(mapFile, `${at}.rooms[${j}]`, `"${r.type}" es más pequeña que su tamaño mínimo`);
+      if (def?.maxTiles !== undefined && r.rect.w * r.rect.h > def.maxTiles)
+        err(
+          mapFile,
+          `${at}.rooms[${j}]`,
+          `"${r.type}" tiene ${r.rect.w * r.rect.h} tiles: más que su máximo (${def.maxTiles})`,
+        );
     });
     for (const type of ['treasury', 'portal'])
       if (!base.rooms.some((r) => r.type === type))

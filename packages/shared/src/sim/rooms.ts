@@ -1,4 +1,5 @@
 import { treasuryCapacity } from './economy';
+import { neighbors4 } from './grid';
 import type { Rules } from './rules';
 import type { MatchState, PlayerState, Room, SimEvent } from './types';
 
@@ -25,20 +26,102 @@ export function clampGold(state: MatchState, rules: Rules, player: PlayerState):
   player.gold = Math.min(player.gold, treasuryCapacity(state, rules, player.id));
 }
 
-/** Quita un tile de su sala; la sala desaparece si se queda sin tiles. No toca el terreno. */
+/** Tiles máximos de una sala de ese tipo (el nivel máximo). Sin tope (Corazón, Portal) es infinito. */
+export function roomMaxTiles(rules: Rules, type: string): number {
+  return rules.roomDefs[type]?.maxTiles ?? Infinity;
+}
+
+/** Nivel de una sala = número de tiles conectados que tiene (de 1 hasta el máximo de su tipo). */
+export const roomLevel = (room: Pick<Room, 'tiles'>): number => room.tiles.length;
+
+/** Mayor nivel que tiene el jugador entre sus salas de un tipo (0 si no tiene ninguna). */
+export function maxRoomLevel(state: MatchState, owner: number, type: string): number {
+  let best = 0;
+  for (const r of state.rooms)
+    if (r.owner === owner && r.type === type) best = Math.max(best, r.tiles.length);
+  return best;
+}
+
+/** Hace crecer `tiles` con el tile del `pool` de menor índice que toque a la sala, hasta `max`. Conserva la conexión. */
+function growInto(state: MatchState, tiles: number[], pool: Set<number>, max: number): boolean {
+  let grew = false;
+  while (tiles.length < max) {
+    let best = -1;
+    for (const t of tiles)
+      for (const n of neighbors4(state, t)) if (pool.has(n) && (best < 0 || n < best)) best = n;
+    if (best < 0) break;
+    tiles.push(best);
+    pool.delete(best);
+    grew = true;
+  }
+  return grew;
+}
+
+/** Componentes conexos (4 vecinos) de un conjunto de tiles, cada uno ordenado, por orden de su tile menor. */
+function components(state: MatchState, tiles: readonly number[]): number[][] {
+  const left = new Set(tiles);
+  const out: number[][] = [];
+  for (const seed of [...tiles].sort((a, b) => a - b)) {
+    if (!left.has(seed)) continue;
+    const comp = [seed];
+    left.delete(seed);
+    for (let k = 0; k < comp.length; k++)
+      for (const n of neighbors4(state, comp[k] as number))
+        if (left.has(n)) {
+          left.delete(n);
+          comp.push(n);
+        }
+    out.push(comp.sort((a, b) => a - b));
+  }
+  return out;
+}
+
+/**
+ * Quita un tile de su sala. Si la sala se queda sin tiles desaparece, y si se queda en varios trozos desconectados
+ * se parte en una sala por trozo: el mayor conserva el id (el de tile menor en caso de empate) y los demás reciben
+ * ids nuevos. No toca el terreno ni vuelve a unir salas.
+ */
 export function removeRoomTile(state: MatchState, rules: Rules, tile: number): void {
   const id = state.roomAt[tile] as number;
   if (!id) return;
   const room = getRoom(state, id);
   state.roomAt[tile] = 0;
   if (!room) return;
-  room.tiles = room.tiles.filter((t) => t !== tile);
-  if (room.tiles.length === 0) state.rooms = state.rooms.filter((r) => r.id !== id);
+  const rest = room.tiles.filter((t) => t !== tile);
+  if (rest.length === 0) {
+    state.rooms = state.rooms.filter((r) => r.id !== id);
+  } else {
+    const parts = components(state, rest);
+    // El mayor trozo conserva la sala; a igualdad, el que tiene el tile menor (los trozos ya salen ordenados así).
+    let keep = 0;
+    parts.forEach((p, i) => {
+      if (p.length > (parts[keep] as number[]).length) keep = i;
+    });
+    room.tiles = parts[keep] as number[];
+    parts.forEach((p, i) => {
+      if (i === keep) return;
+      const piece: Room = {
+        id: state.nextRoomId++,
+        type: room.type,
+        owner: room.owner,
+        tiles: p,
+        timer: 0,
+        stock: 0,
+      };
+      for (const t of p) state.roomAt[t] = piece.id;
+      state.rooms.push(piece);
+    });
+  }
   const owner = state.players.find((p) => p.id === room.owner);
   if (owner) clampGold(state, rules, owner);
 }
 
-/** Construye una sala ya validada y cobra su coste. */
+/**
+ * Construye una sala ya validada y cobra su coste (por tile). Las salas tienen como máximo `maxTiles` tiles conectados:
+ * primero se rellenan las salas vecinas del mismo tipo que no estén llenas (por orden de id) y lo que sobra forma salas
+ * nuevas de hasta `maxTiles` tiles, empezando por el tile de menor índice. Todo es determinista (solo depende de los
+ * índices de tile y de los ids). Devuelve los ids de las salas creadas o ampliadas.
+ */
 export function buildRoomNow(
   state: MatchState,
   rules: Rules,
@@ -49,25 +132,48 @@ export function buildRoomNow(
 ): void {
   const def = rules.roomDefs[type];
   if (!def) return;
-  const room: Room = {
-    id: state.nextRoomId++,
-    type,
-    owner: player.id,
-    tiles: [],
-    timer: 0,
-    stock: 0,
-  };
-  for (let y = rect.y; y < rect.y + rect.h; y++) {
-    for (let x = rect.x; x < rect.x + rect.w; x++) {
-      const i = y * state.width + x;
-      room.tiles.push(i);
-      state.roomAt[i] = room.id;
+  const max = roomMaxTiles(rules, type);
+  const pool = new Set<number>();
+  for (let y = rect.y; y < rect.y + rect.h; y++)
+    for (let x = rect.x; x < rect.x + rect.w; x++) pool.add(y * state.width + x);
+  player.gold -= def.goldPerTile * pool.size;
+  const touched: number[] = [];
+
+  // 1. Rellenar las salas vecinas del mismo tipo (hasta que ninguna crezca más).
+  let changed = true;
+  while (changed && pool.size > 0) {
+    changed = false;
+    for (const room of state.rooms) {
+      if (room.owner !== player.id || room.type !== type || room.tiles.length >= max) continue;
+      if (growInto(state, room.tiles, pool, max)) {
+        changed = true;
+        room.tiles.sort((a, b) => a - b);
+        for (const t of room.tiles) state.roomAt[t] = room.id;
+        if (!touched.includes(room.id)) touched.push(room.id);
+      }
     }
   }
-  player.gold -= def.goldPerTile * room.tiles.length;
-  state.rooms.push(room);
+  // 2. Lo que sobra: salas nuevas de hasta `max` tiles conectados.
+  while (pool.size > 0) {
+    const seed = Math.min(...pool);
+    pool.delete(seed);
+    const tiles = [seed];
+    growInto(state, tiles, pool, max);
+    tiles.sort((a, b) => a - b);
+    const room: Room = {
+      id: state.nextRoomId++,
+      type,
+      owner: player.id,
+      tiles,
+      timer: 0,
+      stock: 0,
+    };
+    for (const t of tiles) state.roomAt[t] = room.id;
+    state.rooms.push(room);
+    touched.push(room.id);
+  }
   state.mapVersion++;
-  events.push({ type: 'roomBuilt', playerId: player.id, roomId: room.id });
+  for (const roomId of touched) events.push({ type: 'roomBuilt', playerId: player.id, roomId });
 }
 
 /** Vende una sala entera ya validada y devuelve su parte del coste. */

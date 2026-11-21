@@ -167,7 +167,7 @@ describe('herramientas', () => {
 });
 
 describe('construir salas', () => {
-  it('un clic construye una Guarida del tamaño mínimo y se cobra tras el tick', () => {
+  it('un clic construye una Guarida de 1 tile (nivel 1) y se cobra tras el tick', () => {
     const { input, sent, sandbox } = setup();
     input.setTool({ kind: 'build', room: 'lair' });
     input.pointerDown(pt(6, 2), 0);
@@ -175,7 +175,7 @@ describe('construir salas', () => {
     expect(sent[0]!.cmd).toEqual({
       type: 'buildRoom',
       room: 'lair',
-      rect: { x: 6, y: 2, w: 2, h: 2 },
+      rect: { x: 6, y: 2, w: 1, h: 1 },
     });
     expect(sent[0]!.res.ok).toBe(true);
     sandbox.advance(100);
@@ -196,7 +196,7 @@ describe('construir salas', () => {
     expect(input.preview()).toEqual({ kind: 'none' });
     input.pointerMove(pt(6, 2));
     const ok = input.preview();
-    expect(ok).toMatchObject({ kind: 'room', room: { valid: true, cost: 1200 } });
+    expect(ok).toMatchObject({ kind: 'room', room: { valid: true, cost: 300 } });
     input.pointerMove(pt(5, 5));
     expect(input.preview()).toMatchObject({
       kind: 'room',
