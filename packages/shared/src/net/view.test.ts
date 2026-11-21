@@ -170,6 +170,13 @@ describe('vistas por jugador: lo que se ve', () => {
       expect(p1.mirror.state.traps[0]).toMatchObject({ owner: 1, hp: 321, revealed: false });
     });
 
+    it('el muro derribado solo se cuenta a su dueño, nunca a quien lo derribó', () => {
+      const { state } = trapWorld();
+      const ev = { type: 'wallBreached', playerId: 1, tile: 5 * 64 + 5 } as const;
+      expect(eventsFor([ev], state, 1, visibleMask(state, rules, 1))).toEqual([ev]);
+      expect(eventsFor([ev], state, 2, visibleMask(state, rules, 2))).toEqual([]);
+    });
+
     it('el evento de trampa destruida llega al dueño siempre y al rival solo si ve el tile', () => {
       const { state } = trapWorld();
       const ev = {

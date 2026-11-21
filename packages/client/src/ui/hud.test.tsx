@@ -37,6 +37,28 @@ describe('buildHudModel', () => {
     expect(empty.hint).toContain('Limitan las camas');
   });
 
+  it('Reforzar II sale bloqueado hasta tener un Taller de nivel 10 y dice qué pide y cuánto tarda', () => {
+    const sb = fresh();
+    const find = () =>
+      buildHudModel(sb.state, data, 1, dig, []).tools.find((t) => t.id === 'reinforce2')!;
+    expect(find()).toMatchObject({
+      hotkey: 'V',
+      locked: true,
+      tool: { kind: 'reinforce', level: 2 },
+    });
+    expect(find().hint).toContain('Taller de nivel 10');
+    sb.state.rooms.push({
+      id: 999,
+      type: 'workshop',
+      owner: 1,
+      tiles: Array.from({ length: 10 }, (_, k) => 20 * 64 + k),
+      timer: 0,
+      stock: 0,
+    });
+    expect(find().locked).toBe(false);
+    expect(find().hint).toContain('30 s');
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

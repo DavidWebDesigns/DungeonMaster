@@ -43,6 +43,10 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
 3. **`render/creatureStyle.ts` → `TRAP_LOOKS`**: forma (`spikes` o `barrel`) y color.
 4. Se coloca en un tile de suelo propio, la construyen los Imps (tarea `buildTrap`) y es invisible para el rival.
 
+## Añadir un nivel de muro reforzado
+
+Casi todo es `data/mvp/terrain.json`: un terreno nuevo (al final de la lista, para no mover los índices), con `ownable: true`, `walkable: false` y `wallLevel: N`. El terreno del que se parte lo apunta con `becomesOnReinforce`, y puede llevar `reinforceSeconds` (tiempo de reforzar, por defecto `work.reinforceSeconds`) y `reinforceRequires: { room, minLevel }` (sala con ese nivel que hace falta para llegar al siguiente nivel). `digSeconds` es lo que tarda **cualquiera** en derribarlo. El comando `reinforce` lleva `level` (1 por defecto) y los botones del HUD salen de los datos; añade el color en `render/tileStyle.ts` y su carácter único en la tabla del generador de mapas si debe aparecer en mapas.
+
 ## Añadir un hechizo
 
 `data/mvp/spells.json` + un efecto en `schemas/spells.ts` y `sim/spells.ts`. Los atajos `Q W E R T` siguen el orden del archivo; el texto de ayuda

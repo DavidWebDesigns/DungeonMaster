@@ -292,3 +292,33 @@ test('arrastrar 12 tiles de Biblioteca da una sala de nivel 10 y otra de nivel 2
   await page.mouse.move(a.x, a.y);
   await expect(page.locator('.infoline')).toContainText('Biblioteca · nivel 10/10 (completa)');
 });
+
+test('V mejora un muro reforzado a nivel 2 cuando hay un Taller de nivel 10', async ({ page }) => {
+  // Un muro de nivel 1 propio junto a la base y un Taller de 10 tiles (puesto por el estado, sin pasar por las salas previas).
+  await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state;
+    const i = 4 * s.width + 11;
+    s.terrain[i] = g.data.terrain.findIndex((t) => t.id === 'reinforcedWall');
+    (s as unknown as { owner: number[] }).owner[i] = 1;
+    (s.rooms as unknown as Array<Record<string, unknown>>).push({
+      id: 999,
+      type: 'workshop',
+      owner: 1,
+      tiles: Array.from({ length: 10 }, (_, k) => 30 * s.width + k),
+      timer: 0,
+      stock: 0,
+    });
+    s.mapVersion++;
+  });
+  await page.waitForTimeout(300);
+  await expect(page.locator('.tools .btn', { hasText: 'Reforzar II' })).not.toHaveClass(/locked/);
+  await page.keyboard.press('v');
+  await drag(page, [11, 4], [11, 4]);
+  await fastForward(page, 40);
+  const id = await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    return g.data.terrain[g.sandbox.state.terrain[4 * g.sandbox.state.width + 11] as number]?.id;
+  });
+  expect(id).toBe('reinforcedWall2');
+});

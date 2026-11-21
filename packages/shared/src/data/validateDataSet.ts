@@ -120,6 +120,39 @@ export function validateDataSet(d: DataSet): DataError[] {
       err(F.terrain, `[${i}]`, `"${t.id}" es excavable: necesita digSeconds y becomesOnDig`);
     if (t.reinforceable && t.becomesOnReinforce === undefined)
       err(F.terrain, `[${i}]`, `"${t.id}" es reforzable: necesita becomesOnReinforce`);
+    // Niveles de muro: el terreno al que se refuerza tiene que decir su nivel, y los datos de refuerzo solo valen si es reforzable.
+    if (t.wallLevel !== undefined && (t.walkable || !t.ownable))
+      err(
+        F.terrain,
+        `[${i}]`,
+        `"${t.id}" tiene wallLevel: debe ser un muro con dueño (no caminable y ownable)`,
+      );
+    if (t.becomesOnReinforce !== undefined) {
+      const target = d.terrain.find((x) => x.id === t.becomesOnReinforce);
+      if (target && target.wallLevel === undefined)
+        err(
+          F.terrain,
+          `[${i}].becomesOnReinforce`,
+          `"${target.id}" necesita wallLevel (es el resultado de reforzar)`,
+        );
+    }
+    if (!t.reinforceable && (t.reinforceSeconds !== undefined || t.reinforceRequires !== undefined))
+      err(F.terrain, `[${i}]`, `"${t.id}" lleva datos de refuerzo pero no es reforzable`);
+    if (t.reinforceRequires) {
+      const room = d.rooms.find((r) => r.id === t.reinforceRequires?.room);
+      if (!room?.buildable)
+        err(
+          F.terrain,
+          `[${i}].reinforceRequires`,
+          `la sala "${t.reinforceRequires.room}" no existe o no es construible`,
+        );
+      else if (room.maxTiles !== undefined && t.reinforceRequires.minLevel > room.maxTiles)
+        err(
+          F.terrain,
+          `[${i}].reinforceRequires`,
+          `el nivel ${t.reinforceRequires.minLevel} supera el máximo de ${room.id} (${room.maxTiles})`,
+        );
+    }
   });
   d.terrain.forEach((t, i) => {
     if (t.infinite && t.goldPerTile !== undefined)

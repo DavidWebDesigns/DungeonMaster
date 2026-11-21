@@ -506,7 +506,8 @@ El MVP necesita unos 45 assets. **Prioridad 1** es la primera tanda de la fase 6
 | tile\_gold\_vein | Veta de oro | 1 | 60–150 | Llena, media, casi agotada | Pepitas con emisivo suave, visibles en la oscuridad |
 | tile\_floor\_neutral | Suelo sin reclamar | 1 | 2–12 | — | Tierra apisonada con escombros pintados |
 | tile\_floor\_claimed | Suelo reclamado | 1 | 2–12 | Animación de reclamo (shader) | Losas con emblema en color de equipo |
-| tile\_wall\_reinforced | Muro reforzado | 2 | 80–150 | — | Mampostería con franja de color de equipo |
+| tile\_wall\_reinforced | Muro reforzado I | 2 | 80–150 | — | Mampostería con franja de color de equipo |
+| tile\_wall\_reinforced2 | Muro reforzado II | 2 | 80–150 | — | Igual que el I, más oscuro y alto, con remaches; se ve distinto a simple vista |
 | tile\_water | Agua | 2 | 2 | — | Plano con desplazamiento de UV, azul verdoso oscuro |
 | tile\_lava | Lava | 2 | 2 | — | Plano emisivo con desplazamiento de UV; brilla sin luz real |
 

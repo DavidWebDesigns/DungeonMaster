@@ -1,5 +1,5 @@
 import { inBounds, neighbors4, octile, tileIndex } from './grid';
-import { removeRoomTile } from './rooms';
+import { maxRoomLevel, removeRoomTile } from './rooms';
 import { isVeinTerrain, type Rules } from './rules';
 import type { Imp, MatchState, PlayerId, SimEvent, Task, TaskKind } from './types';
 
@@ -55,8 +55,13 @@ export function canDig(state: MatchState, rules: Rules, tile: number, player: Pl
   const def = rules.terrain[state.terrain[tile] as number];
   if (!def?.diggable) return false;
   const owner = state.owner[tile] as number;
-  return owner === 0 || owner === player;
+  // Un muro reforzado ajeno también se puede excavar, pero despacio (su `digSeconds` es largo). Lo demás ajeno, no.
+  return owner === 0 || owner === player || isWall(def);
 }
+
+/** Muro con dueño (reforzado): no caminable y con dueño posible. */
+const isWall = (def: { walkable: boolean; ownable: boolean }): boolean =>
+  !def.walkable && def.ownable;
 
 /** ¿Se puede reclamar este tile? Suelo sin dueño, o suelo enemigo sin sala protegida (Corazón, Portal). */
 export function canClaim(state: MatchState, rules: Rules, tile: number, player: PlayerId): boolean {
@@ -72,15 +77,55 @@ export function canClaim(state: MatchState, rules: Rules, tile: number, player: 
   return room ? rules.roomDefs[room.type]?.buildable === true : true;
 }
 
-export function canReinforce(
+/** Nivel de muro al que llevaría reforzar este tile (0 si no se puede reforzar). */
+export function reinforceLevelOf(rules: Rules, tile: number, state: MatchState): number {
+  const def = rules.terrain[state.terrain[tile] as number];
+  if (!def?.reinforceable || def.becomesOnReinforce === undefined) return 0;
+  const target = rules.terrain[rules.terrainIndex[def.becomesOnReinforce] as number];
+  return target?.wallLevel ?? 0;
+}
+
+/** ¿Cumple el jugador la sala que pide este terreno para reforzarlo (por ejemplo, un Taller de nivel 10)? */
+export function reinforceRoomMet(
   state: MatchState,
   rules: Rules,
   tile: number,
   player: PlayerId,
 ): boolean {
+  const req = rules.terrain[state.terrain[tile] as number]?.reinforceRequires;
+  return req === undefined || maxRoomLevel(state, player, req.room) >= req.minLevel;
+}
+
+/**
+ * Forma del refuerzo sin mirar las salas: el terreno se puede reforzar, el tile es nuestro o de nadie (un muro ya
+ * reforzado solo se mejora si es propio), toca suelo propio y, si se pide, lleva al muro de ese nivel.
+ */
+export function canReinforceShape(
+  state: MatchState,
+  rules: Rules,
+  tile: number,
+  player: PlayerId,
+  level?: number,
+): boolean {
   const def = rules.terrain[state.terrain[tile] as number];
-  if (!def?.reinforceable || state.owner[tile] !== 0) return false;
+  if (!def?.reinforceable) return false;
+  const owner = state.owner[tile] as number;
+  if (isWall(def) ? owner !== player : owner !== 0) return false;
+  if (level !== undefined && reinforceLevelOf(rules, tile, state) !== level) return false;
   return hasOwnNeighbor(state, rules, tile, player);
+}
+
+export function canReinforce(
+  state: MatchState,
+  rules: Rules,
+  tile: number,
+  player: PlayerId,
+  level?: number,
+): boolean {
+  return (
+    canReinforceShape(state, rules, tile, player, level) &&
+    reinforceRoomMet(state, rules, tile, player)
+  );
 }
 
 /** Crea o sustituye la tarea de un tile (una tarea por tile y jugador; gana la última orden). */
@@ -147,7 +192,9 @@ export function taskSeconds(state: MatchState, rules: Rules, task: Task): number
     case 'claim':
       return state.owner[task.tile] === 0 ? w.claimSeconds : w.enemyClaimSeconds;
     case 'reinforce':
-      return w.reinforceSeconds;
+      return (
+        rules.terrain[state.terrain[task.tile] as number]?.reinforceSeconds ?? w.reinforceSeconds
+      );
     case 'buildTrap': {
       const trap = state.traps.find((t) => t.tile === task.tile && t.owner === task.owner);
       return rules.data.traps.find((d) => d.id === trap?.type)?.buildSeconds ?? 0;
@@ -203,7 +250,11 @@ export function completeTask(
   if (def) {
     if (task.kind === 'dig') {
       const t = becomes(def.becomesOnDig);
+      const previousOwner = state.owner[i] as number;
       if (t !== undefined) state.terrain[i] = t;
+      // Derribar el muro de otro: su dueño se entera (aunque no lo vea).
+      if (previousOwner !== 0 && previousOwner !== task.owner)
+        events.push({ type: 'wallBreached', playerId: previousOwner, tile: i });
       state.owner[i] = 0;
       state.goldLeft[i] = 0;
     } else if (task.kind === 'claim') {

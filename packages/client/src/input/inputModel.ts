@@ -23,7 +23,8 @@ import {
 export type Tool =
   | { kind: 'dig' }
   | { kind: 'claim' }
-  | { kind: 'reinforce' }
+  /** `level` es el nivel de muro al que se quiere llegar (sin él, 1; con 2 se mejoran muros de nivel 1). */
+  | { kind: 'reinforce'; level?: number }
   | { kind: 'cancelDig' }
   | { kind: 'build'; room: string }
   | { kind: 'sell' }
@@ -170,6 +171,7 @@ export class InputModel {
       action,
       tiles,
       this.host.data.global.commands.maxTilesPerCommand,
+      t.kind === 'reinforce' ? t.level : undefined,
     );
     const [first, ...rest] = cmds;
     if (first) this.dispatch(first);
@@ -235,7 +237,12 @@ export class InputModel {
       } else if (this.hover) {
         tiles = [this.hover];
       } else return { kind: 'none' };
-      return { kind: 'tiles', action, ...highlightSelection(action, state, rules, tiles, player) };
+      const level = t.kind === 'reinforce' ? t.level : undefined;
+      return {
+        kind: 'tiles',
+        action,
+        ...highlightSelection(action, state, rules, tiles, player, level),
+      };
     }
 
     if (t.kind === 'build') {

@@ -285,7 +285,8 @@ export type Command =
   | { type: 'dig'; tiles: Point[] }
   | { type: 'cancelDig'; tiles: Point[] }
   | { type: 'claim'; tiles: Point[] }
-  | { type: 'reinforce'; tiles: Point[] }
+  /** `level` es el nivel de muro al que se quiere llegar (1 si falta). */
+  | { type: 'reinforce'; tiles: Point[]; level?: number }
   | { type: 'buildRoom'; room: string; rect: { x: number; y: number; w: number; h: number } }
   | { type: 'sellRoom'; tile: Point }
   | { type: 'castSpell'; spell: string; target?: Point; creature?: number }
@@ -346,7 +347,7 @@ export type SimEvent =
   | { type: 'trapTriggered'; playerId: PlayerId; trap: string; x: number; y: number }
   | { type: 'trapSold'; playerId: PlayerId; trap: string; tile: number }
   | { type: 'trapDestroyed'; playerId: PlayerId; trap: string; tile: number; x: number; y: number }
-  | { type: 'trapDestroyed'; playerId: PlayerId; trap: string; tile: number; x: number; y: number }
+  | { type: 'wallBreached'; playerId: PlayerId; tile: number }
   | {
       type: 'hit';
       attackerOwner: PlayerId;

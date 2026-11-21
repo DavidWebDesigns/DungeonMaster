@@ -224,6 +224,14 @@ export function deriveEffects(
       out.push({ type: 'sound', sound: 'trap', volume: 1 });
       continue;
     }
+    if (e.type === 'wallBreached') {
+      // Solo lo recibe el dueño del muro (el servidor filtra): polvo y un golpe sordo donde estaba.
+      const x = (e.tile % state.width) + 0.5;
+      const z = Math.floor(e.tile / state.width) + 0.5;
+      burst(x, 0.5, z, DUST, 18, 2, 2.4, 0.16);
+      out.push({ type: 'sound', sound: 'death', volume: 0.7 });
+      continue;
+    }
     if (e.type === 'trapDestroyed') {
       // La ve su dueño siempre y el rival solo si tiene el tile a la vista (el servidor ya lo filtra).
       if (!seesAt(e.x, e.y)) continue;

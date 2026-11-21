@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Id, NonNegativeInt, PositiveNumber } from './common';
+import { Id, NonNegativeInt, PositiveInt, PositiveNumber } from './common';
 
 /** Una entrada de terrain.json (sección 6.2 del plan). */
 export const TerrainDef = z.strictObject({
@@ -23,6 +23,12 @@ export const TerrainDef = z.strictObject({
   goldPerTile: NonNegativeInt.optional(),
   /** Veta que nunca se agota (diamantes): da oro mientras haya un Imp minándola y quede sitio en la Tesorería. No lleva goldPerTile. */
   infinite: z.boolean().optional(),
+  /** Nivel de un muro reforzado (1, 2...). El comando `reinforce` con `level: N` lleva al muro de ese nivel. */
+  wallLevel: PositiveInt.optional(),
+  /** Segundos que tarda un Imp en reforzar este terreno (si falta, `work.reinforceSeconds`). */
+  reinforceSeconds: PositiveNumber.optional(),
+  /** Sala que el jugador debe tener, con al menos `minLevel` tiles conectados, para reforzar este terreno al siguiente nivel. */
+  reinforceRequires: z.strictObject({ room: Id, minLevel: PositiveInt }).optional(),
   becomesOnDig: Id.optional(),
   becomesOnReinforce: Id.optional(),
   becomesOnClaim: Id.optional(),

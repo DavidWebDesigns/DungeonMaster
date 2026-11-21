@@ -54,15 +54,17 @@ describe('dig / cancelDig', () => {
     });
   });
 
-  it('NOT_OWNER al excavar el muro reforzado de otro jugador', () => {
+  it('el muro reforzado de otro jugador se puede marcar para excavar (despacio), pero no el suelo reclamado ajeno', () => {
     const { state, data } = matchAtCorner0();
     const i = tileIndex(state, 11, 4);
     state.terrain[i] = data.terrain.findIndex((t) => t.id === 'reinforcedWall');
     state.owner[i] = 2;
     expect(applyCommand(state, data, 1, { type: 'dig', tiles: [pt(11, 4)] })).toEqual({
-      ok: false,
-      error: 'NOT_OWNER',
+      ok: true,
+      accepted: 1,
     });
+    // El suelo reclamado ajeno no es excavable.
+    expect(applyCommand(state, data, 2, { type: 'dig', tiles: [pt(8, 4)] }).ok).toBe(false);
   });
 
   it('cancelDig retira la marca y el Imp deja de excavar', () => {
@@ -129,16 +131,12 @@ describe('claim / reinforce', () => {
     expect(applyCommand(state, data, 1, { type: 'reinforce', tiles: [pt(20, 20)] }).ok).toBe(false);
   });
 
-  it('un Imp refuerza un muro y solo su dueño puede excavarlo luego', () => {
+  it('un Imp refuerza un muro de tierra y queda como suyo (nivel 1)', () => {
     const { state, data } = matchAtCorner0();
     send(state, data, 1, { type: 'reinforce', tiles: [pt(11, 4)] });
     run(state, data, 250);
     expect(terrainId(state, data, 11, 4)).toBe('reinforcedWall');
     expect(state.owner[tileIndex(state, 11, 4)]).toBe(1);
-    expect(applyCommand(state, data, 2, { type: 'dig', tiles: [pt(11, 4)] })).toEqual({
-      ok: false,
-      error: 'NOT_OWNER',
-    });
     expect(applyCommand(state, data, 1, { type: 'dig', tiles: [pt(11, 4)] }).ok).toBe(true);
   });
 

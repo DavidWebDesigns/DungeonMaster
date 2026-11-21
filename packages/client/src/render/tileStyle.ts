@@ -16,6 +16,8 @@ const BASE: Readonly<Record<string, TileStyle>> = {
   solidRock: { height: 1.6, color: [0.16, 0.15, 0.19] },
   earth: { height: WALL, color: [0.42, 0.28, 0.17] },
   reinforcedWall: { height: WALL, color: [0.36, 0.38, 0.46] },
+  // Nivel 2: más oscuro y un poco más alto, para distinguirlo a simple vista.
+  reinforcedWall2: { height: 1.15, color: [0.22, 0.24, 0.34] },
   goldVein: { height: WALL, color: [0.82, 0.64, 0.12] },
   diamondVein: { height: WALL, color: [0.45, 0.92, 0.98] },
   neutralFloor: { height: 0.08, color: [0.3, 0.26, 0.23] },

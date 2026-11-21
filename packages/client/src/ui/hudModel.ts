@@ -7,6 +7,7 @@ import {
   creatureMaxHp,
   impCount,
   manaRegenPerSecond,
+  maxRoomLevel,
   missingRooms,
   populationOf,
   rulesOf,
@@ -26,6 +27,8 @@ export interface ToolButton {
   tool: Tool;
   active: boolean;
   hint: string;
+  /** Falta algo para usarla (por ejemplo, el Taller de nivel 10 del Reforzar II). */
+  locked?: boolean;
 }
 
 /** "A", "A y B", "A, B y C". */
@@ -205,7 +208,22 @@ export function buildHudModel(
   if (!player) throw new Error(`No existe el jugador ${playerId}`);
   const capacity = treasuryCapacity(state, rules, playerId);
 
-  const toolDefs: Array<{ id: string; label: string; hotkey: string; tool: Tool; hint: string }> = [
+  // Datos de los muros reforzados (tiempos y requisito), para no escribir números en los textos.
+  const wall1 = data.terrain.find((t) => t.wallLevel === 1) ?? { digSeconds: 0 };
+  const wall2 = data.terrain.find((t) => t.wallLevel === 2);
+  const wall2Need = data.terrain.find((t) => t.becomesOnReinforce === wall2?.id)?.reinforceRequires;
+  const wall2Name = data.rooms.find((r) => r.id === wall2Need?.room)?.name ?? '';
+  const wall2Locked =
+    wall2Need !== undefined && maxRoomLevel(state, playerId, wall2Need.room) < wall2Need.minLevel;
+  const wall2Req = wall2Need ? `${wall2Name} de nivel ${wall2Need.minLevel}` : '';
+  const toolDefs: Array<{
+    id: string;
+    label: string;
+    hotkey: string;
+    tool: Tool;
+    hint: string;
+    locked?: boolean;
+  }> = [
     {
       id: 'dig',
       label: 'Excavar',
@@ -225,7 +243,17 @@ export function buildHudModel(
       label: 'Reforzar',
       hotkey: 'F',
       tool: { kind: 'reinforce' },
-      hint: 'Solo tú podrás excavar ese muro',
+      hint: `Muro reforzado I: un rival tarda ${wall1.digSeconds ?? 0} s por Imp en derribarlo`,
+    },
+    {
+      id: 'reinforce2',
+      label: 'Reforzar II',
+      hotkey: 'V',
+      tool: { kind: 'reinforce', level: 2 },
+      hint: wall2Locked
+        ? `Mejora un muro reforzado a nivel 2 (${wall2?.digSeconds ?? 0} s por Imp para derribarlo). Pide ${wall2Req}.`
+        : `Mejora un muro reforzado a nivel 2: un rival tarda ${wall2?.digSeconds ?? 0} s por Imp en derribarlo`,
+      locked: wall2Locked,
     },
     {
       id: 'cancelDig',

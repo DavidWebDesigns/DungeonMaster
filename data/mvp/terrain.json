@@ -30,12 +30,19 @@
     "char": "R",
     "walkable": false,
     "diggable": true,
-    "reinforceable": false,
+    "reinforceable": true,
     "ownable": true,
     "buildable": false,
-    "digSeconds": 4,
+    "digSeconds": 12,
     "becomesOnDig": "neutralFloor",
-    "blocksSight": true
+    "blocksSight": true,
+    "becomesOnReinforce": "reinforcedWall2",
+    "wallLevel": 1,
+    "reinforceSeconds": 8,
+    "reinforceRequires": {
+      "room": "workshop",
+      "minLevel": 10
+    }
   },
   {
     "id": "goldVein",
@@ -109,5 +116,19 @@
     "ownable": false,
     "buildable": false,
     "blocksSight": false
+  },
+  {
+    "id": "reinforcedWall2",
+    "name": "Muro reforzado II",
+    "char": "S",
+    "walkable": false,
+    "diggable": true,
+    "reinforceable": false,
+    "ownable": true,
+    "buildable": false,
+    "digSeconds": 30,
+    "becomesOnDig": "neutralFloor",
+    "blocksSight": true,
+    "wallLevel": 2
   }
 ]

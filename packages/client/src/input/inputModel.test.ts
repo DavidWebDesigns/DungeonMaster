@@ -134,6 +134,19 @@ describe('excavar arrastrando', () => {
 });
 
 describe('herramientas', () => {
+  it('Reforzar II envía el comando con level 2', () => {
+    const { input, sent } = setup();
+    input.setTool({ kind: 'reinforce', level: 2 });
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerUp(pt(11, 5));
+    expect(sent[0]!.cmd).toMatchObject({ type: 'reinforce', level: 2 });
+    // El nivel 1 no lleva level.
+    input.setTool({ kind: 'reinforce' });
+    input.pointerDown(pt(11, 4), 0);
+    input.pointerUp(pt(11, 4));
+    expect('level' in sent[1]!.cmd).toBe(false);
+  });
+
   it('reclamar y reforzar usan su propio comando', () => {
     const { input, sent } = setup();
     input.setTool({ kind: 'reinforce' });
@@ -365,7 +378,8 @@ describe('atajos de teclado', () => {
     expect(keyAction(' ', data)).toEqual({ type: 'center' });
     expect(keyAction('z', data)).toEqual({ type: 'rotate', step: -1 });
     expect(keyAction('x', data)).toEqual({ type: 'rotate', step: 1 });
-    expect(keyAction('v', data)).toBeNull();
+    expect(keyAction('v', data)).toEqual({ type: 'tool', tool: { kind: 'reinforce', level: 2 } });
+    expect(keyAction('y', data)).toBeNull();
   });
 });
 

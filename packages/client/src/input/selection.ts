@@ -60,8 +60,17 @@ export function selectionCommands(
   action: TileAction,
   tiles: readonly Point[],
   maxTiles: number,
+  /** Solo para reforzar: nivel de muro al que se quiere llegar. */
+  level?: number,
 ): Command[] {
-  return chunk(tiles, maxTiles).map((t) => ({ type: action, tiles: t }) as Command);
+  return chunk(tiles, maxTiles).map(
+    (t) =>
+      ({
+        type: action,
+        tiles: t,
+        ...(action === 'reinforce' && level !== undefined ? { level } : {}),
+      }) as Command,
+  );
 }
 
 /** ¿Tiene sentido la acción sobre este tile? (Solo para colorear; el veredicto final es de la simulación.) */
@@ -71,6 +80,7 @@ export function tileAccepts(
   rules: Rules,
   tile: Point,
   playerId: number,
+  level?: number,
 ): boolean {
   if (tile.x < 0 || tile.y < 0 || tile.x >= state.width || tile.y >= state.height) return false;
   const i = tileIndex(state, tile.x, tile.y);
@@ -80,7 +90,7 @@ export function tileAccepts(
     case 'claim':
       return canClaim(state, rules, i, playerId);
     case 'reinforce':
-      return canReinforce(state, rules, i, playerId);
+      return canReinforce(state, rules, i, playerId, level ?? 1);
     case 'cancelDig':
       return state.tasks.some((t) => t.owner === playerId && t.tile === i && t.kind === 'dig');
   }
@@ -93,9 +103,11 @@ export function highlightSelection(
   rules: Rules,
   tiles: readonly Point[],
   playerId: number,
+  level?: number,
 ): { valid: Point[]; invalid: Point[] } {
   const valid: Point[] = [];
   const invalid: Point[] = [];
-  for (const t of tiles) (tileAccepts(action, state, rules, t, playerId) ? valid : invalid).push(t);
+  for (const t of tiles)
+    (tileAccepts(action, state, rules, t, playerId, level) ? valid : invalid).push(t);
   return { valid, invalid };
 }

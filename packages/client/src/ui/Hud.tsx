@@ -161,7 +161,7 @@ export function Hud({
           {model.tools.map((t) => (
             <button
               key={t.id}
-              class={t.active ? 'btn active' : 'btn'}
+              class={`btn${t.active ? ' active' : ''}${t.locked ? ' locked' : ''}`}
               title={t.hint}
               onClick={() => onTool(t.tool)}
             >

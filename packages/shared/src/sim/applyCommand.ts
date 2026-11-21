@@ -12,7 +12,15 @@ import { castEffect } from './spells';
 import { eliminatePlayer } from './victory';
 import { buildRoomNow, getRoom, missingRooms, roomBuildCost, sellRoomNow } from './rooms';
 import { rulesOf, type Rules } from './rules';
-import { canClaim, canDig, canReinforce, isOwnGround, removeTask, setTask } from './tasks';
+import {
+  canClaim,
+  canDig,
+  canReinforceShape,
+  isOwnGround,
+  reinforceRoomMet,
+  removeTask,
+  setTask,
+} from './tasks';
 import type {
   Command,
   CommandResult,
@@ -127,8 +135,14 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
     case 'reinforce': {
       const tiles = parseTiles(state, rules, cmd.tiles);
       if (typeof tiles === 'string') return fail(tiles);
-      const ok = tiles.filter((t) => canReinforce(state, rules, t, pid));
-      return ok.length > 0 ? { ok: true, tiles: ok } : fail('INVALID_TARGET');
+      if (cmd.level !== undefined && (!Number.isInteger(cmd.level) || cmd.level < 1))
+        return fail('INVALID_COMMAND');
+      const level = cmd.level ?? 1;
+      const shaped = tiles.filter((t) => canReinforceShape(state, rules, t, pid, level));
+      if (shaped.length === 0) return fail('INVALID_TARGET');
+      // Falta la sala que pide ese nivel (por ejemplo, un Taller de nivel 10).
+      const ok = shaped.filter((t) => reinforceRoomMet(state, rules, t, pid));
+      return ok.length > 0 ? { ok: true, tiles: ok } : fail('REQUIRES_ROOM');
     }
     case 'buildRoom': {
       const r = cmd.rect;

@@ -81,6 +81,12 @@ describe('el consejero', () => {
     );
   });
 
+  it('avisa de que han derribado un muro reforzado propio, y no de los ajenos', () => {
+    const e = { type: 'wallBreached', playerId: 1, tile: 7 } as const;
+    expect(advise([e])[0]!.text).toContain('derribado uno de tus muros');
+    expect(advise([{ ...e, playerId: 2 }])).toEqual([]);
+  });
+
   it('avisa de que han destruido una trampa propia, con su nombre, y no de las ajenas', () => {
     const e = {
       type: 'trapDestroyed',

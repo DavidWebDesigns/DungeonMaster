@@ -89,6 +89,38 @@ describe('highlightSelection', () => {
     expect(valid).toEqual([{ x: 11, y: 4 }]);
   });
 
+  it('Reforzar II solo resalta muros propios de nivel 1 (y con el Taller pedido)', () => {
+    const wall1 = data.terrain.findIndex((t) => t.id === 'reinforcedWall');
+    const i = 4 * state.width + 11;
+    state.terrain[i] = wall1;
+    state.owner[i] = 1;
+    // Sin Taller de nivel 10: no vale. (El nivel 1 sobre un muro ya reforzado tampoco.)
+    expect(highlightSelection('reinforce', state, rules, [{ x: 11, y: 4 }], 1, 2).valid).toEqual(
+      [],
+    );
+    expect(highlightSelection('reinforce', state, rules, [{ x: 11, y: 4 }], 1).valid).toEqual([]);
+    state.rooms.push({
+      id: 999,
+      type: 'workshop',
+      owner: 1,
+      tiles: Array.from({ length: 10 }, (_, k) => 20 * state.width + k),
+      timer: 0,
+      stock: 0,
+    });
+    expect(highlightSelection('reinforce', state, rules, [{ x: 11, y: 4 }], 1, 2).valid).toEqual([
+      { x: 11, y: 4 },
+    ]);
+  });
+
+  it('selectionCommands lleva el nivel solo al reforzar', () => {
+    const tiles = [{ x: 1, y: 1 }];
+    expect(selectionCommands('reinforce', tiles, 64, 2)).toEqual([
+      { type: 'reinforce', tiles, level: 2 },
+    ]);
+    expect(selectionCommands('reinforce', tiles, 64)).toEqual([{ type: 'reinforce', tiles }]);
+    expect(selectionCommands('dig', tiles, 64, 2)).toEqual([{ type: 'dig', tiles }]);
+  });
+
   it('un tile fuera del mapa no es válido', () => {
     expect(
       highlightSelection(

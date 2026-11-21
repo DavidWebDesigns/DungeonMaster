@@ -125,6 +125,13 @@ export function adviceFor(
           cooldownTicks: 100,
         });
         break;
+      case 'wallBreached':
+        out.push({
+          text: 'Un rival ha derribado uno de tus muros reforzados.',
+          key: 'wallBreached',
+          cooldownTicks: 100,
+        });
+        break;
       case 'trapDestroyed':
         out.push({
           text: `Han destruido tu ${data.traps.find((t) => t.id === e.trap)?.name?.toLowerCase() ?? 'trampa'}.`,
