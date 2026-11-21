@@ -20,7 +20,15 @@ import { mix, playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS } from './scale';
 import { AnimBoard, deathPose } from '../feel/anim';
-import { hpColor, hpFraction, lookOf, moodCloudOf, moodIconOf, trapLookOf } from './creatureStyle';
+import {
+  hpColor,
+  hpFraction,
+  lookOf,
+  moodCloudOf,
+  moodIconOf,
+  ownerMarkOf,
+  trapLookOf,
+} from './creatureStyle';
 import { CreateDisc } from '@babylonjs/core/Meshes/Builders/discBuilder';
 
 function material(scene: Scene, color: RGB, emissive = 0): StandardMaterial {
@@ -38,6 +46,8 @@ const NO_GLOW = new Color3(0, 0, 0);
 interface ImpMesh {
   body: Mesh;
   gold: Mesh;
+  /** Símbolo de enemigo (solo en los Imps rivales). */
+  mark?: Mesh;
 }
 
 interface CreatureMesh {
@@ -47,6 +57,8 @@ interface CreatureMesh {
   barFill: Mesh;
   fillMat: StandardMaterial;
   moodMat: StandardMaterial;
+  /** Símbolo de enemigo (solo en las unidades rivales). */
+  mark?: Mesh;
   height: number;
 }
 
@@ -115,7 +127,10 @@ export class EntitiesView {
         gold.parent = body;
         gold.position.y = IMP_HEIGHT / 2 + 0.08;
         gold.isPickable = false;
-        m = { body, gold };
+        const mark = ownerMarkOf(imp.owner, localPlayer).show
+          ? this.makeEnemyMark(`enemyMark${imp.id}i`, imp.owner, body, IMP_HEIGHT / 2 + 0.3)
+          : undefined;
+        m = { body, gold, mark };
         this.imps.set(imp.id, m);
       }
       const prev = sandbox.previous.get(imp.id) ?? imp;
@@ -149,7 +164,16 @@ export class EntitiesView {
       }
     }
 
-    this.updateCreatures(sandbox, data, timeSeconds, handAt, hiddenByFog, hoverUnit, handIndex);
+    this.updateCreatures(
+      sandbox,
+      data,
+      timeSeconds,
+      handAt,
+      hiddenByFog,
+      hoverUnit,
+      handIndex,
+      localPlayer,
+    );
     for (let i = this.dying.length - 1; i >= 0; i--) {
       const d = this.dying[i]!;
       const pose = deathPose(timeSeconds - d.born);
@@ -178,7 +202,28 @@ export class EntitiesView {
     }
   }
 
-  private makeCreature(id: number, type: string, owner: number): CreatureMesh {
+  /**
+   * Símbolo de enemigo: un rombo (pirámide doble, distinto de la bolita del ánimo) del color del dueño sobre la barra
+   * de vida. Cuelga del cuerpo, así que la niebla, la mano y el cursor lo ocultan o lo escalan con él.
+   */
+  private makeEnemyMark(name: string, owner: number, parent: Mesh, y: number): Mesh {
+    const mark = CreateCylinder(
+      name,
+      { diameterTop: 0.26, diameterBottom: 0, height: 0.22, tessellation: 4 },
+      this.scene,
+    );
+    const mat = new StandardMaterial(`${name}Mat`, this.scene);
+    mat.disableLighting = true;
+    mat.emissiveColor = new Color3(...ownerMarkOf(owner, 0).color);
+    mark.material = mat;
+    mark.parent = parent;
+    mark.position.y = y;
+    mark.renderingGroupId = 1;
+    mark.isPickable = false;
+    return mark;
+  }
+
+  private makeCreature(id: number, type: string, owner: number, localPlayer: number): CreatureMesh {
     const look = lookOf(type);
     const body = CreateCapsule(
       `creature${id}`,
@@ -223,7 +268,10 @@ export class EntitiesView {
     barFill.position.y = look.height / 2 + 0.12;
     barFill.renderingGroupId = 1;
     barFill.isPickable = false;
-    return { body, mood, barBack, barFill, fillMat, moodMat, height: look.height };
+    const mark = ownerMarkOf(owner, localPlayer).show
+      ? this.makeEnemyMark(`enemyMark${id}`, owner, body, look.height / 2 + 0.55)
+      : undefined;
+    return { body, mood, barBack, barFill, fillMat, moodMat, mark, height: look.height };
   }
 
   /** Criaturas: cápsulas de color por tipo con barra de vida (si están heridas) e icono de ánimo. */
@@ -235,6 +283,7 @@ export class EntitiesView {
     hiddenByFog: (owner: number, x: number, y: number) => boolean,
     hoverUnit: { kind: 'creature' | 'imp'; id: number } | null,
     handIndex: Map<string, number>,
+    localPlayer: number,
   ): void {
     const { state } = sandbox;
     const rules = rulesOf(data);
@@ -243,7 +292,7 @@ export class EntitiesView {
       alive.add(c.id);
       let m = this.creatures.get(c.id);
       if (!m) {
-        m = this.makeCreature(c.id, c.type, c.owner);
+        m = this.makeCreature(c.id, c.type, c.owner, localPlayer);
         this.creatures.set(c.id, m);
       }
       const a = sandbox.alpha;
@@ -301,6 +350,7 @@ export class EntitiesView {
           m.mood.setEnabled(false);
           m.barBack.setEnabled(false);
           m.barFill.setEnabled(false);
+          m.mark?.setEnabled(false);
           this.dying.push({ mesh: m, born: timeSeconds });
         } else m.body.dispose(false, true);
       }

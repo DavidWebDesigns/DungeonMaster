@@ -5,6 +5,7 @@ import { removeCreature } from './needs';
 import {
   attractionCandidates,
   newCreature,
+  populationOf,
   slotCapacity,
   speciesCount,
   tickPortals,
@@ -330,5 +331,40 @@ describe('criaturas superiores: 10 de la base y una sala de nivel 10 (datos real
     add(state, data, 'warlock', 1);
     expect(types(state, data)).toContain('vampire');
     expect(types(state, data)).toContain('witch');
+  });
+});
+
+describe('población y máximo actual', () => {
+  it('el máximo lo ponen las camas libres si no puede llegar nadie sin cama', () => {
+    const { state, data } = world(['lair']);
+    add(state, data, 'goblin', 2);
+    // Dos goblins ya ocupan su cama (hay que dársela: newCreature no la asigna).
+    for (const c of state.creatures.filter((x) => x.owner === 1))
+      c.beds = [
+        state.rooms
+          .find((r) => r.type === 'lair')!
+          .tiles.find((t) => !state.creatures.some((o) => o.beds.includes(t)))!,
+      ];
+    const p = populationOf(state, rulesOf(data), 1);
+    expect(p.count).toBe(2);
+    expect(p.freeBeds).toBe(6);
+    expect(p.bedCap).toBe(8);
+    expect(p.max).toBe(Math.min(8, p.portalCap, p.globalCap));
+  });
+
+  it('con un Cementerio (el Esqueleto no usa cama) las camas dejan de limitar', () => {
+    const { state, data } = world(['lair', 'library', 'graveyard']);
+    const p = populationOf(state, rulesOf(data), 1);
+    expect(p.bedCap).toBeNull();
+    expect(p.max).toBe(Math.min(p.portalCap, p.globalCap));
+  });
+
+  it('el tope del Portal y el global son un techo duro', () => {
+    const { state, data } = world(['lair']);
+    data.global.portal.reservePerPortal = 3;
+    expect(populationOf(state, rulesOf(data), 1).max).toBe(3);
+    data.global.portal.reservePerPortal = 15;
+    data.global.maxCreaturesPerPlayer = 5;
+    expect(populationOf(state, rulesOf(data), 1).max).toBe(5);
   });
 });

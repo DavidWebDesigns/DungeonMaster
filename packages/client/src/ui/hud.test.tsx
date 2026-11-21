@@ -26,6 +26,17 @@ describe('buildHudModel', () => {
     expect(m.clock).toBe('00:00');
   });
 
+  it('la población muestra criaturas actuales sobre el máximo y se marca llena', () => {
+    const sb = fresh();
+    const empty = buildHudModel(sb.state, data, 1, dig, []).population;
+    // Sin Guarida ni salas de criaturas no cabe nadie: 0/0 y llena.
+    expect(empty.count).toBe(0);
+    expect(empty.max).toBe(0);
+    expect(empty.full).toBe(true);
+    expect(empty.hint).toContain('camas libres 0');
+    expect(empty.hint).toContain('Limitan las camas');
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

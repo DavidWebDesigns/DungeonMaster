@@ -395,3 +395,9 @@
   white-space: nowrap;
   pointer-events: none;
 }
+
+/* Población al máximo: ámbar, para que se note que no llegarán más criaturas. */
+.chip.full {
+  color: #ffd27a;
+  border-color: #a8742a;
+}

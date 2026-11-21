@@ -3,7 +3,7 @@
  * y barra de vida. Puro y probado.
  */
 import type { Creature } from '@dm/shared';
-import type { RGB } from './palette';
+import { playerColor, type RGB } from './palette';
 
 export interface CreatureLook {
   color: RGB;
@@ -124,3 +124,15 @@ export const TRAP_LOOKS: Readonly<Record<string, TrapLook>> = {
 
 export const trapLookOf = (id: string): TrapLook =>
   TRAP_LOOKS[id] ?? { color: [0.9, 0.9, 0.2], shape: 'spikes' };
+
+export interface OwnerMark {
+  /** Se dibuja el símbolo sobre la barra de vida. */
+  show: boolean;
+  /** Color del dueño (el símbolo es el mismo para todos los rivales; el color dice de quién es). */
+  color: RGB;
+}
+
+/** Símbolo distintivo de las unidades enemigas: solo las que no son del jugador local. */
+export function ownerMarkOf(owner: number, localPlayer: number): OwnerMark {
+  return { show: owner !== localPlayer, color: playerColor(owner) };
+}

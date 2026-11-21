@@ -171,3 +171,28 @@ test('el minimapa no tapa ningún otro panel de la interfaz', async ({ page }) =
     }
   }
 });
+
+test('las unidades rivales llevan un símbolo de enemigo y las propias no', async ({ page }) => {
+  await page.goto('/?rivals=1');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  type Dbg = {
+    __dm: {
+      sandbox: { state: { imps: Array<{ id: number; owner: number }> } };
+      renderer: { scene: { getMeshByName(n: string): { isEnabled(): boolean } | null } };
+    };
+  };
+  await page.evaluate(() => (window as unknown as Dbg).__dm.sandbox.state.imps.length);
+  await page.waitForTimeout(500);
+  const res = await page.evaluate(() => {
+    const d = (window as unknown as Dbg).__dm;
+    const mark = (id: number) => d.renderer.scene.getMeshByName(`enemyMark${id}i`) !== null;
+    return {
+      mine: d.sandbox.state.imps.filter((i) => i.owner === 1).map((i) => mark(i.id)),
+      theirs: d.sandbox.state.imps.filter((i) => i.owner !== 1).map((i) => mark(i.id)),
+    };
+  });
+  expect(res.mine.length).toBeGreaterThan(0);
+  expect(res.mine.every((m) => !m)).toBe(true);
+  expect(res.theirs.length).toBeGreaterThan(0);
+  expect(res.theirs.every((m) => m)).toBe(true);
+});

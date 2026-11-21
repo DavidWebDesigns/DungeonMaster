@@ -1,4 +1,4 @@
-import { findBed } from './lairs';
+import { findBed, freeLairTiles } from './lairs';
 import { creatureMaxHp } from './creatureStats';
 import { maxRoomLevel } from './rooms';
 import { nextFloat } from './rng';
@@ -10,6 +10,51 @@ export function creatureCount(state: MatchState, owner: PlayerId): number {
   let n = 0;
   for (const c of state.creatures) if (c.owner === owner) n++;
   return n;
+}
+
+export interface Population {
+  /** Criaturas vivas del jugador. */
+  count: number;
+  /** Máximo actual: el menor de los topes que hoy frenan la llegada de criaturas. */
+  max: number;
+  /** Tiles de Guarida libres (camas). */
+  freeBeds: number;
+  /** Tope global por jugador. */
+  globalCap: number;
+  /** Tope de los Portales (`reservePerPortal` × Portales). */
+  portalCap: number;
+  /** Tope por camas (`count + camas libres`); `null` si hoy puede llegar alguna especie que no usa cama. */
+  bedCap: number | null;
+}
+
+/**
+ * Población actual y máximo actual de un jugador. El máximo es el menor entre el tope global, el de los Portales y las
+ * camas (las camas solo cuentan si ninguna especie sin cama, como el Esqueleto, puede llegar ya: tiene sus salas).
+ */
+export function populationOf(state: MatchState, rules: Rules, owner: PlayerId): Population {
+  const count = creatureCount(state, owner);
+  const portals = state.rooms.filter((r) => r.owner === owner && r.type === 'portal').length;
+  const g = rules.data.global;
+  const globalCap = g.maxCreaturesPerPlayer;
+  const portalCap = g.portal.reservePerPortal * portals;
+  const freeBeds = freeLairTiles(state, rules, owner).length;
+  const bedless = rules.data.creatures.some(
+    (def) =>
+      def.attraction &&
+      def.base.lairTiles === 0 &&
+      def.attraction.requires.every(
+        (req) => roomTiles(state, owner, req.room) >= (req.minTiles ?? 1),
+      ),
+  );
+  const bedCap = bedless ? null : count + freeBeds;
+  return {
+    count,
+    max: Math.min(globalCap, portalCap, bedCap ?? Infinity),
+    freeBeds,
+    globalCap,
+    portalCap,
+    bedCap,
+  };
 }
 
 /** Criaturas vivas de una especie que tiene el jugador. */

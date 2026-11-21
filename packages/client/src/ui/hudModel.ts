@@ -8,6 +8,7 @@ import {
   impCount,
   manaRegenPerSecond,
   missingRooms,
+  populationOf,
   rulesOf,
   treasuryCapacity,
   type DataSet,
@@ -106,6 +107,8 @@ export interface HudModel {
   manaRegen: number;
   imps: number;
   impsMax: number;
+  /** Criaturas vivas y máximo actual (camas, Portal y tope global). */
+  population: { count: number; max: number; full: boolean; hint: string };
   clock: string;
   tools: ToolButton[];
   rooms: RoomButton[];
@@ -164,6 +167,28 @@ export function formatClock(tick: number, tickRate: number): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/** Población para el HUD: "6/9" y de dónde sale el máximo. */
+export function populationModel(
+  state: MatchState,
+  rules: ReturnType<typeof rulesOf>,
+  playerId: number,
+): HudModel['population'] {
+  const p = populationOf(state, rules, playerId);
+  const parts = [`camas libres ${p.freeBeds}`, `tope ${p.globalCap}`, `Portal ${p.portalCap}`];
+  const limit =
+    p.max === p.portalCap && p.portalCap <= p.globalCap
+      ? 'Limita el Portal.'
+      : p.bedCap !== null && p.max === p.bedCap
+        ? 'Limitan las camas: construye más Guarida.'
+        : 'Limita el tope global.';
+  return {
+    count: p.count,
+    max: p.max,
+    full: p.count >= p.max,
+    hint: `Criaturas ${p.count} de ${p.max} (${parts.join(' · ')}). ${limit}`,
+  };
 }
 
 export function buildHudModel(
@@ -302,6 +327,7 @@ export function buildHudModel(
     manaRegen: manaRegenPerSecond(state, rules, playerId),
     imps: impCount(state, playerId),
     impsMax: data.global.imps.max,
+    population: populationModel(state, rules, playerId),
     clock: formatClock(state.tick, data.global.tickRate),
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
     rooms,

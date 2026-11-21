@@ -13,7 +13,13 @@ export { hashState } from './hashState';
 export { replay } from './replay';
 export * from './creatureStats';
 export * from './lairs';
-export { creatureCount, attractionCandidates, newCreature } from './portal';
+export {
+  creatureCount,
+  attractionCandidates,
+  newCreature,
+  populationOf,
+  type Population,
+} from './portal';
 export { removeCreature } from './needs';
 export * from './fog';
 export * from './combat';

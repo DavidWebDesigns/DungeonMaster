@@ -62,6 +62,9 @@ export function Hud({
         <div class="chip" title="Imps">
           Imps {model.imps}/{model.impsMax}
         </div>
+        <div class={model.population.full ? 'chip full' : 'chip'} title={model.population.hint}>
+          Criaturas {model.population.count}/{model.population.max}
+        </div>
         <div class="chip clock">
           {model.clock}
           {speedLabel && <span class="speed"> {speedLabel}</span>}

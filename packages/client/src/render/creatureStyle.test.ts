@@ -8,7 +8,9 @@ import {
   lookOf,
   MOOD_ICONS,
   moodIconOf,
+  ownerMarkOf,
 } from './creatureStyle';
+import { playerColor } from './palette';
 import { IMP_RADIUS } from './scale';
 
 describe('creatureStyle', () => {
@@ -71,5 +73,15 @@ describe('moodCloudOf', () => {
       color: MOOD_ICONS['happy']!.color,
       scale: { x: 1, y: 1 },
     });
+  });
+});
+
+describe('ownerMarkOf', () => {
+  it('solo marca a las unidades que no son del jugador local, con el color de su dueño', () => {
+    expect(ownerMarkOf(1, 1).show).toBe(false);
+    const enemy = ownerMarkOf(2, 1);
+    expect(enemy.show).toBe(true);
+    expect(enemy.color).toEqual(playerColor(2));
+    expect(ownerMarkOf(3, 1).color).not.toEqual(enemy.color);
   });
 });
