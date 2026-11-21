@@ -20,6 +20,11 @@ export const EconomyConfig = z.strictObject({
     restSeconds: Seconds,
     lairHealFractionPerSecond: Fraction,
   }),
+  /**
+   * Cada tile de una sala cuesta este factor más que el anterior de la misma sala (1,2 = +20 %): el tile n cuesta
+   * `goldPerTile × factor^(n-1)`. Al ampliar una sala se continúa desde su tamaño; una sala nueva vuelve al precio base.
+   */
+  roomCostGrowthPerTile: PositiveNumber,
   wanderRadius: NonNegativeNumber,
   /** Pausa entre dos paseos de una criatura ociosa (al azar entre min y max). */
   wanderPauseSeconds: z.strictObject({ min: NonNegativeNumber, max: NonNegativeNumber }),

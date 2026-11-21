@@ -171,7 +171,59 @@ export function planRoomBuild(
 }
 
 /**
- * Construye una sala ya validada y cobra su coste (por tile). Las salas tienen como máximo `maxTiles` tiles conectados
+ * Precio del tile número `n` (desde 1) de una sala de ese tipo: `goldPerTile × factor^(n-1)`, redondeado por tile para
+ * que el oro siga siendo entero. La potencia se arma multiplicando (no con `Math.pow`) para que servidor y navegador
+ * den exactamente lo mismo.
+ */
+export function roomTileCost(rules: Rules, type: string, n: number): number {
+  const def = rules.roomDefs[type];
+  if (!def || n < 1) return 0;
+  const growth = rules.data.economy.roomCostGrowthPerTile;
+  let factor = 1;
+  for (let i = 1; i < n; i++) factor *= growth;
+  return Math.round(def.goldPerTile * factor);
+}
+
+/** Coste de pasar una sala de `from` tiles a `to` tiles (los tiles `from+1 ... to`). */
+export function roomCostRange(rules: Rules, type: string, from: number, to: number): number {
+  let sum = 0;
+  for (let n = from + 1; n <= to; n++) sum += roomTileCost(rules, type, n);
+  return sum;
+}
+
+/** Coste total de un reparto (`planRoomBuild`): cada sala resultante paga desde su tamaño actual hasta el final. */
+export function planCost(
+  state: MatchState,
+  rules: Rules,
+  type: string,
+  pieces: RoomPiece[],
+): number {
+  let sum = 0;
+  for (const p of pieces) {
+    const before = p.roomId === null ? 0 : (getRoom(state, p.roomId)?.tiles.length ?? 0);
+    sum += roomCostRange(rules, type, before, p.tiles.length);
+  }
+  return sum;
+}
+
+/** Lo que costaría construir este rectángulo ahora mismo (la misma cuenta que usa la simulación al cobrar). */
+export function roomBuildCost(
+  state: MatchState,
+  rules: Rules,
+  owner: number,
+  type: string,
+  rect: { x: number; y: number; w: number; h: number },
+): number {
+  return planCost(state, rules, type, planRoomBuild(state, rules, owner, type, rect));
+}
+
+/** Lo que vale una sala hoy (para la devolución al venderla): sus tiles pagados con el precio incremental. */
+export function roomValue(rules: Rules, room: Pick<Room, 'type' | 'tiles'>): number {
+  return roomCostRange(rules, room.type, 0, room.tiles.length);
+}
+
+/**
+ * Construye una sala ya validada y cobra su coste (por tile, creciente dentro de cada sala). Las salas tienen como máximo `maxTiles` tiles conectados
  * (ver `planRoomBuild` para cómo se reparte el rectángulo).
  */
 export function buildRoomNow(
@@ -184,9 +236,10 @@ export function buildRoomNow(
 ): void {
   const def = rules.roomDefs[type];
   if (!def) return;
-  player.gold -= def.goldPerTile * rect.w * rect.h;
+  const plan = planRoomBuild(state, rules, player.id, type, rect);
+  player.gold -= planCost(state, rules, type, plan);
   const touched: number[] = [];
-  for (const piece of planRoomBuild(state, rules, player.id, type, rect)) {
+  for (const piece of plan) {
     let room = piece.roomId === null ? undefined : getRoom(state, piece.roomId);
     if (!room) {
       room = { id: state.nextRoomId++, type, owner: player.id, tiles: [], timer: 0, stock: 0 };
@@ -210,7 +263,7 @@ export function sellRoomNow(
 ): void {
   const def = rules.roomDefs[room.type];
   if (!def) return;
-  const refund = Math.floor(def.goldPerTile * room.tiles.length * def.sellRefund);
+  const refund = Math.floor(roomValue(rules, room) * def.sellRefund);
   for (const t of room.tiles) state.roomAt[t] = 0;
   state.rooms = state.rooms.filter((r) => r.id !== room.id);
   player.gold += refund;

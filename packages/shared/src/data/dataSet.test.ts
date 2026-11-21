@@ -202,6 +202,12 @@ describe('errores de referencias cruzadas', () => {
     expectError(parseDataSet(raw), 'global.json', 'la esquina 9 no existe');
   });
 
+  it('rechaza un factor de coste por tile menor que 1', () => {
+    const raw = realRawData();
+    (raw.economy as any).roomCostGrowthPerTile = 0.9;
+    expectError(parseDataSet(raw), 'economy.json', 'roomCostGrowthPerTile');
+  });
+
   it('rechaza una pausa de paseo con mínimo mayor que máximo', () => {
     const raw = realRawData();
     (raw.economy as any).wanderPauseSeconds = { min: 6, max: 2 };

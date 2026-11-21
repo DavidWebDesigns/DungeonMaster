@@ -43,15 +43,17 @@ describe('Cámara de tortura', () => {
     const { state, data } = world(true);
     const room = state.rooms.find((r) => r.type === 'tortureChamber')!;
     expect(room.tiles).toHaveLength(9);
-    expect(state.players[0]!.gold).toBe(9000 - 9 * 400);
+    // 9 tiles a 400 con +20 % por tile: 8.318.
+    expect(state.players[0]!.gold).toBe(9000 - 8318);
     applyCommand(state, data, 1, { type: 'sellRoom', tile: { x: 2, y: 11 } });
     step(state, data);
-    expect(state.players[0]!.gold).toBe(9000 - 9 * 400 + 1800);
+    expect(state.players[0]!.gold).toBe(9000 - 8318 + 4159);
   });
 
   it('atrae a la Torturadora (1 por 3 tiles de Cámara); el Verdugo pide 10 torturadoras y una Cámara de nivel 10', () => {
     const { state, data } = world(true);
-    // Guarida para tener camas.
+    // Guarida para tener camas (con oro de sobra: cada tile cuesta un 20 % más que el anterior).
+    state.players[0]!.gold = 50000;
     applyCommand(state, data, 1, {
       type: 'buildRoom',
       room: 'lair',

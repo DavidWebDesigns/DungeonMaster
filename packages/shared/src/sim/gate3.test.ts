@@ -22,11 +22,11 @@ import type { Command, MatchState, SimEvent } from './types';
 
 const TEN_MINUTES = 6000;
 
-/** Solo comandos: construir las tres salas que caben en la base y excavar hasta las vetas para tener ingresos. */
+/** Solo comandos: construir las tres salas (de 4 tiles: con el precio incremental, 4.025 de los 5.000 iniciales) y excavar hasta las vetas para tener ingresos. */
 const SCRIPT: Command[] = [
   { type: 'buildRoom', room: 'lair', rect: { x: 5, y: 2, w: 2, h: 2 } },
-  { type: 'buildRoom', room: 'hatchery', rect: { x: 2, y: 5, w: 3, h: 3 } },
-  { type: 'buildRoom', room: 'trainingRoom', rect: { x: 2, y: 8, w: 3, h: 3 } },
+  { type: 'buildRoom', room: 'hatchery', rect: { x: 2, y: 5, w: 2, h: 2 } },
+  { type: 'buildRoom', room: 'trainingRoom', rect: { x: 2, y: 8, w: 2, h: 2 } },
   { type: 'dig', tiles: [...row(4, 11, 16), ...row(5, 14, 16)] },
 ];
 

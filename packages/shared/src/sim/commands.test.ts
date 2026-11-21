@@ -166,13 +166,14 @@ describe('claim / reinforce', () => {
 describe('buildRoom / sellRoom', () => {
   const lair = { x: 6, y: 2, w: 2, h: 2 };
 
-  it('construye una Guarida, cobra 300 por tile y la deja en el estado', () => {
+  it('construye una Guarida, cobra 300 el primer tile (+20 % por cada tile más) y la deja en el estado', () => {
     const { state, data } = matchAtCorner0();
     expect(send(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair })).toEqual({
       ok: true,
       accepted: 4,
     });
-    expect(state.players[0]!.gold).toBe(5000 - 1200);
+    // 300 + 360 + 432 + 518 = 1610
+    expect(state.players[0]!.gold).toBe(5000 - 1610);
     expect(
       state.rooms.some((r) => r.type === 'lair' && r.owner === 1 && r.tiles.length === 4),
     ).toBe(true);
@@ -181,12 +182,12 @@ describe('buildRoom / sellRoom', () => {
 
   it('NO_GOLD si no alcanza el oro', () => {
     const { state, data } = matchAtCorner0();
-    state.players[0]!.gold = 1199;
+    state.players[0]!.gold = 1609;
     expect(applyCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair })).toEqual({
       ok: false,
       error: 'NO_GOLD',
     });
-    state.players[0]!.gold = 1200;
+    state.players[0]!.gold = 1610;
     expect(applyCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair }).ok).toBe(
       true,
     );
@@ -225,14 +226,15 @@ describe('buildRoom / sellRoom', () => {
     const events = step(state, data);
     expect(events.filter((e) => e.type === 'roomBuilt')).toHaveLength(1);
     expect(events.filter((e) => e.type === 'commandRejected')).toHaveLength(1);
-    expect(state.players[0]!.gold).toBe(3800);
+    expect(state.players[0]!.gold).toBe(5000 - 1610);
   });
 
   it('vender devuelve el 50 % y libera los tiles', () => {
     const { state, data } = matchAtCorner0();
     send(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair });
     expect(send(state, data, 1, { type: 'sellRoom', tile: pt(7, 3) }).ok).toBe(true);
-    expect(state.players[0]!.gold).toBe(3800 + 600);
+    // Devuelve el 50 % de lo que vale la sala (1610): 805.
+    expect(state.players[0]!.gold).toBe(5000 - 1610 + 805);
     expect(state.roomAt[tileIndex(state, 6, 2)]).toBe(0);
     expect(state.rooms.some((r) => r.type === 'lair')).toBe(false);
   });
@@ -297,7 +299,7 @@ describe('previewCommand', () => {
     const { state, data } = matchAtCorner0();
     expect(
       previewCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair }),
-    ).toMatchObject({ ok: true, cost: 1200 });
+    ).toMatchObject({ ok: true, cost: 1610 });
     state.players[0]!.gold = 10;
     expect(previewCommand(state, data, 1, { type: 'buildRoom', room: 'lair', rect: lair })).toEqual(
       { ok: false, error: 'NO_GOLD' },

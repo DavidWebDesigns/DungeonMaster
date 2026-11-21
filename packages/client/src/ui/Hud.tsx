@@ -178,7 +178,7 @@ export function Hud({
               class={`btn${r.active ? ' active' : ''}${r.available ? '' : ' locked'}${r.affordable ? '' : ' poor'}`}
               title={
                 r.available
-                  ? `${r.name}: ${fmt(r.costPerTile)} de oro por tile. Hasta ${r.maxTiles} tiles conectados por sala (nivel ${r.maxTiles}); el siguiente abre otra sala.`
+                  ? `${r.name}: ${fmt(r.costPerTile)} de oro el primer tile, +${r.growthPercent} % por cada tile más de la misma sala. Hasta ${r.maxTiles} tiles conectados por sala (nivel ${r.maxTiles}); el siguiente abre otra sala.`
                   : `Requiere: ${r.requires}`
               }
               onClick={() => onTool({ kind: 'build', room: r.id })}

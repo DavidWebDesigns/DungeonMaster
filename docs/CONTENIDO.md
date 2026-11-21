@@ -22,7 +22,7 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
 
 ## Añadir una sala
 
-1. **`data/mvp/rooms.json`**: `id`, `name`, `modelId`, `buildable`, `goldPerTile`, `minSize`, `maxTiles` (las construibles; 10 = nivel máximo), `sellRefund`. Los parámetros propios de la sala son
+1. **`data/mvp/rooms.json`**: `id`, `name`, `modelId`, `buildable`, `goldPerTile` (precio del primer tile; cada tile extra de la misma sala cuesta `economy.roomCostGrowthPerTile` veces más), `minSize`, `maxTiles` (las construibles; 10 = nivel máximo), `sellRefund`. Los parámetros propios de la sala son
    campos opcionales de `schemas/rooms.ts` (por ejemplo `goldCapacityPerTile`).
 2. **`packages/shared/src/data/validateDataSet.ts` → `REQUIRED_ROOM_FIELDS`**: añade el `id` con los campos que la sala exige.
    (Es la lista de salas que el juego da por obligatorias.)

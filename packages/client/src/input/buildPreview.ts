@@ -3,6 +3,7 @@
  * Usa `previewCommand`, así que las reglas son exactamente las de la simulación.
  */
 import {
+  planCost,
   planRoomBuild,
   previewCommand,
   rulesOf,
@@ -80,11 +81,13 @@ export function previewRoom(
   room: string,
   rect: Rect,
 ): RoomPreview {
-  const def = data.rooms.find((r) => r.id === room);
-  const cost = (def?.goldPerTile ?? 0) * rect.w * rect.h;
+  const rules = rulesOf(data);
+  // Se calcula siempre (también sin oro o en un sitio inválido): es lo que se enseña como coste.
+  const plan = planRoomBuild(state, rules, playerId, room, rect);
+  const cost = planCost(state, rules, room, plan);
   const res = previewCommand(state, data, playerId, { type: 'buildRoom', room, rect });
   if (!res.ok) return { rect, valid: false, error: res.error, cost, pieces: [] };
-  const pieces = planRoomBuild(state, rulesOf(data), playerId, room, rect).map((p) => ({
+  const pieces = plan.map((p) => ({
     tiles: p.tiles,
     level: p.tiles.length,
     extends: p.roomId !== null,

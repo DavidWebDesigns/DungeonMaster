@@ -46,10 +46,10 @@ describe('roomRectFromDrag', () => {
 describe('previewRoom', () => {
   const data = loadGameData();
 
-  it('una Guarida en suelo libre propio es válida y cuesta 300 por tile', () => {
+  it('una Guarida en suelo libre propio es válida y cuesta 300 más un 20 % por cada tile extra', () => {
     const state = createMatch({ playerCount: 1 }, data, 1);
     const p = previewRoom(state, data, 1, 'lair', { x: 6, y: 2, w: 2, h: 2 });
-    expect(p).toMatchObject({ valid: true, cost: 1200 });
+    expect(p).toMatchObject({ valid: true, cost: 1610 });
   });
 
   it('encima del Corazón es inválida', () => {
@@ -66,7 +66,7 @@ describe('previewRoom', () => {
     expect(previewRoom(state, data, 1, 'lair', { x: 6, y: 2, w: 2, h: 2 })).toMatchObject({
       valid: false,
       error: 'NO_GOLD',
-      cost: 1200,
+      cost: 1610,
     });
   });
 

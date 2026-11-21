@@ -38,6 +38,8 @@ export interface RoomButton {
   name: string;
   hotkey: string;
   costPerTile: number;
+  /** Cuánto sube el precio cada tile extra de la misma sala (20 = +20 %). */
+  growthPercent: number;
   /** Coste de la sala más pequeña posible. */
   minCost: number;
   minSize: string;
@@ -250,6 +252,7 @@ export function buildHudModel(
       name: r.name,
       hotkey: roomHotkey(i),
       costPerTile: r.goldPerTile,
+      growthPercent: Math.round((data.economy.roomCostGrowthPerTile - 1) * 100),
       minCost: r.goldPerTile * minTiles,
       minSize: `${r.minSize.w}×${r.minSize.h}`,
       maxTiles: r.maxTiles ?? 0,

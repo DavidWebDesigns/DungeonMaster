@@ -10,7 +10,7 @@ import { checkBuildTrap, placeTrapNow, sellTrapNow, trapAt } from './traps';
 import { isVisible } from './fog';
 import { castEffect } from './spells';
 import { eliminatePlayer } from './victory';
-import { buildRoomNow, getRoom, missingRooms, sellRoomNow } from './rooms';
+import { buildRoomNow, getRoom, missingRooms, roomBuildCost, sellRoomNow } from './rooms';
 import { rulesOf, type Rules } from './rules';
 import { canClaim, canDig, canReinforce, isOwnGround, removeTask, setTask } from './tasks';
 import type {
@@ -153,7 +153,7 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
           tiles.push(i);
         }
       }
-      const cost = def.goldPerTile * tiles.length;
+      const cost = roomBuildCost(state, rules, pid, cmd.room, r);
       if (player.gold < cost) return fail('NO_GOLD');
       return { ok: true, tiles, cost };
     }

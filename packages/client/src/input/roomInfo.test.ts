@@ -17,7 +17,7 @@ function world() {
       sb.state.owner[y * 64 + x] = 1;
     }
   sb.state.mapVersion++;
-  sb.state.players[0]!.gold = 9000;
+  sb.state.players[0]!.gold = 30000;
   return sb;
 }
 
@@ -28,10 +28,11 @@ describe('previsión por salas', () => {
     expect(p.valid).toBe(true);
     expect(p.pieces.map((x) => x.level).sort((a, b) => b - a)).toEqual([10, 2]);
     expect(p.pieces.every((x) => !x.extends)).toBe(true);
-    expect(p.cost).toBe(12 * 250);
+    // Sala de 10 tiles (6.489) + sala de 2 tiles (550): el precio sube dentro de cada sala y la 2.ª vuelve a empezar.
+    expect(p.cost).toBe(7039);
     // (el idioma "es" no agrupa los miles de 4 cifras: 3000 y no 3.000)
     expect(roomPreviewText(p, 'Biblioteca')).toMatch(
-      /^Biblioteca: sala nueva de nivel 10 \+ sala nueva de nivel 2 · 3\.?000 de oro$/,
+      /^Biblioteca: sala nueva de nivel 10 \+ sala nueva de nivel 2 · 7\.?039 de oro$/,
     );
   });
 

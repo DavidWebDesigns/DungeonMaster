@@ -465,6 +465,12 @@ export function validateDataSet(d: DataSet): DataError[] {
     err('economy.json', 'hunger.eatThreshold', 'supera hunger.max');
   if (e.sleep.sleepThreshold > e.sleep.max)
     err('economy.json', 'sleep.sleepThreshold', 'supera sleep.max');
+  if (e.roomCostGrowthPerTile < 1)
+    err(
+      'economy.json',
+      'roomCostGrowthPerTile',
+      'no puede ser menor que 1 (las salas no se abaratan)',
+    );
   if (e.wanderPauseSeconds.min > e.wanderPauseSeconds.max)
     err('economy.json', 'wanderPauseSeconds', 'min no puede ser mayor que max');
 

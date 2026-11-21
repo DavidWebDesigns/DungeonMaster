@@ -11,7 +11,7 @@ import type { MatchState, Room } from './types';
 function world() {
   const { state, data } = duel();
   extendTerritory(state, data);
-  state.players[0]!.gold = 9000;
+  state.players[0]!.gold = 40000;
   return { state, data, rules: rulesOf(data) };
 }
 const build = (
@@ -98,7 +98,7 @@ describe('niveles de sala', () => {
     const rooms = mine(state, 'library');
     expect(rooms.map(roomLevel).sort((a, b) => b - a)).toEqual([10, 2]);
     expect(events.filter((e) => e.type === 'roomBuilt')).toHaveLength(2);
-    expect(state.players[0]!.gold).toBe(gold - 12 * 250);
+    expect(state.players[0]!.gold).toBe(gold - 7039);
     checkInvariants(state);
   });
 
@@ -222,11 +222,14 @@ describe('quitar un tile de una sala', () => {
     const { state, data } = world();
     build(state, data, 'library', 2, 11, 5, 2);
     build(state, data, 'library', 7, 11, 2, 1); // otra sala (la primera estaba llena)
-    const gold = state.players[0]!.gold;
+    // La Tesorería guarda 9.000: se parte de menos para que la devolución no se recorte.
+    state.players[0]!.gold = 2000;
+    const gold = 2000;
     applyCommand(state, data, 1, { type: 'sellRoom', tile: { x: 2, y: 11 } });
     step(state, data);
     expect(mine(state, 'library').map(roomLevel)).toEqual([2]);
-    expect(state.players[0]!.gold).toBe(gold + Math.floor(10 * 250 * 0.5));
+    // Una Biblioteca de 10 tiles vale 6.489 (250 × (1,2^10 − 1) / 0,2, redondeado por tile): devuelve la mitad.
+    expect(state.players[0]!.gold).toBe(gold + 3244);
     checkInvariants(state);
   });
 });

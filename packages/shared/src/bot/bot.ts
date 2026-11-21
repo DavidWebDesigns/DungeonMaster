@@ -18,6 +18,7 @@ import { treasuryCapacity, createImpCost, impCount } from '../sim/economy';
 import { freeLairTiles } from '../sim/lairs';
 import { visibleMask } from '../sim/fog';
 import { tileIndex, tileX, tileY } from '../sim/grid';
+import { roomCostRange } from '../sim/rooms';
 import { nextFloat } from '../sim/rng';
 import { isVeinTerrain, rulesOf } from '../sim/rules';
 import type { Command, MatchState, PlayerId, PlayerState } from '../sim/types';
@@ -44,7 +45,12 @@ export interface BotOptions {
 
 const ROOM_ORDER = ['lair', 'hatchery', 'trainingRoom', 'library'] as const;
 /** Se construye siempre al menos de 3×3 (la Guarida mínima es 2×2, pero 3×3 da 9 camas). */
-const ROOM_SIZE = 3;
+/** Tamaños que prueba el bot al construir una sala, del más grande al más pequeño (el tile n de una sala cuesta +20 %). */
+const ROOM_SIZES: ReadonlyArray<{ w: number; h: number }> = [
+  { w: 3, h: 3 },
+  { w: 3, h: 2 },
+  { w: 2, h: 2 },
+];
 const RESERVE_GOLD = 300;
 
 export function createBot(playerId: PlayerId, seed: number, options: BotOptions = {}): Bot {
@@ -79,12 +85,15 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
     state: MatchState,
     data: DataSet,
     room: string,
+    size: { w: number; h: number },
+    /** Oro que puede gastar: solo valen los sitios que cuestan menos. */
+    budget: number,
   ): { x: number; y: number; w: number; h: number } | null {
     const rules = rulesOf(data);
     const def = rules.roomDefs[room];
     if (!def) return null;
-    const w = Math.max(def.minSize.w, ROOM_SIZE);
-    const h = Math.max(def.minSize.h, ROOM_SIZE);
+    const w = Math.max(def.minSize.w, size.w);
+    const h = Math.max(def.minSize.h, size.h);
     const heart = heartCenter(state, playerId);
     const candidates: Array<{ x: number; y: number; d: number }> = [];
     for (let y = 0; y + h <= state.height; y++) {
@@ -100,9 +109,9 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
     candidates.splice(0, candidates.length, ...keyed.map((x) => x.c));
     for (const c of candidates) {
       const rect = { x: c.x, y: c.y, w, h };
-      // NO_GOLD cuenta como sitio válido: lo que se busca aquí es hueco, no dinero.
+      // El coste depende del sitio (ampliar una sala vecina cuesta distinto que abrir una nueva).
       const res = previewCommand(state, data, playerId, { type: 'buildRoom', room, rect });
-      if (res.ok || res.error === 'NO_GOLD') return rect;
+      if (res.ok && (res.cost ?? 0) <= budget) return rect;
     }
     return null;
   }
@@ -140,12 +149,23 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
     if (!next) return;
     const def = rules.roomDefs[next];
     if (!def) return;
-    const w = Math.max(def.minSize.w, ROOM_SIZE);
-    const h = Math.max(def.minSize.h, ROOM_SIZE);
-    if (p.gold < def.goldPerTile * w * h + RESERVE_GOLD) return;
-    const spot = findRoomSpot(state, data, next);
+    // Si no alcanza ni para la sala más pequeña, no se busca sitio.
+    const smallest = ROOM_SIZES[ROOM_SIZES.length - 1] as { w: number; h: number };
+    const cheapest = roomCostRange(
+      rules,
+      next,
+      0,
+      Math.max(def.minSize.w, smallest.w) * Math.max(def.minSize.h, smallest.h),
+    );
+    if (p.gold < cheapest + RESERVE_GOLD) return;
     mem.lastRoomTry = state.tick;
-    if (spot) out.push({ type: 'buildRoom', room: next, rect: spot });
+    for (const size of ROOM_SIZES) {
+      const spot = findRoomSpot(state, data, next, size, p.gold - RESERVE_GOLD);
+      if (spot) {
+        out.push({ type: 'buildRoom', room: next, rect: spot });
+        return;
+      }
+    }
   }
 
   function planImps(state: MatchState, data: DataSet, p: PlayerState, out: Command[]): void {
