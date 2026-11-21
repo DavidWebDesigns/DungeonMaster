@@ -196,7 +196,12 @@ export function attractionCandidates(
       missingLair = true;
       continue;
     }
-    candidates.push({ type: def.id, weight: def.attraction.attractWeight });
+    // La probabilidad sigue a las salas: cuantos más tiles tenga la sala que atrae a la especie (la más pequeña de las que
+    // pide, si son varias), más veces sale. `attractWeight` es lo común o rara que es esa especie.
+    const tiles = Math.min(
+      ...def.attraction.requires.map((req) => roomTiles(state, owner, req.room)),
+    );
+    candidates.push({ type: def.id, weight: def.attraction.attractWeight * Math.max(1, tiles) });
   }
   return {
     candidates,

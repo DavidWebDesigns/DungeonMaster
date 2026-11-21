@@ -22,6 +22,7 @@ import { errorMessage } from './input/messages';
 import { applyRotateKey, applyWheel, updateCamera } from './render/cameraController';
 import {
   centerOn,
+  centerOnAboveHud,
   defaultCamera,
   groundFootprint,
   pickTile,
@@ -125,7 +126,10 @@ export class Game {
       x: heart.x + Math.floor(heart.w / 2),
       y: heart.y + Math.floor(heart.h / 2),
     };
-    this.camera = centerOn(defaultCamera({ x: 0, y: 0 }, this.renderer.aspect), this.heartTile);
+    this.camera = centerOnAboveHud(
+      defaultCamera({ x: 0, y: 0 }, this.renderer.aspect),
+      this.heartTile,
+    );
 
     this.input = new InputModel(
       {
@@ -497,7 +501,7 @@ export class Game {
     if (!action) return;
     if (action.type === 'tool') this.input.setTool(action.tool);
     else if (action.type === 'cancel') this.input.setTool({ kind: 'dig' });
-    else if (action.type === 'center') this.camera = centerOn(this.camera, this.heartTile);
+    else if (action.type === 'center') this.camera = centerOnAboveHud(this.camera, this.heartTile);
     else if (action.type === 'slap') this.input.slapHovered();
     else if (action.type === 'pause') this.togglePause();
     else if (action.type === 'mute') this.toggleMute();

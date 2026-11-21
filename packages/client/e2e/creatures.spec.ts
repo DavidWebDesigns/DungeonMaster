@@ -78,10 +78,10 @@ async function buildLair(page: Page, x = 2, y = 11) {
 test('con una Guarida llega un Goblin por el Portal y sale en la lista y con aviso', async ({
   page,
 }) => {
-  await advance(page, 31); // sin Guarida: avisa de que falta
+  await advance(page, 61); // sin Guarida: avisa de que falta
   await expect(page.locator('.notice').first()).toContainText('Guarida');
   await buildLair(page);
-  await advance(page, 31);
+  await advance(page, 61);
   const types = await page.evaluate(() => dm().sandbox.state.creatures.map((c) => c.type));
   expect(types).toContain('goblin');
   await expect(page.locator('.creatures')).toContainText('Goblin');
@@ -93,7 +93,7 @@ test('se recoge una criatura con el ratón, aparece en la mano y se suelta con c
   page,
 }) => {
   await buildLair(page);
-  await advance(page, 31);
+  await advance(page, 61);
   const id = await page.evaluate(() => dm().sandbox.state.creatures[0]!.id);
   await page.evaluate(() => {
     // Quieta mientras se prueba el ratón.
@@ -122,7 +122,7 @@ test('se recoge una criatura con el ratón, aparece en la mano y se suelta con c
 
 test('B abofetea a la criatura bajo el cursor y baja su ánimo', async ({ page }) => {
   await buildLair(page);
-  await advance(page, 31);
+  await advance(page, 61);
   await page.evaluate(() => {
     const c = dm().sandbox.state.creatures[0]!;
     c.x = 3.5;
@@ -146,7 +146,7 @@ test('B abofetea a la criatura bajo el cursor y baja su ánimo', async ({ page }
 
 test('el panel de criaturas centra la cámara al hacer clic en una', async ({ page }) => {
   await buildLair(page);
-  await advance(page, 31);
+  await advance(page, 61);
   await page.locator('.creature').first().click();
   await page.waitForTimeout(200);
   const errors: string[] = [];
@@ -159,7 +159,7 @@ test('hover resalta la criatura, muestra su tarjeta y se recoge aunque esté act
 }) => {
   await buildLair(page);
   await page.keyboard.press('1'); // vuelve a modo construir: antes esto impedía recoger
-  await advance(page, 31);
+  await advance(page, 61);
   await page.evaluate(() => {
     const c = dm().sandbox.state.creatures[0]!;
     c.x = 3.5;
@@ -187,7 +187,7 @@ test('se llevan varias criaturas y el clic derecho las suelta todas en el tile d
   await buildLair(page, 2, 11);
   await buildLair(page, 5, 11);
   await buildLair(page, 8, 11);
-  await advance(page, 95); // llegan 3 criaturas
+  await advance(page, 185); // llegan 3 criaturas (una por minuto)
   const n = await page.evaluate(() => dm().sandbox.state.creatures.length);
   expect(n).toBeGreaterThanOrEqual(3);
   const ids = await page.evaluate(() => dm().sandbox.state.creatures.map((c) => c.id));
@@ -213,7 +213,7 @@ test('se llevan varias criaturas y el clic derecho las suelta todas en el tile d
 
 test('Tab salta a la siguiente criatura propia y centra la cámara en ella', async ({ page }) => {
   await buildLair(page);
-  await advance(page, 31);
+  await advance(page, 61);
   await page.evaluate(() => {
     const c = dm().sandbox.state.creatures[0]!;
     c.x = 3.5;

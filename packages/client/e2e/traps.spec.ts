@@ -133,8 +133,8 @@ test('se recoge un Imp con el ratón y al soltarlo va a la tarea marcada más ce
   const id = await page.evaluate(() => dm().sandbox.state.imps.find((i) => i.owner === 1)!.id);
   await page.evaluate((i) => {
     const imp = dm().sandbox.state.imps.find((k) => k.id === i)!;
-    imp.x = 3.5;
-    imp.y = 9.5;
+    imp.x = 6.5;
+    imp.y = 6.5;
   }, id);
   const at = await page.evaluate((i) => dm().impToScreen(i), id);
   await page.mouse.click(at!.x, at!.y);

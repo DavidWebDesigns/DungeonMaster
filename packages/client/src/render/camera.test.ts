@@ -3,6 +3,7 @@ import {
   ISO,
   cameraBasis,
   centerOn,
+  centerOnAboveHud,
   defaultCamera,
   orthoBounds,
   panCamera,
@@ -203,5 +204,17 @@ describe('controles', () => {
     const dist = (c: CameraState) => Math.hypot(c.targetX - 30.5, c.targetZ - 30.5);
     expect(dist(far) / dist(near)).toBeCloseTo(4);
     expect(dist(near)).toBeCloseTo(6 * 2 * CAMERA_CONTROLS.panScreensPerSecond * 0.5);
+  });
+});
+
+describe('centrar por encima de la botonera', () => {
+  it('deja el tile en la parte alta de la pantalla, con cualquier giro y zoom', () => {
+    for (const rotation of [0, 1, 2, 3])
+      for (const zoom of [5, ISO.defaultZoom, 20]) {
+        const c = centerOnAboveHud(cam({ rotation, zoom }), { x: 10, y: 12 });
+        const s = worldToScreen(c, 10.5, 0, 12.5);
+        expect(s.nx).toBeCloseTo(0, 6); // sigue centrado en horizontal
+        expect(s.ny).toBeCloseTo(ISO.hudShift, 6); // y subido el 30 % de la semialtura
+      }
   });
 });

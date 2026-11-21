@@ -252,9 +252,9 @@ describe('buildRoom / sellRoom', () => {
 
   it('vender la Tesorería recorta el oro a la capacidad que queda', () => {
     const { state, data } = matchAtCorner0();
-    send(state, data, 1, { type: 'buildRoom', room: 'treasury', rect: { x: 6, y: 2, w: 3, h: 3 } }); // 900 de oro
+    send(state, data, 1, { type: 'buildRoom', room: 'treasury', rect: { x: 6, y: 5, w: 3, h: 3 } });
     state.players[0]!.gold = 9000 + 3000; // capacidad total 18.000, esto cabe
-    send(state, data, 1, { type: 'sellRoom', tile: pt(2, 2) }); // vende la original: capacidad 9.000 (3 tiles = 3×... )
+    send(state, data, 1, { type: 'sellRoom', tile: pt(9, 3) }); // vende la original: queda la capacidad de la nueva
     const cap = state.rooms
       .filter((r) => r.owner === 1 && r.type === 'treasury')
       .reduce((n, r) => n + r.tiles.length * 1000, 0);

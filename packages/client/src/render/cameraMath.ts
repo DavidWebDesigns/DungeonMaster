@@ -12,12 +12,14 @@ export const ISO = {
   elevationDeg: 35.264,
   /** Giro base: la cámara mira en diagonal, y cada paso de rotación suma 90°. */
   baseYawDeg: 45,
-  /** Semialtura visible, en tiles: menos = más cerca. */
-  minZoom: 4,
-  maxZoom: 40,
-  defaultZoom: 11,
+  /** Semialtura visible, en tiles: menos = más cerca. (Con los tiles un 30 % más grandes: 4, 40 y 11 divididos entre 1,3.) */
+  minZoom: 3.1,
+  maxZoom: 30.8,
+  defaultZoom: 8.5,
   /** Distancia de la cámara al punto de mira; en ortográfica solo evita recortes. */
   distance: 120,
+  /** Cuánto se sube el Corazón al centrarlo, como fracción de la semialtura visible (la botonera tapa abajo). */
+  hudShift: 0.3,
   /** Altura de un muro de tierra o roca. */
   wallHeight: 1,
 } as const;
@@ -202,6 +204,24 @@ export function panCamera(
     ...cam,
     targetX: Math.max(0, Math.min(map.width, x)),
     targetZ: Math.max(0, Math.min(map.height, z)),
+  };
+}
+
+/**
+ * Como `centerOn`, pero deja el tile en la parte alta de la pantalla: la botonera ocupa el 40 % de abajo y, centrado,
+ * el Corazón y la base quedaban medio tapados. Sube el tile `ISO.hudShift` de la semialtura visible (hacia donde
+ * apunta "abajo" en pantalla, según el giro de la cámara).
+ */
+export function centerOnAboveHud(cam: CameraState, tile: Point): CameraState {
+  const centered = centerOn(cam, tile);
+  const { forward } = cameraBasis(cam.rotation);
+  const len = Math.hypot(forward[0], forward[2]) || 1;
+  // Metros de suelo para subir un `hudShift` de la semialtura en pantalla (la vertical se acorta por sen(elevación)).
+  const ground = (ISO.hudShift * cam.zoom) / Math.sin(rad(ISO.elevationDeg));
+  return {
+    ...centered,
+    targetX: centered.targetX - (forward[0] / len) * ground,
+    targetZ: centered.targetZ - (forward[2] / len) * ground,
   };
 }
 

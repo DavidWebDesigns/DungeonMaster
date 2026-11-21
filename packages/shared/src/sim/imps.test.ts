@@ -248,6 +248,8 @@ describe('Crear Imp', () => {
       );
     const ticksToFinish = (extraImps: number) => {
       const { state, data } = matchAtCorner0();
+      // Sin paseos: los Imps nuevos se quedan donde nacen, así solo cuenta cuántos hay.
+      data.economy.wanderRadius = 0;
       state.players[0]!.mana = 5000;
       for (let k = 0; k < extraImps; k++) {
         state.players[0]!.cooldowns = {};

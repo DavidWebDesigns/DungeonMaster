@@ -79,8 +79,10 @@ export interface Imp {
   slapUntil: number;
   /** Hasta qué tick holgazanea sin coger trabajo (0 = no holgazanea). Una bofetada lo despierta. */
   loafUntil: number;
-  /** Tile al que pasea mientras holgazanea (-1 = ninguno). */
+  /** Tile al que pasea mientras holgazanea o sin objetivo (-1 = ninguno). */
   loafTile: number;
+  /** Hasta qué tick descansa quieto entre dos paseos cuando no tiene nada que hacer. */
+  restUntil: number;
   /** Criatura que lo atacó la última vez (0 = nadie) y cuándo. */
   attackedBy: number;
   attackedTick: number;

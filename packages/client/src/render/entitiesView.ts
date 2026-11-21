@@ -18,7 +18,7 @@ import { creatureMaxHp, rulesOf, type DataSet, type MatchState, type Room } from
 import type { GameSource } from '../sandbox/source';
 import { mix, playerColor, ROOM_COLORS, type RGB } from './palette';
 import { treasuryFill } from './roomProps';
-import { IMP_HEIGHT, IMP_RADIUS } from './scale';
+import { IMP_HEIGHT, IMP_RADIUS, UNIT_SCALE as S } from './scale';
 import { AnimBoard, deathPose } from '../feel/anim';
 import {
   hpColor,
@@ -116,25 +116,25 @@ export class EntitiesView {
         // Sombra del color del jugador bajo los pies: ayuda a ver al Imp aunque sea pequeño.
         const shadow = CreateDisc(
           `impShadow${imp.id}`,
-          { radius: 0.2, tessellation: 16 },
+          { radius: 0.2 * S, tessellation: 16 },
           this.scene,
         );
         shadow.material = material(this.scene, playerColor(imp.owner), 0.5);
         shadow.parent = body;
         shadow.rotation.x = Math.PI / 2;
-        shadow.position.y = -IMP_HEIGHT / 2 - 0.07;
+        shadow.position.y = -IMP_HEIGHT / 2 - 0.07 * S;
         shadow.isPickable = false;
-        const gold = CreateBox(`impGold${imp.id}`, { size: 0.12 }, this.scene);
+        const gold = CreateBox(`impGold${imp.id}`, { size: 0.12 * S }, this.scene);
         gold.material = this.goldMat;
         gold.parent = body;
-        gold.position.y = IMP_HEIGHT / 2 + 0.08;
+        gold.position.y = IMP_HEIGHT / 2 + 0.08 * S;
         gold.isPickable = false;
         const mark = ownerMarkOf(imp.owner, localPlayer).show
-          ? this.makeEnemyMark(`enemyMark${imp.id}i`, imp.owner, body, IMP_HEIGHT / 2 + 0.3)
+          ? this.makeEnemyMark(`enemyMark${imp.id}i`, imp.owner, body, IMP_HEIGHT / 2 + 0.3 * S)
           : undefined;
         const bubble = CreateSphere(
           `impLoaf${imp.id}`,
-          { diameter: 0.16, segments: 6 },
+          { diameter: 0.16 * S, segments: 6 },
           this.scene,
         );
         const bubbleMat = new StandardMaterial(`impLoafMat${imp.id}`, this.scene);
@@ -142,7 +142,7 @@ export class EntitiesView {
         bubbleMat.emissiveColor = new Color3(0.9, 0.9, 1);
         bubble.material = bubbleMat;
         bubble.parent = body;
-        bubble.position.y = IMP_HEIGHT / 2 + 0.22;
+        bubble.position.y = IMP_HEIGHT / 2 + 0.22 * S;
         bubble.isPickable = false;
         bubble.setEnabled(false);
         m = { body, gold, mark, bubble };
@@ -160,7 +160,7 @@ export class EntitiesView {
       } else {
         m.body.position.set(
           prev.x + (imp.x - prev.x) * a,
-          0.1 + IMP_HEIGHT / 2,
+          0.1 * S + IMP_HEIGHT / 2,
           prev.y + (imp.y - prev.y) * a,
         );
         m.gold.setEnabled(imp.carry > 0 && !hiddenByFog(imp.owner, imp.x, imp.y));
@@ -169,7 +169,8 @@ export class EntitiesView {
       // Holgazanea (solo se sabe de los propios): se balancea y lleva una burbuja encima.
       const lazy = imp.owner === localPlayer && imp.loafUntil > state.tick && !imp.held;
       m.bubble.setEnabled(lazy);
-      m.bubble.position.y = IMP_HEIGHT / 2 + 0.22 + (lazy ? 0.04 * Math.sin(timeSeconds * 3) : 0);
+      m.bubble.position.y =
+        IMP_HEIGHT / 2 + 0.22 * S + (lazy ? 0.04 * S * Math.sin(timeSeconds * 3) : 0);
       m.body.rotation.z = lazy ? 0.25 * Math.sin(timeSeconds * 2.5 + imp.id) : 0;
       // Bajo el cursor: más grande y brillante (los Imps son pequeños: se agrandan más).
       const impHovered = hoverUnit?.kind === 'imp' && hoverUnit.id === imp.id && !imp.held;
@@ -203,11 +204,12 @@ export class EntitiesView {
         continue;
       }
       d.mesh.body.scaling.set(pose.sx, pose.sy, pose.sx);
-      d.mesh.body.position.y = 0.1 + (d.mesh.height * pose.sy) / 2;
+      d.mesh.body.position.y = 0.1 * S + (d.mesh.height * pose.sy) / 2;
       const mat = d.mesh.body.material as StandardMaterial | null;
       if (mat) mat.alpha = pose.alpha;
     }
     this.updateTraps(state, data, localPlayer, visible);
+    this.updateHeartBars(state, data, localPlayer, visible);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
@@ -229,7 +231,7 @@ export class EntitiesView {
   private makeEnemyMark(name: string, owner: number, parent: Mesh, y: number): Mesh {
     const mark = CreateCylinder(
       name,
-      { diameterTop: 0.26, diameterBottom: 0, height: 0.22, tessellation: 4 },
+      { diameterTop: 0.26 * S, diameterBottom: 0, height: 0.22 * S, tessellation: 4 },
       this.scene,
     );
     const mat = new StandardMaterial(`${name}Mat`, this.scene);
@@ -255,41 +257,41 @@ export class EntitiesView {
     // Disco del color del jugador bajo los pies: distingue a los tuyos de los del rival.
     const ring = CreateDisc(
       `creatureRing${id}`,
-      { radius: look.radius + 0.12, tessellation: 20 },
+      { radius: look.radius + 0.12 * S, tessellation: 20 },
       this.scene,
     );
     ring.material = material(this.scene, playerColor(owner), 0.6);
     ring.parent = body;
     ring.rotation.x = Math.PI / 2;
-    ring.position.y = -look.height / 2 - 0.07;
+    ring.position.y = -look.height / 2 - 0.07 * S;
     ring.isPickable = false;
     const moodMat = new StandardMaterial(`mood${id}`, this.scene);
     moodMat.disableLighting = true;
-    const mood = CreateSphere(`moodIcon${id}`, { diameter: 0.22, segments: 6 }, this.scene);
+    const mood = CreateSphere(`moodIcon${id}`, { diameter: 0.22 * S, segments: 6 }, this.scene);
     mood.material = moodMat;
     mood.parent = body;
-    mood.position.y = look.height / 2 + 0.3;
+    mood.position.y = look.height / 2 + 0.3 * S;
     mood.isPickable = false;
-    const barBack = CreatePlane(`barBack${id}`, { width: 0.7, height: 0.08 }, this.scene);
+    const barBack = CreatePlane(`barBack${id}`, { width: 0.7 * S, height: 0.08 * S }, this.scene);
     const backMat = new StandardMaterial(`barBackMat${id}`, this.scene);
     backMat.disableLighting = true;
     backMat.emissiveColor = new Color3(0.08, 0.06, 0.1);
     barBack.material = backMat;
     barBack.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
     barBack.parent = body;
-    barBack.position.y = look.height / 2 + 0.12;
+    barBack.position.y = look.height / 2 + 0.12 * S;
     barBack.isPickable = false;
     const fillMat = new StandardMaterial(`barFillMat${id}`, this.scene);
     fillMat.disableLighting = true;
-    const barFill = CreatePlane(`barFill${id}`, { width: 0.7, height: 0.08 }, this.scene);
+    const barFill = CreatePlane(`barFill${id}`, { width: 0.7 * S, height: 0.08 * S }, this.scene);
     barFill.material = fillMat;
     barFill.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
     barFill.parent = body;
-    barFill.position.y = look.height / 2 + 0.12;
+    barFill.position.y = look.height / 2 + 0.12 * S;
     barFill.renderingGroupId = 1;
     barFill.isPickable = false;
     const mark = ownerMarkOf(owner, localPlayer).show
-      ? this.makeEnemyMark(`enemyMark${id}`, owner, body, look.height / 2 + 0.55)
+      ? this.makeEnemyMark(`enemyMark${id}`, owner, body, look.height / 2 + 0.55 * S)
       : undefined;
     return { body, mood, barBack, barFill, fillMat, moodMat, mark, height: look.height };
   }
@@ -327,7 +329,7 @@ export class EntitiesView {
         m.body.setEnabled(true);
         m.body.position.set(
           prev.x + (c.x - prev.x) * a,
-          0.1 + m.height / 2,
+          0.1 * S + m.height / 2,
           prev.y + (c.y - prev.y) * a,
         );
       }
@@ -351,7 +353,7 @@ export class EntitiesView {
       m.barFill.setEnabled(frac < 1);
       if (frac < 1) {
         m.barFill.scaling.x = Math.max(0.001, frac);
-        m.barFill.position.x = -0.35 * (1 - frac);
+        m.barFill.position.x = -0.35 * S * (1 - frac);
         const col = hpColor(frac);
         m.fillMat.emissiveColor = new Color3(...col);
       }
@@ -373,6 +375,70 @@ export class EntitiesView {
           m.mark?.setEnabled(false);
           this.dying.push({ mesh: m, born: timeSeconds });
         } else m.body.dispose(false, true);
+      }
+    }
+  }
+
+  private readonly heartBars = new Map<
+    number,
+    { back: Mesh; fill: Mesh; fillMat: StandardMaterial }
+  >();
+
+  /**
+   * Barra de vida de cada Corazón: aparece cuando ha recibido daño (propio siempre; el rival, solo si su Corazón está
+   * a la vista) y se queda mientras no se cure. Cuelga sobre la esfera, mira siempre a la cámara.
+   */
+  private updateHeartBars(
+    state: MatchState,
+    data: DataSet,
+    localPlayer: number,
+    visible: Uint8Array | null,
+  ): void {
+    const alive = new Set<number>();
+    const maxHp = data.global.heart.hp;
+    for (const room of state.rooms) {
+      if (room.type !== 'heart') continue;
+      const player = state.players.find((p) => p.id === room.owner);
+      if (!player) continue;
+      const frac = hpFraction({ hp: player.heartHp }, maxHp);
+      const seen =
+        room.owner === localPlayer || visible === null || room.tiles.some((t) => visible[t] === 1);
+      if (frac >= 1 || !seen) continue;
+      alive.add(room.id);
+      let bar = this.heartBars.get(room.id);
+      if (!bar) {
+        const width = 1.8;
+        const back = CreatePlane(`heartBarBack${room.id}`, { width, height: 0.16 }, this.scene);
+        const backMat = new StandardMaterial(`heartBarBackMat${room.id}`, this.scene);
+        backMat.disableLighting = true;
+        backMat.emissiveColor = new Color3(0.08, 0.06, 0.1);
+        back.material = backMat;
+        back.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+        back.isPickable = false;
+        const fillMat = new StandardMaterial(`heartBarFillMat${room.id}`, this.scene);
+        fillMat.disableLighting = true;
+        const fill = CreatePlane(`heartBarFill${room.id}`, { width, height: 0.16 }, this.scene);
+        fill.material = fillMat;
+        fill.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+        fill.renderingGroupId = 1;
+        fill.isPickable = false;
+        bar = { back, fill, fillMat };
+        this.heartBars.set(room.id, bar);
+      }
+      const cx = room.tiles.reduce((n, t) => n + (t % state.width) + 0.5, 0) / room.tiles.length;
+      const cz =
+        room.tiles.reduce((n, t) => n + Math.floor(t / state.width) + 0.5, 0) / room.tiles.length;
+      bar.back.position.set(cx, 2.3, cz);
+      // El relleno se encoge hacia la izquierda (en pantalla, por ser billboard) manteniendo su borde izquierdo.
+      bar.fill.scaling.x = Math.max(0.001, frac);
+      bar.fill.position.set(cx, 2.3, cz);
+      bar.fillMat.emissiveColor = new Color3(...hpColor(frac));
+    }
+    for (const [id, bar] of this.heartBars) {
+      if (!alive.has(id)) {
+        bar.back.dispose();
+        bar.fill.dispose();
+        this.heartBars.delete(id);
       }
     }
   }

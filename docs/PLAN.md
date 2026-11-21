@@ -370,8 +370,8 @@ Portal y Corazón vienen construidos en el mapa y no se pueden vender.
 
 **Atracción por el Portal**
 
-- Cada Portal intenta atraer una criatura cada 30 s si: hay hueco en la reserva (15 por Portal), no se llegó al máximo de 20 criaturas y hay **guarida libre** para ella.
-- Entre las criaturas cuyo requisito se cumple, se elige al azar con el generador de la partida, ponderado por `attractWeight` de cada criatura [PROPUESTO: Goblin 4, Troll 3, Warlock 3, Demonio de bilis 2].
+- Cada Portal intenta atraer una criatura **cada 60 s** si: hay hueco en la reserva (15 por Portal), no se llegó al máximo de 20 criaturas y hay **guarida libre** para ella.
+- Entre las criaturas cuyo requisito se cumple, se elige al azar con el generador de la partida, ponderado por `attractWeight` de cada criatura **por los tiles de la sala que la atrae** (la más pequeña si pide varias): una Guarida de 10 tiles saca más Goblins que una de 4 [PROPUESTO: Goblin 4, Troll 3, Warlock 3, Demonio de bilis 2].
 - Si ninguna cumple requisito, no llega nadie y el cliente muestra un aviso ("Construye una Guarida para atraer criaturas").
 
 **Niveles**

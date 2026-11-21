@@ -28,12 +28,12 @@
   "imps": {
     "start": 4,
     "max": 12,
-    "loaf": { "chance": 0.15, "minSeconds": 5, "maxSeconds": 15, "speedFactor": 0.4 }
+    "loaf": { "chance": 0.075, "minSeconds": 5, "maxSeconds": 15, "speedFactor": 0.4 }
   },
   "maxCreaturesPerPlayer": 20,
   "heart": { "hp": 8000, "size": 3 },
   "roomTileHp": 1000,
-  "portal": { "attractIntervalSeconds": 30, "reservePerPortal": 15 },
+  "portal": { "attractIntervalSeconds": 60, "reservePerPortal": 15 },
   "work": {
     "claimSeconds": 1.5,
     "enemyClaimSeconds": 3,

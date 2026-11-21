@@ -25,7 +25,8 @@ function world(
 ) {
   const m = matchAtCorner0();
   // Salvo en las pruebas del Portal, no llegan criaturas solas: cada prueba controla las suyas.
-  if (!portalOn) m.data.global.portal.attractIntervalSeconds = 100000;
+  // Las pruebas del Portal cuentan en ciclos de 30 s (el intervalo real, 60 s, se prueba aparte).
+  m.data.global.portal.attractIntervalSeconds = portalOn ? 30 : 100000;
   mutate?.(m.data);
   buildRooms(m.state, m.data, rooms);
   return m;
@@ -113,6 +114,18 @@ describe('el Portal atrae criaturas', () => {
     expect(
       eventsOf(events, 'portalIdle').filter((e) => (e as { playerId: number }).playerId === 1),
     ).toEqual([{ type: 'portalIdle', playerId: 1, reason: 'noLair' }]);
+  });
+
+  it('con los datos reales el Portal atrae una criatura por minuto', () => {
+    const { state, data } = matchAtCorner0();
+    expect(data.global.portal.attractIntervalSeconds).toBe(60);
+    buildRooms(state, data, ['lair']);
+    const events = run(state, data, 590);
+    expect(eventsOf(events, 'creatureArrived')).toHaveLength(0);
+    const later = run(state, data, 20);
+    expect(
+      eventsOf(later, 'creatureArrived').filter((e) => (e as { playerId: number }).playerId === 1),
+    ).toHaveLength(1);
   });
 
   it('con Guarida llega un Goblin a los 30 s y ocupa una cama', () => {

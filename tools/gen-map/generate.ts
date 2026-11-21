@@ -65,10 +65,11 @@ const CENTER_DIAMOND: Rect = { x: 31, y: 31, w: 2, h: 2 };
 
 const BASE_0: Omit<MapBase, 'slot'> = {
   claimed: { x: 2, y: 2, w: 9, h: 9 },
-  heart: { x: 5, y: 5, w: 3, h: 3 },
+  // El Corazón en la esquina y el Portal en la esquina opuesta de la base (mirando al centro del mapa): quedan a dos
+  // tiles de distancia, no pegados.
+  heart: { x: 3, y: 3, w: 3, h: 3 },
   rooms: [
-    { type: 'treasury', rect: { x: 2, y: 2, w: 3, h: 3 } },
-    // El Portal mira hacia el centro del mapa.
+    { type: 'treasury', rect: { x: 8, y: 2, w: 3, h: 3 } },
     { type: 'portal', rect: { x: 8, y: 8, w: 3, h: 3 } },
   ],
   imps: [

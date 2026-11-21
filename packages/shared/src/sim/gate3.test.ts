@@ -24,8 +24,8 @@ const TEN_MINUTES = 6000;
 
 /** Solo comandos: construir las tres salas (de 4 tiles: con el precio incremental, 4.025 de los 5.000 iniciales) y excavar hasta las vetas para tener ingresos. */
 const SCRIPT: Command[] = [
-  { type: 'buildRoom', room: 'lair', rect: { x: 5, y: 2, w: 2, h: 2 } },
-  { type: 'buildRoom', room: 'hatchery', rect: { x: 2, y: 5, w: 2, h: 2 } },
+  { type: 'buildRoom', room: 'lair', rect: { x: 6, y: 2, w: 2, h: 2 } },
+  { type: 'buildRoom', room: 'hatchery', rect: { x: 6, y: 5, w: 2, h: 2 } },
   { type: 'buildRoom', room: 'trainingRoom', rect: { x: 2, y: 8, w: 2, h: 2 } },
   { type: 'dig', tiles: [...row(4, 11, 16), ...row(5, 14, 16)] },
 ];

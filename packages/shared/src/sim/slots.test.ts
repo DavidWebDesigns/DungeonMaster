@@ -368,3 +368,69 @@ describe('población y máximo actual', () => {
     expect(populationOf(state, rulesOf(data), 1).max).toBe(5);
   });
 });
+
+describe('el Portal sortea según el tamaño de las salas', () => {
+  const weights = (state: MatchState, data: DataSet) =>
+    Object.fromEntries(
+      attractionCandidates(state, rulesOf(data), 1, PORTAL_TILE).candidates.map((c) => [
+        c.type,
+        c.weight,
+      ]),
+    );
+
+  it('el peso de cada especie es su rareza (attractWeight) por los tiles de su sala', () => {
+    const { state, data } = world(['lair', 'library']); // Guarida 8 tiles, Biblioteca 9
+    const w = weights(state, data);
+    const attract = (id: string) =>
+      data.creatures.find((c) => c.id === id)!.attraction!.attractWeight;
+    expect(w['goblin']).toBe(attract('goblin') * 8);
+    expect(w['warlock']).toBe(attract('warlock') * 9);
+  });
+
+  it('ampliar una sala la hace más probable', () => {
+    const { state, data } = world(['lair', 'library']);
+    const before = weights(state, data)['warlock']!;
+    // Un tile más de Biblioteca (pegado a la sala existente).
+    applyCommand(state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 8, y: 14, w: 1, h: 1 },
+    });
+    step(state, data);
+    expect(weights(state, data)['warlock']!).toBeGreaterThan(before);
+  });
+
+  it('con varias salas requeridas manda la más pequeña (cuello de botella)', () => {
+    const { state, data } = world(['lair', 'hatchery', 'trainingRoom']);
+    const hatchery = state.rooms.find((r) => r.type === 'hatchery')!.tiles.length;
+    const training = state.rooms.find((r) => r.type === 'trainingRoom')!.tiles.length;
+    const bile = data.creatures.find((c) => c.id === 'bileDemon')!.attraction!.attractWeight;
+    expect(weights(state, data)['bileDemon']).toBe(bile * Math.min(hatchery, training));
+  });
+
+  it('a la larga las especies salen en proporción a sus pesos', () => {
+    const { state, data } = world(['lair', 'library']);
+    data.global.portal.attractIntervalSeconds = 1;
+    data.global.maxCreaturesPerPlayer = 100000;
+    data.global.portal.reservePerPortal = 100000;
+    for (const c of data.creatures) if (c.attraction) c.attraction.slots = undefined as never;
+    const rules = rulesOf(data);
+    const w = weights(state, data);
+    // (esta partida de pruebas también deja salir al Troll: se cuenta todo lo que puede salir)
+    const total = Object.values(w).reduce((n, x) => n + x, 0);
+    const share = w['goblin']! / total;
+    let goblins = 0;
+    const N = 600;
+    for (let n = 0; n < N; n++) {
+      const before = state.creatures.length;
+      for (const r of state.rooms) if (r.type === 'portal') r.timer = 1e9;
+      tickPortals(state, rules, []);
+      const c = state.creatures[before];
+      if (c?.owner === 1 && c.type === 'goblin') goblins++;
+      // Sin camas ni tope: se vacía para medir solo el sorteo.
+      state.creatures = [];
+    }
+    expect(goblins / N).toBeGreaterThan(share - 0.08);
+    expect(goblins / N).toBeLessThan(share + 0.08);
+  });
+});

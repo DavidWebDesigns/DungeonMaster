@@ -29,6 +29,7 @@ export function makeImp(id: number, owner: number, tileX: number, tileY: number,
     slapUntil: 0,
     loafUntil: 0,
     loafTile: -1,
+    restUntil: 0,
     attackedBy: 0,
     attackedTick: -1000000,
   };

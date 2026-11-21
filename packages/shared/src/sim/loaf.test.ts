@@ -30,7 +30,8 @@ describe('Imps holgazanes', () => {
     run(state, data, 30);
     expect(imp.taskId).toBe(0);
     expect(imp.goal === 'loaf' || imp.goal === 'none').toBe(true);
-    // Pasado el tiempo, vuelve al trabajo.
+    // Pasado el tiempo, vuelve al trabajo (y esta vez no vuelve a holgazanear, para no mezclar los dos efectos).
+    data.global.imps.loaf.chance = 0;
     run(state, data, 6 * data.global.tickRate);
     expect(isLoafing(state, imp)).toBe(false);
     run(state, data, 100);
@@ -90,7 +91,9 @@ describe('Imps holgazanes', () => {
     send(state, data, 1, { type: 'slap', id: imp.id, kind: 'imp' });
     expect(isLoafing(state, imp)).toBe(false);
     expect(imp.taskId).toBe(0);
-    expect(imp.loafTile).toBe(-1);
+    // Sin objetivo vuelve a su estado por defecto (pasear), no a holgazanear de verdad.
+    run(state, data, 3);
+    expect(isLoafing(state, imp)).toBe(false);
   });
 
   it('a un Imp que ya trabaja la bofetada no le cambia la tarea', () => {
@@ -112,6 +115,49 @@ describe('Imps holgazanes', () => {
       return [w.imp.x, w.imp.y, w.imp.loafUntil, w.state.rng];
     };
     expect(play()).toEqual(play());
+  });
+});
+
+describe('estado por defecto: pasear sin objetivo', () => {
+  it('un Imp sin nada que hacer pasea despacio por su territorio, con pausas entre paseos', () => {
+    const { state, data, imp, rules } = lazyWorld(0);
+    imp.x = 5.5;
+    imp.y = 8.5;
+    run(state, data, 1);
+    expect(imp.goal).toBe('loaf');
+    expect(imp.loafUntil).toBe(0); // no es holgazanear de verdad
+    const start = { x: imp.x, y: imp.y };
+    run(state, data, 10);
+    // 1 s: nunca más de la velocidad de paseo.
+    expect(Math.hypot(imp.x - start.x, imp.y - start.y)).toBeLessThanOrEqual(
+      rules.imp.base.speed * data.global.imps.loaf.speedFactor + 1e-6,
+    );
+    // Al llegar descansa antes del siguiente paseo.
+    run(state, data, 400);
+    const visited = new Set<number>();
+    for (let n = 0; n < 600; n++) {
+      run(state, data, 1);
+      visited.add(Math.floor(imp.x) * 100 + Math.floor(imp.y));
+    }
+    expect(visited.size).toBeGreaterThan(1);
+    expect(state.owner[Math.floor(imp.y) * 64 + Math.floor(imp.x)]).toBe(1);
+  });
+
+  it('paseando coge el trabajo en cuanto aparece (no se comporta como holgazán)', () => {
+    const { state, data, imp } = lazyWorld(0);
+    run(state, data, 20);
+    expect(imp.goal).toBe('loaf');
+    send(state, data, 1, { type: 'dig', tiles: [pt(11, 4)] });
+    run(state, data, 2);
+    expect(imp.goal === 'task' || imp.taskId !== 0).toBe(true);
+  });
+
+  it('con radio de paseo 0 se queda quieto (así lo desactivan las pruebas que lo necesitan)', () => {
+    const { state, data, imp } = lazyWorld(0);
+    data.economy.wanderRadius = 0;
+    const start = { x: imp.x, y: imp.y };
+    run(state, data, 300);
+    expect([imp.x, imp.y]).toEqual([start.x, start.y]);
   });
 });
 

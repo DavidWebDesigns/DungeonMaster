@@ -27,7 +27,7 @@ describe('styleForTile', () => {
 
   it('las salas se ven más bajas que los muros y con su color', () => {
     const s = fresh();
-    const heart = styleForTile(s, data, at(s, 6, 6), undefined);
+    const heart = styleForTile(s, data, at(s, 4, 4), undefined);
     const floor = styleForTile(s, data, at(s, 3, 8), undefined);
     expect(heart.height).toBeGreaterThan(floor.height);
     expect(heart.color).not.toEqual(floor.color);

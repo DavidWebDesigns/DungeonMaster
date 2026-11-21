@@ -98,7 +98,8 @@ function botCommands(
         {
           type: 'buildRoom',
           room,
-          rect: { x: o.x, y: o.y, w: 2 + nextInt(bot, 3), h: 2 + nextInt(bot, 3) },
+          // Salas pequeñas: con el precio incremental por tile, las grandes casi nunca caben en el oro inicial.
+          rect: { x: o.x, y: o.y, w: 1 + nextInt(bot, 3), h: 1 + nextInt(bot, 3) },
         },
       ]);
     } else if (roll === 6) out.push([p.id, { type: 'sellRoom', tile: around(0) }]);

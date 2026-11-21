@@ -196,3 +196,39 @@ test('las unidades rivales llevan un símbolo de enemigo y las propias no', asyn
   expect(res.theirs.length).toBeGreaterThan(0);
   expect(res.theirs.every((m) => m)).toBe(true);
 });
+
+test('el Corazón muestra su barra de vida cuando recibe daño (y no antes)', async ({ page }) => {
+  await page.goto('/?mode=solo');
+  await page.waitForFunction(() => (window as unknown as { __dm?: unknown }).__dm !== undefined);
+  type Dbg = {
+    __dm: {
+      sandbox: {
+        state: {
+          players: Array<{ id: number; heartHp: number }>;
+          rooms: Array<{ id: number; type: string; owner: number }>;
+        };
+      };
+      renderer: { scene: { getMeshByName(n: string): { isEnabled(): boolean } | null } };
+    };
+  };
+  const heartId = await page.evaluate(
+    () =>
+      (window as unknown as Dbg).__dm.sandbox.state.rooms.find(
+        (r) => r.type === 'heart' && r.owner === 1,
+      )!.id,
+  );
+  const barOf = () =>
+    page.evaluate(
+      (id) =>
+        (window as unknown as Dbg).__dm.renderer.scene.getMeshByName(`heartBarFill${id}`) !== null,
+      heartId,
+    );
+  await page.waitForTimeout(400);
+  expect(await barOf()).toBe(false);
+  await page.evaluate(() => {
+    (window as unknown as Dbg).__dm.sandbox.state.players.find((p) => p.id === 1)!.heartHp -= 2000;
+  });
+  await page.waitForTimeout(400);
+  expect(await barOf()).toBe(true);
+  await page.screenshot({ path: 'test-results/heartbar.png' });
+});

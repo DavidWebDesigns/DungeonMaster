@@ -53,6 +53,32 @@ export function maybeLoaf(state: MatchState, rules: Rules, imp: Imp): void {
   }
 }
 
+/**
+ * Estado por defecto de un Imp sin objetivo: pasear despacio por su territorio (con pausas entre paseos). A diferencia
+ * de holgazanear de verdad (`loafUntil`), no ignora el trabajo: en cuanto aparece una tarea la coge.
+ */
+function startIdleWander(state: MatchState, rules: Rules, imp: Imp): void {
+  if (state.tick < imp.restUntil) return;
+  const tile = pickLoafTile(state, rules, imp);
+  if (tile < 0) {
+    imp.restUntil = state.tick + restTicks(state, rules);
+    return;
+  }
+  imp.loafTile = tile;
+  imp.goal = 'loaf';
+  imp.mode = 'needPath';
+  imp.path = [];
+}
+
+/** Ticks de descanso entre dos paseos (al azar entre los segundos de `economy.wanderPauseSeconds`). */
+function restTicks(state: MatchState, rules: Rules): number {
+  const { min, max } = rules.data.economy.wanderPauseSeconds;
+  return Math.max(
+    1,
+    Math.round((min + nextFloat(state) * (max - min)) * rules.data.global.tickRate),
+  );
+}
+
 /** Un tile de suelo propio al azar dentro del radio de paseo (-1 si no hay ninguno). */
 function pickLoafTile(state: MatchState, rules: Rules, imp: Imp): number {
   const radius = Math.floor(rules.data.economy.wanderRadius);
@@ -76,9 +102,10 @@ export const isLoafing = (state: MatchState, imp: Imp): boolean => imp.loafUntil
  * (por camino). Si ya trabaja o va a una tarea no se le cambia nada (solo va más rápido, por `slapUntil`).
  */
 export function wakeImp(state: MatchState, rules: Rules, imp: Imp): void {
-  if (isLoafing(state, imp)) {
+  if (isLoafing(state, imp) || imp.goal === 'loaf') {
     imp.loafUntil = 0;
     imp.loafTile = -1;
+    imp.restUntil = 0;
     resetImp(state, imp);
   }
   if (imp.mode !== 'idle' || imp.held || imp.carry > 0) return;
@@ -93,6 +120,7 @@ function startHaul(imp: Imp): void {
 }
 
 function startTask(imp: Imp, task: Task): void {
+  imp.loafTile = -1;
   task.reservedBy = imp.id;
   imp.taskId = task.id;
   imp.goal = 'task';
@@ -123,9 +151,12 @@ export function assignTasks(state: MatchState, rules: Rules): void {
     if (player.eliminated) continue;
     const capacity = treasuryCapacity(state, rules, player.id);
     for (const imp of state.imps) {
-      if (imp.owner !== player.id || imp.mode !== 'idle' || imp.held) continue;
-      // Holgazanea: ni coge trabajo ni reclama suelo hasta que pase su tiempo (o lo abofeteen).
+      if (imp.owner !== player.id || imp.held) continue;
+      // Holgazanea de verdad: ni coge trabajo ni reclama suelo hasta que pase su tiempo (o lo abofeteen).
       if (isLoafing(state, imp)) continue;
+      // Libre, o paseando sin objetivo (eso no impide coger trabajo en cuanto lo haya).
+      const strolling = imp.goal === 'loaf';
+      if (imp.mode !== 'idle' && !strolling) continue;
 
       if (imp.carry > 0 && capacity > 0 && imp.haulBlockedVersion !== state.mapVersion) {
         startHaul(imp);
@@ -161,7 +192,6 @@ export function assignTasks(state: MatchState, rules: Rules): void {
         startTask(imp, best);
         continue;
       }
-
       if (
         imp.autoBlockedVersion !== state.mapVersion &&
         (state.tick + imp.id) % AUTO_CLAIM_SCAN_TICKS === 0
@@ -170,6 +200,9 @@ export function assignTasks(state: MatchState, rules: Rules): void {
         if (tile === null) imp.autoBlockedVersion = state.mapVersion;
         else startTask(imp, setTask(state, player.id, 'claim', tile, true, imp.id));
       }
+      // Sin nada que hacer: su estado por defecto es pasear (despacio, con pausas).
+      if (!strolling && imp.mode === 'idle' && imp.goal === 'none' && imp.carry === 0)
+        startIdleWander(state, rules, imp);
     }
   }
 }
@@ -248,9 +281,10 @@ function arrive(state: MatchState, rules: Rules, imp: Imp, events: SimEvent[]): 
     return;
   }
   if (imp.goal === 'loaf') {
-    // Llegó a donde iba a pasear: se queda ahí quieto hasta que se le pase la holgazanería.
+    // Llegó a donde iba a pasear: se queda ahí quieto (hasta que se le pase la holgazanería o termine su pausa).
     imp.loafTile = -1;
     resetImp(state, imp);
+    if (!isLoafing(state, imp)) imp.restUntil = state.tick + restTicks(state, rules);
     return;
   }
   imp.mode = 'working';
@@ -375,6 +409,9 @@ export function updateImps(
       if (!computePath(state, rules, imp)) {
         if (imp.goal === 'haul') {
           imp.haulBlockedVersion = state.mapVersion;
+        } else if (imp.goal === 'loaf') {
+          // No llega a donde quería pasear: descansa un poco antes de elegir otro sitio.
+          imp.restUntil = state.tick + restTicks(state, rules);
         } else {
           const task = getTask(state, imp.taskId);
           if (task) {

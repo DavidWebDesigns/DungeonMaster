@@ -105,8 +105,8 @@ test('las 5 salas se construyen con las teclas 1 a 5', async ({ page }) => {
     // El HUD (9 salas en dos filas) tapa la parte baja del mapa: se centra la cámara en la zona de construcción.
     (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
       ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
-      targetX: 6,
-      targetZ: 13,
+      targetX: 9,
+      targetZ: 16,
     };
   });
   const spots: Array<[string, string, [number, number]]> = [
@@ -189,13 +189,21 @@ test('Crear Imp con Q y un clic en suelo propio', async ({ page }) => {
 });
 
 test('rotar la cámara con Z y X sigue apuntando al mismo tile', async ({ page }) => {
-  const before = await page.evaluate(() =>
-    (window as unknown as { __dm: DmHook }).__dm.tileToScreen(6, 6),
+  // El tile bajo el punto de mira (el encuadre deja el Corazón algo por encima del centro).
+  const focus = await page.evaluate(() => {
+    const cam = (window as unknown as { __dm: { camera: { targetX: number; targetZ: number } } })
+      .__dm.camera;
+    return { x: Math.floor(cam.targetX), y: Math.floor(cam.targetZ) };
+  });
+  const before = await page.evaluate(
+    (f) => (window as unknown as { __dm: DmHook }).__dm.tileToScreen(f.x, f.y),
+    focus,
   );
   await page.keyboard.press('x');
   await page.waitForTimeout(100);
-  const after = await page.evaluate(() =>
-    (window as unknown as { __dm: DmHook }).__dm.tileToScreen(6, 6),
+  const after = await page.evaluate(
+    (f) => (window as unknown as { __dm: DmHook }).__dm.tileToScreen(f.x, f.y),
+    focus,
   );
   // El tile del centro no se mueve de sitio al girar alrededor de él.
   expect(Math.abs(before.x - after.x)).toBeLessThan(40);
@@ -259,8 +267,8 @@ test('arrastrar 12 tiles de Biblioteca da una sala de nivel 10 y otra de nivel 2
     s.players[0]!.gold = 20000;
     (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
       ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
-      targetX: 6,
-      targetZ: 13,
+      targetX: 9,
+      targetZ: 16,
     };
   });
   await page.keyboard.press('5'); // Biblioteca
@@ -368,8 +376,8 @@ test('O coloca una puerta básica: los Imps la construyen y cierra el paso a los
     s.players[0]!.gold = 5000;
     (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
       ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
-      targetX: 6,
-      targetZ: 14,
+      targetX: 9,
+      targetZ: 17,
     };
   });
   await page.waitForTimeout(300);

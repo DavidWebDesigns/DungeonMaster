@@ -282,11 +282,11 @@ describe('asedio: salas y Corazón', () => {
     applyCommand(m.state, m.data, 1, {
       type: 'buildRoom',
       room: 'lair',
-      rect: { x: 6, y: 2, w: 2, h: 2 },
+      rect: { x: 6, y: 6, w: 2, h: 2 },
     });
     step(m.state, m.data);
-    const t = spawn(m.state, m.data, 2, 'troll', 8.5, 2.5, { mood: 50 });
-    const tile = tileIndex(m.state, 7, 2);
+    const t = spawn(m.state, m.data, 2, 'troll', 8.5, 6.5, { mood: 50 });
+    const tile = tileIndex(m.state, 7, 6);
     const events = run(m.state, m.data, 400);
     expect(hits(events).some((h) => h.targetKind === 'room')).toBe(true);
     expect(events.some((e) => e.type === 'tileDestroyed' && e.tile === tile)).toBe(true);
@@ -301,7 +301,8 @@ describe('asedio: salas y Corazón', () => {
     const tre = baseRoom(m.data, 0, 'treasury');
     noImps(m.state, 1);
     m.state.players[0]!.gold = 9000;
-    spawn(m.state, m.data, 2, 'bileDemon', tre.x + 3.5, tre.y + 0.5, { mood: 50 });
+    // Pegado a la Tesorería por su lado oeste.
+    spawn(m.state, m.data, 2, 'bileDemon', tre.x - 0.5, tre.y + 0.5, { mood: 50 });
     run(m.state, m.data, 300);
     expect(m.state.players[0]!.gold).toBeLessThan(9000);
   });
