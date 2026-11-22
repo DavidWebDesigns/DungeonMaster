@@ -1,5 +1,5 @@
 {
-  "paydayIntervalSeconds": 120,
+  "paydayIntervalSeconds": 180,
   "impCarryGold": 300,
   "miningGoldPerSecond": 100,
   "hunger": {

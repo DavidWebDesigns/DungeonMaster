@@ -204,5 +204,46 @@
       "type": "dive",
       "damageMultiplier": 1.5
     }
+  },
+  {
+    "id": "banditTrip",
+    "creature": "bandit",
+    "name": "Zancadilla",
+    "kind": "active",
+    "unlockLevel": 3,
+    "cooldownSeconds": 10,
+    "rangeTiles": 2,
+    "durationSeconds": 4,
+    "effect": {
+      "type": "status",
+      "status": "slow",
+      "value": -0.3
+    }
+  },
+  {
+    "id": "assassinFinisher",
+    "creature": "assassin",
+    "name": "Golpe mortal",
+    "kind": "passive",
+    "unlockLevel": 1,
+    "effect": {
+      "type": "executeBonus",
+      "belowHpFraction": 0.4,
+      "damageBonus": 0.75
+    }
+  },
+  {
+    "id": "assassinPounce",
+    "creature": "assassin",
+    "name": "Salto asesino",
+    "kind": "active",
+    "unlockLevel": 3,
+    "cooldownSeconds": 12,
+    "rangeTiles": 4,
+    "radiusTiles": 1,
+    "effect": {
+      "type": "dive",
+      "damageMultiplier": 1.4
+    }
   }
 ]

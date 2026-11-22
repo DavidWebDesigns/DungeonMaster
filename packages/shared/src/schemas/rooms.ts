@@ -33,6 +33,18 @@ export const RoomDef = z.strictObject({
   trainingMaxLevel: PositiveInt.optional(),
   trainingGoldPerSecond: NonNegativeInt.optional(),
   tilesPerTrainee: PositiveInt.optional(),
+  /**
+   * Casino: las criaturas con sueldo van a gastar parte de lo que cobran y salen divertidas. Un asiento por cada
+   * `casinoTilesPerSeat` tiles; la visita dura `casinoStaySeconds`; gastan `casinoSpendFraction` de su sueldo, y la casa
+   * (la Tesorería del jugador) se queda `casinoHouseShare` de lo gastado. Al salir, `casinoBonusSeconds` segundos de
+   * entrenamiento con `casinoTrainingBonus` más de experiencia (0,5 = +50 %).
+   */
+  casinoTilesPerSeat: PositiveInt.optional(),
+  casinoStaySeconds: PositiveNumber.optional(),
+  casinoSpendFraction: Fraction.optional(),
+  casinoHouseShare: Fraction.optional(),
+  casinoTrainingBonus: PositiveNumber.optional(),
+  casinoBonusSeconds: PositiveNumber.optional(),
 });
 export type RoomDef = z.infer<typeof RoomDef>;
 

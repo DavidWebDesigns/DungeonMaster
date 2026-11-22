@@ -78,8 +78,8 @@ async function buildLair(page: Page, x = 2, y = 11) {
 test('con una Guarida llega un Goblin por el Portal y sale en la lista y con aviso', async ({
   page,
 }) => {
-  await advance(page, 61); // sin Guarida: avisa de que falta
-  await expect(page.locator('.notice').first()).toContainText('Guarida');
+  await advance(page, 26); // sin Guarida: avisa de que falta (el Portal prueba cada 25 s)
+  await expect(page.locator('.notice', { hasText: 'Guarida' }).first()).toBeVisible();
   await buildLair(page);
   await advance(page, 61);
   const types = await page.evaluate(() => dm().sandbox.state.creatures.map((c) => c.type));
@@ -98,8 +98,8 @@ test('se recoge una criatura con el ratón, aparece en la mano y se suelta con c
   await page.evaluate(() => {
     // Quieta mientras se prueba el ratón.
     const c = dm().sandbox.state.creatures[0]!;
-    c.x = 3.5;
-    c.y = 9.5;
+    c.x = 6.5;
+    c.y = 6.5;
   });
   const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
   await page.mouse.move(at!.x, at!.y);
@@ -125,8 +125,8 @@ test('B abofetea a la criatura bajo el cursor y baja su ánimo', async ({ page }
   await advance(page, 61);
   await page.evaluate(() => {
     const c = dm().sandbox.state.creatures[0]!;
-    c.x = 3.5;
-    c.y = 9.5;
+    c.x = 6.5;
+    c.y = 6.5;
   });
   const id = await page.evaluate(() => dm().sandbox.state.creatures[0]!.id);
   const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
@@ -162,8 +162,8 @@ test('hover resalta la criatura, muestra su tarjeta y se recoge aunque esté act
   await advance(page, 61);
   await page.evaluate(() => {
     const c = dm().sandbox.state.creatures[0]!;
-    c.x = 3.5;
-    c.y = 9.5;
+    c.x = 6.5;
+    c.y = 6.5;
   });
   const id = await page.evaluate(() => dm().sandbox.state.creatures[0]!.id);
   const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
@@ -194,8 +194,8 @@ test('se llevan varias criaturas y el clic derecho las suelta todas en el tile d
   for (const id of ids.slice(0, 3)) {
     await page.evaluate((i) => {
       const c = dm().sandbox.state.creatures.find((k) => k.id === i)!;
-      c.x = 3.5;
-      c.y = 9.5;
+      c.x = 6.5;
+      c.y = 6.5;
     }, id);
     const at = await page.evaluate((i) => dm().creatureToScreen(i), id);
     await page.mouse.click(at!.x, at!.y);
@@ -216,8 +216,8 @@ test('Tab salta a la siguiente criatura propia y centra la cámara en ella', asy
   await advance(page, 61);
   await page.evaluate(() => {
     const c = dm().sandbox.state.creatures[0]!;
-    c.x = 3.5;
-    c.y = 9.5;
+    c.x = 6.5;
+    c.y = 6.5;
   });
   await page.keyboard.press('Tab');
   const seen = await page.evaluate(() => {

@@ -33,7 +33,7 @@
   "maxCreaturesPerPlayer": 20,
   "heart": { "hp": 8000, "size": 3 },
   "roomTileHp": 1000,
-  "portal": { "attractIntervalSeconds": 60, "reservePerPortal": 15 },
+  "portal": { "attractIntervalSeconds": 25, "reservePerPortal": 15 },
   "work": {
     "claimSeconds": 1.5,
     "enemyClaimSeconds": 3,

@@ -84,6 +84,13 @@ export function adviceFor(
             cooldownTicks: 600,
           });
         break;
+      case 'gambled':
+        out.push({
+          text: 'Tus criaturas gastan su sueldo en el Casino: la Tesorería recupera ese oro.',
+          key: 'casino',
+          cooldownTicks: 1200,
+        });
+        break;
       case 'moodBand':
         if (e.band === 'unhappy')
           out.push({

@@ -193,8 +193,8 @@ test('B sobre un Imp lo abofetea y trabaja más rápido durante un rato', async 
 test('las salas con requisitos salen bloqueadas y se desbloquean al construir lo que piden', async ({
   page,
 }) => {
-  // Taller (7), Cementerio (8) y Templo (9) empiezan bloqueados y dicen qué falta.
-  await expect(page.locator('.panel.rooms .btn.locked')).toHaveCount(3);
+  // Taller (7), Cementerio (8), Templo (9) y Casino (0) empiezan bloqueados y dicen qué falta.
+  await expect(page.locator('.panel.rooms .btn.locked')).toHaveCount(4);
   await expect(page.locator('.panel.rooms .btn.locked').first()).toContainText(
     'Sala de entrenamiento',
   );

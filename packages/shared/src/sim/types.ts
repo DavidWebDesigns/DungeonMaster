@@ -107,6 +107,8 @@ export type CreatureGoal =
   | 'bed'
   | 'treasury'
   | 'training'
+  /** Va a gastar parte de su sueldo al Casino y a divertirse. */
+  | 'casino'
   | 'wander'
   /** Persigue y ataca a un enemigo. */
   | 'combat'
@@ -158,6 +160,12 @@ export interface Creature {
   beds: number[];
   /** Hay día de pago y aún no ha cobrado. */
   payPending: boolean;
+  /** Oro del último sueldo cobrado que aún lleva encima (lo gasta en el Casino). */
+  purse: number;
+  /** Hasta qué tick entrena con el bono de experiencia del Casino (0 = sin bono). */
+  funUntil: number;
+  /** Oro gastado en la visita actual al Casino. */
+  gambled: number;
   goal: CreatureGoal;
   mode: CreatureMode;
   /** Sala a la que va a entrenar. */
@@ -342,6 +350,7 @@ export type SimEvent =
       reason: 'noLair' | 'noRoom' | 'noSlots' | 'noLevel' | 'full';
     }
   | { type: 'payday'; tick: number }
+  | { type: 'gambled'; playerId: PlayerId; creatureId: number; amount: number }
   | { type: 'paid'; playerId: PlayerId; creatureId: number; amount: number; ok: boolean }
   | { type: 'moodBand'; playerId: PlayerId; creatureId: number; band: string }
   | { type: 'levelUp'; playerId: PlayerId; creatureId: number; level: number }

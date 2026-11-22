@@ -116,11 +116,11 @@ describe('el Portal atrae criaturas', () => {
     ).toEqual([{ type: 'portalIdle', playerId: 1, reason: 'noLair' }]);
   });
 
-  it('con los datos reales el Portal atrae una criatura por minuto', () => {
+  it('con los datos reales el Portal atrae una criatura cada 25 s mientras haya camas', () => {
     const { state, data } = matchAtCorner0();
-    expect(data.global.portal.attractIntervalSeconds).toBe(60);
+    expect(data.global.portal.attractIntervalSeconds).toBe(25);
     buildRooms(state, data, ['lair']);
-    const events = run(state, data, 590);
+    const events = run(state, data, 240);
     expect(eventsOf(events, 'creatureArrived')).toHaveLength(0);
     const later = run(state, data, 20);
     expect(
@@ -366,12 +366,12 @@ describe('necesidades', () => {
 });
 
 describe('día de pago', () => {
-  it('cada 120 s la criatura cobra su sueldo de la Tesorería y queda satisfecha', () => {
+  it('cada 180 s la criatura cobra su sueldo de la Tesorería y queda satisfecha', () => {
     const { state, data } = world(['lair']);
     const c = addCreature(state, data, 'goblin');
     c.beds = [11 * 64 + 2];
     state.players[0]!.gold = 5000;
-    const events = run(state, data, 1300);
+    const events = run(state, data, 1900);
     const paid = eventsOf(events, 'paid');
     expect(eventsOf(events, 'payday')).toHaveLength(1);
     expect(paid).toEqual([{ type: 'paid', playerId: 1, creatureId: c.id, amount: 100, ok: true }]);
@@ -384,7 +384,7 @@ describe('día de pago', () => {
     const c = addCreature(state, data, 'goblin', { level: 3 });
     c.beds = [11 * 64 + 2];
     state.players[0]!.gold = 5000;
-    const events = run(state, data, 1300);
+    const events = run(state, data, 1900);
     expect(eventsOf(events, 'paid')[0]).toMatchObject({ amount: 170, ok: true });
   });
 
@@ -394,13 +394,13 @@ describe('día de pago', () => {
     c.beds = [11 * 64 + 2];
     c.wageSat = 0;
     state.players[0]!.gold = 0;
-    const events = run(state, data, 1300);
+    const events = run(state, data, 1900);
     expect(eventsOf(events, 'paid')).toEqual([
       { type: 'paid', playerId: 1, creatureId: c.id, amount: 0, ok: false },
     ]);
     expect(c.wageSat).toBeLessThan(-0.9);
     const moodAfterPayday = c.mood;
-    run(state, data, 1200 * 2);
+    run(state, data, 1800 * 2);
     expect(c.mood).toBeLessThan(moodAfterPayday + 1);
     expect(c.mood).toBeLessThan(50);
   });

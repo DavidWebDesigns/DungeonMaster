@@ -725,6 +725,30 @@ export class EntitiesView {
           m.position.set(x, 0.45, z);
         }
         break;
+      case 'casino':
+        // Mesas de juego: un tablero verde plano con una ficha dorada por tile.
+        for (const t of room.tiles) {
+          const [x, z] = tileXY(t);
+          const table = add(
+            CreateBox(
+              `casinoTable${room.id}_${t}`,
+              { width: 0.8, height: 0.14, depth: 0.8 },
+              this.scene,
+            ),
+          );
+          table.material = material(this.scene, [0.1, 0.5, 0.28]);
+          table.position.set(x, 0.18, z);
+          const chip = add(
+            CreateCylinder(
+              `casinoChip${room.id}_${t}`,
+              { diameter: 0.22, height: 0.06 },
+              this.scene,
+            ),
+          );
+          chip.material = this.goldMat;
+          chip.position.set(x, 0.28, z);
+        }
+        break;
       case 'temple':
         // Columnas: un cilindro claro por tile.
         for (const t of room.tiles) {

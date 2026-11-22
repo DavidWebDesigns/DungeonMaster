@@ -115,9 +115,9 @@ function checkInvariants(state: MatchState, data: DataSet): void {
   const rules = rulesOf(data);
   for (const p of state.players) {
     expect(p.gold).toBeGreaterThanOrEqual(-1e-6);
-    expect(p.gold + carriedGold(state, p.id)).toBeLessThanOrEqual(
-      treasuryCapacity(state, rules, p.id) + 1e-6,
-    );
+    // El oro nunca pasa de la capacidad. (Con el oro que llevan los Imps tampoco, salvo un instante después de que
+    // encoja la Tesorería: se vende o destruye un tile con Imps cargados y lo que sobra se pierde al entregarlo.)
+    expect(p.gold).toBeLessThanOrEqual(treasuryCapacity(state, rules, p.id) + 1e-6);
     expect(p.mana).toBeLessThanOrEqual(data.global.mana.max);
     expect(p.mana).toBeGreaterThanOrEqual(0);
     expect(state.imps.filter((i) => i.owner === p.id).length).toBeLessThanOrEqual(

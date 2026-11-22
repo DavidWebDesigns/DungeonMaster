@@ -14,7 +14,7 @@ export type KeyAction =
   | { type: 'speed'; step: 1 | -1 };
 
 /**
- * Atajos (docs/PLAN.md 10.2): 1 a 9 construyen salas, G H J K L N colocan trampas y O I las puertas (básica y reforzada), Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
+ * Atajos (docs/PLAN.md 10.2): 1 a 9 y 0 construyen salas, G H J K L N colocan trampas y O I las puertas (básica y reforzada), Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
  * Tab salta a la siguiente criatura propia. M silencia o activa el sonido. P pausa y [ ] cambian la velocidad (solo en partidas locales). F refuerza (nivel 1), V mejora un muro a nivel 2, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
@@ -22,7 +22,8 @@ export type KeyAction =
 export const TRAP_KEYS = ['G', 'H', 'J', 'K', 'L', 'N'] as const;
 
 /** Etiqueta de la tecla de la sala número `index` (0 = la primera construible): 1 a 9. */
-export const roomHotkey = (index: number): string => (index < 9 ? String(index + 1) : '');
+export const roomHotkey = (index: number): string =>
+  index < 9 ? String(index + 1) : index === 9 ? '0' : '';
 
 /** Teclas de las puertas, en el orden de traps.json (básica, reforzada). */
 export const DOOR_KEYS = ['O', 'I'] as const;
@@ -36,9 +37,9 @@ export const trapHotkey = (index: number): string => TRAP_KEYS[index] ?? '';
 export function keyAction(key: string, data: DataSet): KeyAction | null {
   const buildable = data.rooms.filter((r) => r.buildable);
   const k = key.length === 1 ? key.toLowerCase() : key;
-  if (/^[1-9]$/.test(k)) {
-    // 1 a 9: las salas construibles, en el orden de los datos.
-    const room = buildable[Number(k) - 1];
+  if (/^[0-9]$/.test(k)) {
+    // 1 a 9 y 0 (la décima): las salas construibles, en el orden de los datos.
+    const room = buildable[k === '0' ? 9 : Number(k) - 1];
     return room ? { type: 'tool', tool: { kind: 'build', room: room.id } } : null;
   }
   const trapIndex = TRAP_KEYS.findIndex((t) => t.toLowerCase() === k);

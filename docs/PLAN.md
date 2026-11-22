@@ -370,7 +370,7 @@ Portal y Corazón vienen construidos en el mapa y no se pueden vender.
 
 **Atracción por el Portal**
 
-- Cada Portal intenta atraer una criatura **cada 60 s** si: hay hueco en la reserva (15 por Portal), no se llegó al máximo de 20 criaturas y hay **guarida libre** para ella.
+- Cada Portal intenta atraer una criatura **cada 25 s** si: hay hueco en la reserva (15 por Portal), no se llegó al máximo de 20 criaturas y hay **guarida libre** para ella.
 - Entre las criaturas cuyo requisito se cumple, se elige al azar con el generador de la partida, ponderado por `attractWeight` de cada criatura **por los tiles de la sala que la atrae** (la más pequeña si pide varias): una Guarida de 10 tiles saca más Goblins que una de 4 [PROPUESTO: Goblin 4, Troll 3, Warlock 3, Demonio de bilis 2].
 - Si ninguna cumple requisito, no llega nadie y el cliente muestra un aviso ("Construye una Guarida para atraer criaturas").
 
@@ -423,9 +423,10 @@ La vida máxima no cambia con el ánimo. Imps inmunes al ánimo.
 4. **Llamada a las armas:** va al punto marcado y ataca lo que encuentre.
 5. Comer si el hambre pasa de 70.
 6. Dormir si el sueño pasa de 80.
-7. Cobrar si hay día de pago pendiente.
-8. Entrenar si hay hueco en la Sala de entrenamiento y no llegó a nivel 4.
-9. Vagar por territorio propio.
+7. Cobrar si hay día de pago pendiente (el día de pago es cada 3 minutos).
+8. **Casino:** con el sueldo en el bolsillo y un asiento libre en el Casino, va a gastar parte de él y sale con un bono de experiencia de entrenamiento.
+9. Entrenar si hay hueco en la Sala de entrenamiento y no llegó a nivel 4.
+10. Vagar por territorio propio.
 
 Las criaturas no invaden por su cuenta. Para atacar, el jugador usa Llamada a las armas o las suelta con la mano en territorio enemigo. Una criatura adyacente al Corazón o a una sala enemiga, sin enemigos vivos a la vista, ataca esa estructura (tile de sala: 1.000 de vida; al llegar a 0 se vuelve suelo neutral).
 

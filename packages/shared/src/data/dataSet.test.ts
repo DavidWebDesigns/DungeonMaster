@@ -42,6 +42,8 @@ describe('datos reales de /data/mvp', () => {
       'vampire',
       'darkKnight',
       'fallenAngel',
+      'bandit',
+      'assassin',
     ]);
     expect(result.data.spells).toHaveLength(5);
     expect(result.data.traps.map((t) => t.id)).toEqual([
@@ -105,8 +107,23 @@ describe('errores de esquema', () => {
 describe('errores de referencias cruzadas', () => {
   it('detecta una criatura que pide una sala inexistente', () => {
     const raw = realRawData();
-    (raw.creatures as any)[1].attraction.requires[0].room = 'casino';
-    expectError(parseDataSet(raw), 'creatures.json', 'la sala "casino" no existe');
+    (raw.creatures as any)[1].attraction.requires[0].room = 'salaInventada';
+    expectError(parseDataSet(raw), 'creatures.json', 'la sala "salaInventada" no existe');
+  });
+
+  it('el Casino exige todos sus datos', () => {
+    for (const field of [
+      'casinoTilesPerSeat',
+      'casinoStaySeconds',
+      'casinoSpendFraction',
+      'casinoHouseShare',
+      'casinoTrainingBonus',
+      'casinoBonusSeconds',
+    ]) {
+      const raw = realRawData();
+      delete (raw.rooms as any).find((r: any) => r.id === 'casino')[field];
+      expectError(parseDataSet(raw), 'rooms.json', `la sala "casino" necesita ${field}`);
+    }
   });
 
   it('detecta un enemigo natural inexistente', () => {

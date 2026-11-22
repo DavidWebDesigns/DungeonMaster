@@ -496,5 +496,86 @@
     "abilities": ["fallenAngelFlight", "fallenAngelDive"],
     "enemies": [],
     "flags": ["flying"]
+  },
+  {
+    "id": "bandit",
+    "name": "Bandido",
+    "gender": "m",
+    "modelId": "creature_bandit",
+    "tier": "common",
+    "threat": 4,
+    "jobClass": "fighter",
+    "fightStyle": "flanker",
+    "base": {
+      "hp": 1700,
+      "damage": 80,
+      "attackInterval": 0.9,
+      "range": 1,
+      "speed": 2.0,
+      "wage": 220,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "casino"
+        }
+      ],
+      "attractWeight": 3,
+      "slots": {
+        "fromRoom": "casino",
+        "tilesPerSlot": 3
+      }
+    },
+    "abilities": ["banditTrip"],
+    "enemies": [],
+    "flags": []
+  },
+  {
+    "id": "assassin",
+    "name": "Asesino",
+    "gender": "m",
+    "modelId": "creature_assassin",
+    "tier": "elite",
+    "threat": 7,
+    "jobClass": "fighter",
+    "fightStyle": "flanker",
+    "base": {
+      "hp": 2800,
+      "damage": 190,
+      "attackInterval": 1.0,
+      "range": 1,
+      "speed": 2.4,
+      "wage": 650,
+      "lairTiles": 1
+    },
+    "needs": {
+      "eats": true,
+      "sleeps": true,
+      "paid": true,
+      "hasMood": true
+    },
+    "attraction": {
+      "requires": [
+        {
+          "room": "casino",
+          "minLevel": 10
+        }
+      ],
+      "attractWeight": 2,
+      "slots": {
+        "fromCreature": "bandit",
+        "unlockEvery": 10
+      }
+    },
+    "abilities": ["assassinFinisher", "assassinPounce"],
+    "enemies": [],
+    "flags": []
   }
 ]

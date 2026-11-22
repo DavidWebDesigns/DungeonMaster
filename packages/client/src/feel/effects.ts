@@ -320,6 +320,18 @@ export function deriveEffects(
         out.push({ type: 'sound', sound: 'slap', volume: 1 });
         break;
       }
+      case 'gambled': {
+        // Una criatura sale del Casino: lo que gastó va a la Tesorería (flotante dorado sobre ella).
+        const c = state.creatures.find((k) => k.id === e.creatureId);
+        const share = data.rooms.find((r) => r.id === 'casino')?.casinoHouseShare ?? 1;
+        const won = Math.round(e.amount * share);
+        if (c && won > 0) {
+          burst(c.x, 0.8, c.y, GOLD, Math.min(12, 4 + Math.floor(won / 20)), 1.6, 3, 0.12);
+          out.push({ type: 'floater', x: c.x, y: c.y, text: `+${won} oro`, color: '#ffd86a' });
+          out.push({ type: 'sound', sound: 'deposit', volume: 0.7 });
+        }
+        break;
+      }
       case 'impSlapped': {
         const imp = impById.get(e.impId);
         if (imp) {

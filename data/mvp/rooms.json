@@ -150,5 +150,25 @@
     },
     "maxTiles": 10,
     "sellRefund": 0.5
+  },
+  {
+    "id": "casino",
+    "name": "Casino",
+    "modelId": "room_casino",
+    "buildable": true,
+    "goldPerTile": 350,
+    "requiresRooms": ["trainingRoom"],
+    "minSize": {
+      "w": 1,
+      "h": 1
+    },
+    "maxTiles": 10,
+    "sellRefund": 0.5,
+    "casinoTilesPerSeat": 2,
+    "casinoStaySeconds": 15,
+    "casinoSpendFraction": 0.4,
+    "casinoHouseShare": 1,
+    "casinoTrainingBonus": 0.5,
+    "casinoBonusSeconds": 90
   }
 ]

@@ -38,9 +38,9 @@ describe('informe de balance', () => {
     expect(by('bileDemon').power).toBeCloseTo(4000 * 80);
   });
 
-  it('el sueldo por minuto sale del día de pago (cada 120 s)', () => {
-    expect(by('goblin').wagePerMinute).toBe(50);
-    expect(by('bileDemon').wagePerMinute).toBe(150);
+  it('el sueldo por minuto sale del día de pago (cada 180 s)', () => {
+    expect(by('goblin').wagePerMinute).toBeCloseTo(100 / 3);
+    expect(by('bileDemon').wagePerMinute).toBeCloseTo(100);
     expect(by('imp').wagePerMinute).toBe(0);
   });
 

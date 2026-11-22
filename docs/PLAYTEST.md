@@ -40,6 +40,7 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - **Imps holgazanes:** de vez en cuando uno se queda paseando con una burbuja encima (el chip de Imps dice cuántos). Una bofetada (**B**) lo despierta y lo manda a la tarea más cercana. ¿Se nota demasiado o muy poco? (probabilidad en `global.json` → `imps.loaf`).
 - **Escala y encuadre:** los tiles son un 30 % más grandes que los personajes; ¿se ve bien o se pierde demasiado mapa? Al empezar (y con Espacio) la base queda por encima de la botonera.
 - **Portal:** llega una criatura por minuto y la especie sale según el tamaño de tus salas (más Guarida = más Goblins). ¿Es demasiado lento ahora? Tampoco olvides mirar la distancia entre el Corazón y el Portal y la barra de vida del Corazón al atacarlo.
+- **Casino:** construye Sala de entrenamiento y luego Casino (tecla **0**). Tras el día de pago (ahora cada 3 min) las criaturas con sueldo van a jugar 15 s: sale un "+N oro" sobre ellas y entrenan con +50 % de XP un rato. ¿Se nota el ingreso? ¿Es demasiado o poco? El Portal trae una criatura cada 25 s si hay camas.
 - **Muros:** **F** refuerza (nivel 1) y **V** mejora a nivel 2 (pide un Taller de 10 tiles). Los rivales pueden derribarlos con Imps, despacio; ¿hace falta algo más para defenderlos?
 - Recoger criaturas con el ratón (hasta 10) y soltarlas con clic derecho: ¿es natural? ¿Van al objetivo marcado más cercano?
 

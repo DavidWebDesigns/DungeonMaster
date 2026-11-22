@@ -103,7 +103,7 @@ describe('Puerta 3: una mazmorra con vida propia durante 10 minutos', () => {
       const count = (t: SimEvent['type']) =>
         events.filter((e) => e.type === t && (e as { playerId?: number }).playerId !== 2).length;
       expect(count('creatureArrived')).toBeGreaterThanOrEqual(3);
-      expect(events.filter((e) => e.type === 'payday')).toHaveLength(4); // ticks 1200, 2400, 3600 y 4800
+      expect(events.filter((e) => e.type === 'payday')).toHaveLength(3); // ticks 1800, 3600 y 5400
       expect(count('paid')).toBeGreaterThan(0);
       expect(count('levelUp')).toBeGreaterThan(0);
       expect(state.tick).toBe(TEN_MINUTES);

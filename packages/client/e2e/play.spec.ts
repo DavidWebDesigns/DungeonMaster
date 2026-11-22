@@ -223,7 +223,7 @@ test('el HUD muestra oro, maná y salas, y sus botones eligen la herramienta', a
   await expect(page.locator('.bar.gold')).toContainText('Oro 5000 / 9000');
   await expect(page.locator('.bar.mana')).toContainText('Maná');
   await expect(page.locator('.chip').first()).toContainText('Imps 4/12');
-  await expect(page.locator('.panel.rooms .btn')).toHaveCount(9);
+  await expect(page.locator('.panel.rooms .btn')).toHaveCount(10);
 
   await page.getByRole('button', { name: /Guarida/ }).click();
   expect(
@@ -401,4 +401,60 @@ test('O coloca una puerta básica: los Imps la construyen y cierra el paso a los
   expect(door).toEqual({ built: true, owner: 1 });
   await expect(page.locator('.panel.doors .btn', { hasText: 'Puerta básica' })).toBeVisible();
   await page.screenshot({ path: 'test-results/door.png' });
+});
+
+test('0 construye el Casino (décima sala) cuando ya hay una Sala de entrenamiento', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state;
+    const claimed = g.data.terrain.findIndex((t) => t.id === 'claimedFloor');
+    for (let y = 11; y < 20; y++)
+      for (let x = 2; x < 11; x++) {
+        s.terrain[y * s.width + x] = claimed;
+        (s as unknown as { owner: number[] }).owner[y * s.width + x] = 1;
+      }
+    (s.rooms as unknown as Array<Record<string, unknown>>).push({
+      id: 998,
+      type: 'trainingRoom',
+      owner: 1,
+      tiles: [30 * s.width + 2],
+      timer: 0,
+      stock: 0,
+    });
+    s.mapVersion++;
+    s.players[0]!.gold = 5000;
+    (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
+      ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
+      targetX: 9,
+      targetZ: 16,
+    };
+  });
+  await page.waitForTimeout(300);
+  await expect(page.locator('.panel.rooms .btn', { hasText: 'Casino' })).not.toHaveClass(/locked/);
+  await page.keyboard.press('0');
+  expect(
+    await page.evaluate(() => (window as unknown as { __dm: DmHook }).__dm.input.tool),
+  ).toEqual({ kind: 'build', room: 'casino' });
+  const at = (x: number, y: number) =>
+    page.evaluate(
+      ([tx, ty]) => (window as unknown as { __dm: DmHook }).__dm.tileToScreen(tx!, ty!),
+      [x, y] as const,
+    );
+  const a = await at(4, 14);
+  const b = await at(6, 15);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 6 });
+  await page.mouse.up();
+  await fastForward(page, 1);
+  const tiles = await page.evaluate(
+    () =>
+      (window as unknown as { __dm: DmHook }).__dm.sandbox.state.rooms.find(
+        (r) => r.type === 'casino',
+      )?.tiles.length ?? 0,
+  );
+  expect(tiles).toBe(6);
+  await page.screenshot({ path: 'test-results/casino.png' });
 });

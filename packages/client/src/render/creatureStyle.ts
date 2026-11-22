@@ -25,6 +25,8 @@ export const CREATURE_LOOKS: Readonly<Record<string, CreatureLook>> = {
   witch: { color: [0.45, 0.2, 0.6], radius: 0.17 * UNIT_SCALE, height: 0.78 * UNIT_SCALE },
   vampire: { color: [0.5, 0.08, 0.15], radius: 0.19 * UNIT_SCALE, height: 0.9 * UNIT_SCALE },
   darkKnight: { color: [0.2, 0.22, 0.3], radius: 0.3 * UNIT_SCALE, height: 1.0 * UNIT_SCALE },
+  bandit: { color: [0.58, 0.38, 0.2], radius: 0.17 * UNIT_SCALE, height: 0.72 * UNIT_SCALE },
+  assassin: { color: [0.16, 0.12, 0.22], radius: 0.19 * UNIT_SCALE, height: 0.95 * UNIT_SCALE },
   fallenAngel: { color: [0.75, 0.72, 0.85], radius: 0.24 * UNIT_SCALE, height: 1.15 * UNIT_SCALE },
 };
 
@@ -105,6 +107,8 @@ export function activityLabel(c: Pick<Creature, 'held' | 'goal' | 'mode'>): stri
       return 'Va a cobrar';
     case 'training':
       return c.mode === 'acting' ? 'Entrenando' : 'Va a entrenar';
+    case 'casino':
+      return c.mode === 'acting' ? 'En el Casino' : 'Va al Casino';
     case 'wander':
       return 'Paseando';
     default:

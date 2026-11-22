@@ -358,11 +358,12 @@ describe('atajos de teclado', () => {
       type: 'tool',
       tool: { kind: 'trap', trap: 'boulderTrap' },
     });
-    // J K L N son las otras cuatro trampas; el 0 y las letras libres no hacen nada.
+    // J K L N son las otras cuatro trampas; el 0 es la décima sala (Casino) y las letras libres no hacen nada.
     ['crushingWalls', 'frostTrap', 'fireTrap', 'lightningTrap'].forEach((trap, n) =>
       expect(keyAction('jkln'[n]!, data)).toEqual({ type: 'tool', tool: { kind: 'trap', trap } }),
     );
-    expect(keyAction('0', data)).toBeNull();
+    expect(keyAction('0', data)).toEqual({ type: 'tool', tool: { kind: 'build', room: 'casino' } });
+    expect(keyAction('y', data)).toBeNull();
   });
 
   it('el resto de atajos', () => {

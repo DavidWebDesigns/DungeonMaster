@@ -28,11 +28,15 @@ vive en `/data/mvp/*.json`; el código solo lo interpreta. Esta guía dice qué 
    (Es la lista de salas que el juego da por obligatorias.)
 3. **`packages/client/src/render/palette.ts` → `ROOM_COLORS`**: su color. Opcional: accesorios en `render/entitiesView.ts` (`buildProps`).
 4. Si da un efecto (como el Criadero o la Sala de entrenamiento), el efecto es lógica nueva en `packages/shared/src/sim/` con sus pruebas.
-5. Atajos de teclado: las salas construibles toman `1`, `2`, ... en el orden del archivo (hay sitio hasta el 9; la prueba avisa si te pasas) y
+5. Atajos de teclado: las salas construibles toman `1`, `2`, ... en el orden del archivo (1 a 9 y 0 para la décima; la prueba avisa si te pasas de 10) y
    las trampas las letras `G H J K L N` (`TRAP_KEYS` en `input/keymap.ts`).
 6. Niveles: una sala son tiles conectados del mismo tipo y su nivel es su número de tiles (1 a `maxTiles`); el siguiente tile abre otra sala. Los cupos de una criatura salen de los tiles (`slots.fromRoom` + `tilesPerSlot`) y las superiores piden una sala de nivel 10 (`requires[].minLevel`) y 10 de la base (`unlockEvery`).
 7. Progresión: `requiresRooms` lista las salas que el jugador debe tener antes (el HUD la muestra bloqueada y el aviso nombra lo que falta). Solo
    las salas nuevas deberían llevarlo.
+
+## El Casino (sala de economía)
+
+`rooms.json` → `casino` con `casinoTilesPerSeat`, `casinoStaySeconds`, `casinoSpendFraction`, `casinoHouseShare`, `casinoTrainingBonus` y `casinoBonusSeconds` (todos obligatorios: `validateDataSet` y `dataSet.test.ts` lo comprueban). La lógica está en `sim/behavior.ts` (`pickCasinoRoom`, `gamble`) y el bono se aplica en `train`. Es la décima sala construible, así que toma la tecla **0**.
 
 ## Añadir una trampa
 

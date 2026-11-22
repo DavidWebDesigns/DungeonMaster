@@ -36,13 +36,14 @@ describe('todo el contenido de /data tiene su parte en el cliente', () => {
     ).toEqual([]);
   });
 
-  it('cada sala construible tiene su atajo (1 a 9) y cada trampa (G H J K L N) y cada puerta (O I) el suyo', () => {
+  it('cada sala construible tiene su atajo (1 a 9 y 0) y cada trampa (G H J K L N) y cada puerta (O I) el suyo', () => {
     const buildable = data.rooms.filter((r) => r.buildable);
     expect(
       buildable.length,
-      'hay más de 9 salas construibles: hace falta otro sistema de atajos',
-    ).toBeLessThanOrEqual(9);
-    for (let n = 1; n <= buildable.length; n++) expect(keyAction(String(n), data)).not.toBeNull();
+      'hay más de 10 salas construibles: hace falta otro sistema de atajos (1 a 9 y 0)',
+    ).toBeLessThanOrEqual(10);
+    for (let n = 1; n <= buildable.length; n++)
+      expect(keyAction(String(n % 10), data)).not.toBeNull();
     const armed = data.traps.filter((t) => t.family !== 'door');
     const doors = data.traps.filter((t) => t.family === 'door');
     expect(

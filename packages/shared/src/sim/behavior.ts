@@ -25,6 +25,7 @@ import {
   workSpeedFactor,
   xpFactor,
 } from './creatureStats';
+import { goldRoom } from './economy';
 import { tileIndex, tileOfPosition } from './grid';
 import { moveAlongPath } from './movement';
 import { isStunned, walkableFor } from './abilities';
@@ -65,6 +66,23 @@ function pickTrainingRoom(state: MatchState, rules: Rules, c: Creature): Room | 
   if (c.goal === 'training' && current && occupancy(current) < trainingSlots(rules, current))
     return current;
   return rooms.find((r) => occupancy(r) < trainingSlots(rules, r));
+}
+
+function casinoSeats(rules: Rules, room: Room): number {
+  const per = rules.roomDefs['casino']?.casinoTilesPerSeat ?? 1;
+  return Math.floor(room.tiles.length / per);
+}
+
+/** Casino con asiento libre: el que ya tenía si sigue libre, o el de menor id con hueco. */
+function pickCasinoRoom(state: MatchState, rules: Rules, c: Creature): Room | undefined {
+  const rooms = roomsOf(state, c.owner, 'casino');
+  const occupancy = (room: Room) =>
+    state.creatures.filter((o) => o.id !== c.id && o.goal === 'casino' && o.targetRoom === room.id)
+      .length;
+  const current = rooms.find((r) => r.id === c.targetRoom);
+  if (c.goal === 'casino' && current && occupancy(current) < casinoSeats(rules, current))
+    return current;
+  return rooms.find((r) => occupancy(r) < casinoSeats(rules, r));
 }
 
 /** ¿Está la criatura sobre suelo de otro jugador? (Es lo que la convierte en invasora.) */
@@ -188,6 +206,12 @@ function decide(state: MatchState, rules: Rules, c: Creature): Desire {
   if (c.payPending && !blocked('treasury') && roomsOf(state, c.owner, 'treasury').length > 0)
     return { goal: 'treasury', room: 0 };
 
+  // Con el sueldo en el bolsillo, va a gastarlo al Casino (si lo hay y tiene asiento) antes de entrenar.
+  if (c.purse > 0 && !blocked('casino')) {
+    const casino = pickCasinoRoom(state, rules, c);
+    if (casino) return { goal: 'casino', room: casino.id };
+  }
+
   const training = rules.roomDefs['trainingRoom'];
   if (
     training?.trainingMaxLevel !== undefined &&
@@ -296,6 +320,7 @@ function goalTiles(state: MatchState, rules: Rules, c: Creature): Set<number> {
       add(roomsOf(state, c.owner, 'treasury'));
       break;
     case 'training':
+    case 'casino':
       add(state.rooms.filter((r) => r.id === c.targetRoom));
       break;
     case 'bed':
@@ -412,6 +437,7 @@ function arrive(state: MatchState, rules: Rules, c: Creature, events: SimEvent[]
       if (player && player.gold >= wage) {
         player.gold -= wage;
         c.wageSat = 1;
+        c.purse = wage; // el sueldo cobrado: lo que podrá gastar en el Casino
         events.push({ type: 'paid', playerId: c.owner, creatureId: c.id, amount: wage, ok: true });
       } else {
         c.wageSat = -1;
@@ -424,6 +450,11 @@ function arrive(state: MatchState, rules: Rules, c: Creature, events: SimEvent[]
     case 'training':
       c.mode = 'acting';
       return;
+    case 'casino':
+      c.mode = 'acting';
+      c.actTimer = 0;
+      c.gambled = 0;
+      return;
     case 'wander': {
       const { min, max } = rules.data.economy.wanderPauseSeconds;
       c.pauseTicks = Math.round(
@@ -435,6 +466,47 @@ function arrive(state: MatchState, rules: Rules, c: Creature, events: SimEvent[]
     default:
       stopCreature(c);
   }
+}
+
+/**
+ * En el Casino: gasta poco a poco parte de su sueldo (`casinoSpendFraction`) durante `casinoStaySeconds`; la casa, o sea la
+ * Tesorería del jugador, se queda `casinoHouseShare` de lo gastado (hasta donde quepa). Al salir queda divertida: entrena
+ * con más experiencia durante `casinoBonusSeconds`.
+ */
+function gamble(state: MatchState, rules: Rules, c: Creature, events: SimEvent[]): void {
+  const def = rules.roomDefs['casino'];
+  const player = state.players.find((p) => p.id === c.owner);
+  const room = state.rooms.find((r) => r.id === c.targetRoom);
+  if (
+    !def ||
+    !player ||
+    !room ||
+    !def.casinoStaySeconds ||
+    def.casinoSpendFraction === undefined ||
+    def.casinoHouseShare === undefined
+  ) {
+    stopCreature(c);
+    return;
+  }
+  const budget = creatureWage(rules, c) * def.casinoSpendFraction;
+  const spend = Math.min(c.purse, (budget / def.casinoStaySeconds) * rules.dt);
+  c.purse -= spend;
+  c.gambled += spend;
+  // Solo entra lo que cabe en la Tesorería (contando el oro que llevan los Imps).
+  player.gold += Math.min(spend * def.casinoHouseShare, goldRoom(state, rules, player));
+  c.actTimer += rules.dt;
+  if (c.actTimer < def.casinoStaySeconds - EPS) return;
+  // Se va: gastó lo que quiso (lo que sobra del sueldo se lo queda) y sale con ganas de entrenar.
+  c.funUntil = state.tick + secondsToTicks(rules, def.casinoBonusSeconds ?? 0);
+  events.push({
+    type: 'gambled',
+    playerId: c.owner,
+    creatureId: c.id,
+    amount: Math.round(c.gambled),
+  });
+  c.purse = 0;
+  c.gambled = 0;
+  stopCreature(c);
 }
 
 /** Entrenando: gana experiencia y gasta oro cada tick; sube de nivel hasta el máximo de la sala. */
@@ -452,8 +524,15 @@ function train(state: MatchState, rules: Rules, c: Creature, events: SimEvent[])
     return;
   }
   player.gold -= cost;
+  // Si salió del Casino hace poco, entrena con más experiencia.
+  const fun =
+    state.tick < c.funUntil ? 1 + (rules.roomDefs['casino']?.casinoTrainingBonus ?? 0) : 1;
   c.xp +=
-    def.trainingXpPerSecond * rules.dt * workSpeedFactor(state, rules, c) * xpFactor(rules, c);
+    def.trainingXpPerSecond *
+    rules.dt *
+    workSpeedFactor(state, rules, c) *
+    xpFactor(rules, c) *
+    fun;
   levelUpIfReady(rules, c, events);
   if (c.level >= def.trainingMaxLevel) stopCreature(c);
 }
@@ -567,6 +646,7 @@ export function updateCreatures(
       if (c.path.length === 0) arrive(state, rules, c, events);
     }
     if (c.mode === 'acting' && c.goal === 'training') train(state, rules, c, events);
+    if (c.mode === 'acting' && c.goal === 'casino') gamble(state, rules, c, events);
     // Descansando tras huir: vuelve a la acción al recuperar parte de la vida.
     if (c.mode === 'acting' && c.goal === 'flee') {
       if (c.hp >= creatureMaxHp(rules, c) * rules.data.global.combat.recoverHpFraction)

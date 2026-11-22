@@ -76,6 +76,7 @@ export const ROOM_SPOTS = {
   workshop: { x: 2, y: 17, w: 3, h: 3 },
   graveyard: { x: 5, y: 17, w: 3, h: 3 },
   temple: { x: 8, y: 17, w: 3, h: 3 },
+  casino: { x: 9, y: 11, w: 2, h: 3 },
 } as const;
 
 /** Construye salas (por tipo) en sitios fijos con oro de sobra; deja la partida lista para criaturas. */

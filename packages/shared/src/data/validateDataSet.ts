@@ -20,6 +20,14 @@ const REQUIRED_ROOM_FIELDS: Record<string, readonly string[]> = {
   workshop: [],
   graveyard: [],
   temple: [],
+  casino: [
+    'casinoTilesPerSeat',
+    'casinoStaySeconds',
+    'casinoSpendFraction',
+    'casinoHouseShare',
+    'casinoTrainingBonus',
+    'casinoBonusSeconds',
+  ],
 };
 
 /** Terrenos que la simulación usa por id. */

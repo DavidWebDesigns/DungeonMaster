@@ -75,7 +75,7 @@ describe('buildHudModel', () => {
     expect(buildHudModel(sb.state, data, 1, dig, []).goldFull).toBe(true);
   });
 
-  it('lista las 9 salas con tecla, coste mínimo y si alcanza el oro', () => {
+  it('lista las 10 salas con tecla, coste mínimo y si alcanza el oro', () => {
     const sb = fresh();
     const m = buildHudModel(sb.state, data, 1, dig, []);
     expect(m.rooms.map((r) => [r.hotkey, r.id, r.minCost])).toEqual([
@@ -88,6 +88,7 @@ describe('buildHudModel', () => {
       ['7', 'workshop', 200],
       ['8', 'graveyard', 350],
       ['9', 'temple', 600],
+      ['0', 'casino', 350],
     ]);
     // El coste mínimo es el de 1 tile: con 5.000 de oro alcanza todo.
     expect(m.rooms.every((r) => r.affordable)).toBe(true);
@@ -109,8 +110,10 @@ describe('buildHudModel', () => {
       'workshop',
       'graveyard',
       'temple',
+      'casino',
     ]);
     expect(by('workshop').requires).toBe('Sala de entrenamiento');
+    expect(by('casino').requires).toBe('Sala de entrenamiento');
     expect(by('graveyard').requires).toBe('Biblioteca');
     expect(by('temple').requires).toBe('Cámara de tortura y Cementerio');
     expect(by('lair').requires).toBe('');
@@ -185,9 +188,9 @@ describe('buildHudModel', () => {
 
   it('cuenta la mano y los segundos que faltan para el día de pago', () => {
     const sb = fresh();
-    expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(120);
+    expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(180);
     sb.state.tick = 300;
-    expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(90);
+    expect(buildHudModel(sb.state, data, 1, dig, []).payday).toBe(150);
     sb.state.players[0]!.hand = [
       { kind: 'creature', id: 1 },
       { kind: 'imp', id: 1 },
@@ -246,7 +249,7 @@ describe('Hud', () => {
     expect(out).toContain('Criaturas (1)');
     expect(out).toContain('Troll');
     expect(out).toContain('Descansando');
-    expect(out).toContain('Pago 120 s');
+    expect(out).toContain('Pago 180 s');
     expect(out).toContain('Mano 1/10');
   });
 

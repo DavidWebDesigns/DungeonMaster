@@ -86,6 +86,8 @@ Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cem
 - **Criatura superior:** hacen falta **10 criaturas vivas de la especie base y una sala de ese tipo en nivel 10** (Troll por goblins y Guarida, Bruja por warlocks y Biblioteca, Vampiro por esqueletos y Cementerio, Verdugo por torturadoras y Cámara). 1 criatura superior por cada 10 de la base.
 - **Guarida:** da camas (población neta de toda la mazmorra) y además cupos de Goblin. La criatura sin cama (Esqueleto) no la necesita.
 - **Templo:** cupos de Ángel caído y `maxPerPlayer: 1`: nunca más de uno vivo.
+- **Casino:** tras cobrar, las criaturas con sueldo van al Casino (1 asiento por cada 2 tiles) y se quedan 15 s: gastan el 40 % de su sueldo, que va entero a la Tesorería (`casinoHouseShare` 1; hasta donde quepa), y salen divertidas: 90 s de entrenamiento con +50 % de experiencia. Cupos: Bandido 1 por cada 3 tiles de Casino; el Asesino pide 10 bandidos vivos y un Casino de nivel 10. Todo en `rooms.json` (`casino*`).
+- **Tiempos:** el Portal atrae una criatura cada 25 s (si hay cama libre y cupo) y el día de pago es cada 3 minutos.
 - El Criadero no invoca nada: solo produce pollos. El Demonio de bilis conserva su regla (Criadero + Sala de entrenamiento, sin cupo).
 
 | Sala | Nivel | Coste por tile (mínimo) | Requiere tener antes | Invoca |
@@ -99,6 +101,7 @@ Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cem
 | Cámara de tortura | 3 | 400 (3.600) | — | Torturadora; Verdugo (por torturadoras) |
 | Cementerio | 3 | 350 (3.150) | Biblioteca | Esqueleto; Vampiro (por esqueletos) |
 | Templo | 4 | 600 (5.400) | Cámara de tortura + Cementerio | Ángel caído (máximo 1) |
+| Casino | 3 | 350 (3.150) | Sala de entrenamiento | Bandido; Asesino (por bandidos) |
 
 Solo las salas nuevas llevan requisitos; las seis anteriores no, para que el inicio de la partida no cambie. Vender un requisito no destruye las salas que dependían de él.
 
@@ -118,6 +121,8 @@ Las columnas usan los nombres de campo del esquema de `creatures.json`. `imp`, `
 | firefly | Luciérnaga | Después | 1 | 700 | 20 | 1.0 | 20 | 1 | 2.4 | 50 | 1 | 1 |
 | salamander | Salamandra | Esta tanda | 3 | 1600 | 70 | 1.2 | 58.3 | 4 | 1.8 | 160 | 2 | 1 |
 | skeleton | Esqueleto | Esta tanda | 3 | 1500 | 75 | 1.1 | 68.2 | 1 | 1.8 | 0 | 0 | 0 |
+| bandit | Bandido | Implementado | 4 | 1700 | 80 | 0.9 | 88.9 | 1 | 2.0 | 220 | 2 | 1 |
+| assassin | Asesino | Implementado | 7 | 2800 | 190 | 1.0 | 190 | 1 | 2.4 | 650 | 2 | 1 |
 | rogue | Pícaro | Después | 4 | 1800 | 85 | 0.9 | 94.4 | 1 | 2.0 | 250 | 2 | 1 |
 | torturer | Torturadora | Implementado (provisional) | 5 | 1200 | 70 | 1.2 | 58.3 | 1 | 2.0 | 120 | 2 | 1 |
 | executioner | Verdugo | Implementado (provisional) | 5 | 3000 | 140 | 1.8 | 77.8 | 1 | 1.4 | 250 | 3 | 1 |
