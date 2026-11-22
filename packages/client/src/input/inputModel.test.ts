@@ -363,7 +363,8 @@ describe('atajos de teclado', () => {
       expect(keyAction('jkln'[n]!, data)).toEqual({ type: 'tool', tool: { kind: 'trap', trap } }),
     );
     expect(keyAction('0', data)).toEqual({ type: 'tool', tool: { kind: 'build', room: 'casino' } });
-    expect(keyAction('y', data)).toBeNull();
+    expect(keyAction('y', data)).toEqual({ type: 'cancelRally' });
+    expect(keyAction('ñ', data)).toBeNull();
   });
 
   it('el resto de atajos', () => {
@@ -380,7 +381,7 @@ describe('atajos de teclado', () => {
     expect(keyAction('z', data)).toEqual({ type: 'rotate', step: -1 });
     expect(keyAction('x', data)).toEqual({ type: 'rotate', step: 1 });
     expect(keyAction('v', data)).toEqual({ type: 'tool', tool: { kind: 'reinforce', level: 2 } });
-    expect(keyAction('y', data)).toBeNull();
+    expect(keyAction('ñ', data)).toBeNull();
   });
 });
 
@@ -392,6 +393,17 @@ describe('mensajes de la mano', () => {
       typeof errorMessage
     >[1];
   };
+  it('cancelar la llamada sin ninguna activa avisa', () => {
+    const sb = new Sandbox(data, 1);
+    const ctx = {
+      cmd: { type: 'cancelRally' },
+      data,
+      state: sb.state,
+      player: LOCAL_PLAYER,
+    } as Parameters<typeof errorMessage>[1];
+    expect(errorMessage('INVALID_TARGET', ctx)).toBe('No hay ninguna Llamada a las armas activa.');
+  });
+
   it('soltar fuera de tu territorio y coger criaturas ajenas tienen su texto', () => {
     expect(errorMessage('NOT_OWNER', ctx('drop'))).toContain('ya reclamados como tuyos');
     expect(errorMessage('INVALID_TARGET', ctx('drop'))).toContain('ya reclamados como tuyos');
@@ -646,6 +658,24 @@ describe('bofetada con B', () => {
     input.pointerMove(null, null);
     input.slapHovered();
     expect(sent).toHaveLength(2);
+  });
+});
+
+describe('cancelar la Llamada a las armas', () => {
+  it('envía la orden y, con una llamada activa, la quita', () => {
+    const { input, sent, sandbox } = setup();
+    expect(input.cancelRally()).toBeUndefined();
+    expect(sent.at(-1)!.cmd).toEqual({ type: 'cancelRally' });
+    expect(sent.at(-1)!.res).toEqual({ ok: false, error: 'INVALID_TARGET' });
+    sandbox.state.players[0]!.mana = 5000;
+    input.setTool({ kind: 'spell', spell: 'callToArms' });
+    input.pointerDown({ x: 8, y: 4 }, 0);
+    sandbox.advance(200);
+    expect(sandbox.state.players[0]!.rallyTile).toBeGreaterThanOrEqual(0);
+    input.cancelRally();
+    expect(sent.at(-1)!.res.ok).toBe(true);
+    sandbox.advance(200);
+    expect(sandbox.state.players[0]!.rallyTile).toBe(-1);
   });
 });
 

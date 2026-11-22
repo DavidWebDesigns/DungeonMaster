@@ -84,6 +84,13 @@ export function adviceFor(
             cooldownTicks: 600,
           });
         break;
+      case 'rallyCancelled':
+        out.push({
+          text: 'Llamada a las armas cancelada: tus criaturas vuelven a lo que hacían.',
+          key: 'rallyCancelled',
+          cooldownTicks: 0,
+        });
+        break;
       case 'gambled':
         out.push({
           text: 'Tus criaturas gastan su sueldo en el Casino: la Tesorería recupera ese oro.',

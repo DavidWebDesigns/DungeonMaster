@@ -517,3 +517,47 @@ test('el coste se ve en vivo al pasar el cursor y un tile que conecta dos salas 
   );
   expect(levels).toEqual([8]);
 });
+
+test('la Llamada a las armas se puede cancelar con el botón o con Y', async ({ page }) => {
+  await page.evaluate(() => {
+    (window as unknown as { __dm: DmHook }).__dm.sandbox.state.players[0]!.mana = 5000;
+  });
+  const rally = () =>
+    page.evaluate(() => {
+      const p = (window as unknown as { __dm: DmHook }).__dm.sandbox.state
+        .players[0] as unknown as { rallyTile: number };
+      return p.rallyTile;
+    });
+  const cast = async () => {
+    await page.keyboard.press('w'); // Llamada a las armas
+    const at = await page.evaluate(() =>
+      (window as unknown as { __dm: DmHook }).__dm.tileToScreen(6, 6),
+    );
+    await page.mouse.move(at.x, at.y);
+    await page.mouse.click(at.x, at.y);
+    await fastForward(page, 1);
+  };
+  await cast();
+  expect(await rally()).toBeGreaterThanOrEqual(0);
+  await expect(page.locator('.cancel-rally')).toBeVisible();
+  await page.keyboard.press('y');
+  await fastForward(page, 1);
+  expect(await rally()).toBe(-1);
+  await expect(page.locator('.cancel-rally')).toHaveCount(0);
+  // Con el botón: la llamada tiene enfriamiento, así que se vuelve a poner por el estado.
+  await page.evaluate(() => {
+    const p = (window as unknown as { __dm: DmHook }).__dm.sandbox.state.players[0] as unknown as {
+      rallyTile: number;
+      rallyUntil: number;
+    };
+    const s = (window as unknown as { __dm: DmHook }).__dm.sandbox.state as unknown as {
+      tick: number;
+    };
+    p.rallyTile = 6 * 64 + 6;
+    p.rallyUntil = s.tick + 300;
+  });
+  await expect(page.locator('.cancel-rally')).toBeVisible();
+  await page.locator('.cancel-rally').click();
+  await fastForward(page, 1);
+  expect(await rally()).toBe(-1);
+});

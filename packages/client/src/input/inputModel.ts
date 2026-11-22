@@ -151,6 +151,11 @@ export class InputModel {
     return state.tasks.some((k) => k.owner === player && k.tile === i && k.kind === 'dig');
   }
 
+  /** Cancela la Llamada a las armas activa (las criaturas vuelven a lo que hacían). */
+  cancelRally(): void {
+    this.dispatch({ type: 'cancelRally' });
+  }
+
   /**
    * Recoge una criatura propia desde la lista del HUD (igual que hacerlo con el ratón sobre ella). Solo las propias y
    * que no estén ya en la mano: las de otros jugadores nunca se pueden coger (la simulación también lo rechaza).

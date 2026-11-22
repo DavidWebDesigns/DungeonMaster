@@ -393,6 +393,7 @@ export class Game {
         onRestart: () => window.location.reload(),
         // Clic en la lista: la recoge (solo las propias; la simulación también lo exige).
         onPickCreature: (id) => this.input.pickUpCreature(id),
+        onCancelRally: () => this.input.cancelRally(),
         onLocateCreature: (id) => {
           const c = state.creatures.find((k) => k.id === id && k.owner === this.me);
           if (c) this.camera = centerOn(this.camera, { x: Math.floor(c.x), y: Math.floor(c.y) });
@@ -534,6 +535,7 @@ export class Game {
     else if (action.type === 'cancel') this.input.setTool({ kind: 'dig' });
     else if (action.type === 'center') this.camera = centerOnAboveHud(this.camera, this.heartTile);
     else if (action.type === 'slap') this.input.slapHovered();
+    else if (action.type === 'cancelRally') this.input.cancelRally();
     else if (action.type === 'pause') this.togglePause();
     else if (action.type === 'mute') this.toggleMute();
     else if (action.type === 'cycleCreature') this.cycleCreature(action.step);

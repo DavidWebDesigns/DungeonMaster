@@ -463,3 +463,8 @@
 .btn .cost.live.poor {
   color: #ffcf7a;
 }
+
+/* Cancelar la Llamada a las armas (solo mientras está activa). */
+.btn.cancel-rally {
+  border-color: #d08a3a;
+}

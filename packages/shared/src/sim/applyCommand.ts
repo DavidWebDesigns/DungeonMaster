@@ -257,6 +257,10 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
     }
     case 'surrender':
       return { ok: true, tiles: [] };
+    case 'cancelRally':
+      // Solo si hay una Llamada a las armas en marcha.
+      if (player.rallyTile < 0 || state.tick >= player.rallyUntil) return fail('INVALID_TARGET');
+      return { ok: true, tiles: [] };
     case 'slap': {
       if (!isInt(cmd.id)) return fail('INVALID_COMMAND');
       // Criaturas e Imps se abofetean igual (los Imps no tienen ánimo, solo trabajan más rápido).
@@ -383,6 +387,12 @@ function execute(
     }
     case 'surrender':
       eliminatePlayer(state, rules, player, events);
+      break;
+    case 'cancelRally':
+      // Las criaturas que acudían dejan de querer ir al punto y retoman lo suyo (entrenar, pasear, el Casino...) solas.
+      player.rallyTile = -1;
+      player.rallyUntil = 0;
+      events.push({ type: 'rallyCancelled', playerId: player.id });
       break;
     case 'castSpell': {
       const spell = rules.spells[cmd.spell];

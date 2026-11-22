@@ -320,6 +320,8 @@ export type Command =
   | { type: 'buildTrap'; trap: string; tile: Point }
   | { type: 'sellTrap'; tile: Point }
   | { type: 'drop'; tile: Point }
+  /** Cancela la Llamada a las armas activa: las criaturas vuelven a lo que hacían. */
+  | { type: 'cancelRally' }
   | { type: 'slap'; id: number; kind?: 'creature' | 'imp' };
 
 export type ErrorCode =
@@ -359,6 +361,7 @@ export type SimEvent =
     }
   | { type: 'payday'; tick: number }
   | { type: 'pigletEaten'; playerId: PlayerId; creatureId: number; healed: number }
+  | { type: 'rallyCancelled'; playerId: PlayerId }
   | { type: 'gambled'; playerId: PlayerId; creatureId: number; amount: number }
   | { type: 'paid'; playerId: PlayerId; creatureId: number; amount: number; ok: boolean }
   | { type: 'moodBand'; playerId: PlayerId; creatureId: number; band: string }

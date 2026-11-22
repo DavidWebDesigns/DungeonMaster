@@ -147,6 +147,24 @@ describe('buildHudModel', () => {
     expect(poor).toContain('cost live poor');
   });
 
+  it('con una Llamada a las armas activa sale "Cancelar llamada" con los segundos que quedan', () => {
+    const sb = fresh();
+    expect(buildHudModel(sb.state, data, 1, dig, []).rally).toBeNull();
+    expect(
+      render(<Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />),
+    ).not.toContain('Cancelar llamada');
+    sb.state.players[0]!.rallyTile = 4 * 64 + 8;
+    sb.state.players[0]!.rallyUntil = sb.state.tick + 150;
+    const model = buildHudModel(sb.state, data, 1, dig, []);
+    expect(model.rally).toEqual({ secondsLeft: 15 });
+    const out = render(<Hud model={model} onTool={() => {}} />);
+    expect(out).toContain('Cancelar llamada');
+    expect(out).toContain('15 s');
+    // Caducada: ya no sale.
+    sb.state.tick += 200;
+    expect(buildHudModel(sb.state, data, 1, dig, []).rally).toBeNull();
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

@@ -49,6 +49,7 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - **Cerditos:** el Criadero cría uno por tile cada 20 s (chip "Cerditos N/M" en el HUD) y las criaturas con el 70 % de vida o menos se lo comen y recuperan el 30 %. ¿Basta para sustituir a la Guarida como cura?
 - **Unir salas:** construye dos tramos del mismo tipo con un hueco y pon un tile en medio: se unen en una sola sala y ese tile cuesta como el tile n.º (total). Si juntas pasaran de 10, el tile abre una sala nueva de nivel 1. El precio aparece junto al cursor y en el botón de la sala.
 - **Barras enemigas:** las criaturas rivales llevan la barra de vida siempre visible, con un marco del color de su jugador.
+- **Cancelar la Llamada a las armas:** mientras está activa sale el botón "Cancelar llamada" (o la tecla **Y**): las criaturas dejan de acudir y retoman lo que hacían (entrenar, el Casino, pasear...). No devuelve el maná ni el enfriamiento.
 - **Muros:** **F** refuerza (nivel 1) y **V** mejora a nivel 2 (pide un Taller de 10 tiles). Los rivales pueden derribarlos con Imps, despacio; ¿hace falta algo más para defenderlos?
 - Recoger criaturas con el ratón (hasta 10) y soltarlas con clic derecho: ¿es natural? ¿Van al objetivo marcado más cercano?
 

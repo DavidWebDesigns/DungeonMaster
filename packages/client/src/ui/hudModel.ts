@@ -143,6 +143,8 @@ export interface HudModel {
   hand: { count: number; capacity: number };
   /** Segundos que faltan para el próximo día de pago. */
   payday: number;
+  /** Llamada a las armas en marcha: segundos que le quedan (`null` si no hay). */
+  rally: { secondsLeft: number } | null;
   notices: string[];
 }
 
@@ -360,7 +362,8 @@ export function buildHudModel(
   const SPELL_KEYS = ['Q', 'W', 'E', 'R', 'T'];
   const SPELL_HINTS: Record<string, string> = {
     createImp: 'Crea un Imp en suelo propio. Cada Imp extra cuesta 50 más.',
-    callToArms: 'Todas tus criaturas disponibles acuden al punto marcado durante 20 s.',
+    callToArms:
+      'Todas tus criaturas disponibles acuden al punto marcado durante 20 s. Se puede cancelar (Y) para que sigan con lo suyo.',
     haste: 'Una criatura propia se mueve y ataca un 50 % más rápido durante 20 s.',
     heal: 'Cura el 40 % de la vida máxima de una criatura propia en 3 s.',
     lightning: 'Daña con 600 a los enemigos en 1,5 tiles. No toca salas ni el Corazón.',
@@ -427,6 +430,10 @@ export function buildHudModel(
     canSurrender: state.players.length > 1 && state.status === 'playing' && !player.eliminated,
     hand: { count: player.hand.length, capacity: data.global.hand.capacity },
     payday: Math.max(0, (state.nextPayTick - state.tick) / data.global.tickRate),
+    rally:
+      player.rallyTile >= 0 && state.tick < player.rallyUntil
+        ? { secondsLeft: (player.rallyUntil - state.tick) / data.global.tickRate }
+        : null,
     notices: notices.map((n) => n.text),
   };
 }

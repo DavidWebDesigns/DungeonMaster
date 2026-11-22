@@ -9,6 +9,8 @@ export interface HudProps {
   onPickCreature?(id: number): void;
   /** Botón de mira de una criatura de la lista: centra la cámara en ella. */
   onLocateCreature?(id: number): void;
+  /** Pulsó "Cancelar llamada": las criaturas dejan de acudir y siguen con lo que hacían. */
+  onCancelRally?(): void;
   /** Pulsó el botón de rendirse (el juego pide confirmación). */
   onSurrender?(): void;
   /** Pulsó "Jugar de nuevo" en la pantalla final. */
@@ -48,6 +50,7 @@ export function Hud({
   onTool,
   onPickCreature,
   onLocateCreature,
+  onCancelRally,
   onSurrender,
   onRestart,
   surrenderArmed,
@@ -293,6 +296,17 @@ export function Hud({
               <kbd>{sp.hotkey}</kbd>
             </button>
           ))}
+          {model.rally && (
+            <button
+              class="btn cancel-rally"
+              title="Cancela la Llamada a las armas: tus criaturas vuelven a lo que hacían"
+              onClick={() => onCancelRally?.()}
+            >
+              <span class="name">Cancelar llamada</span>
+              <span class="cost">{Math.ceil(model.rally.secondsLeft)} s</span>
+              <kbd>Y</kbd>
+            </button>
+          )}
         </div>
       </div>
 

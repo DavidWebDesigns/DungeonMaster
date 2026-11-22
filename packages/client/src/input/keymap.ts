@@ -7,6 +7,7 @@ export type KeyAction =
   | { type: 'center' }
   | { type: 'cancel' }
   | { type: 'slap' }
+  | { type: 'cancelRally' }
   | { type: 'pause' }
   | { type: 'mute' }
   | { type: 'cycleCreature'; step: 1 | -1 }
@@ -15,7 +16,7 @@ export type KeyAction =
 
 /**
  * Atajos (docs/PLAN.md 10.2): 1 a 9 y 0 construyen salas, G H J K L N colocan trampas y O I las puertas (básica y reforzada), Q W E R T lanzan los hechizos, Espacio centra en el Corazón.
- * Tab salta a la siguiente criatura propia. M silencia o activa el sonido. P pausa y [ ] cambian la velocidad (solo en partidas locales). F refuerza (nivel 1), V mejora un muro a nivel 2, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Z y X giran la cámara
+ * Tab salta a la siguiente criatura propia. M silencia o activa el sonido. P pausa y [ ] cambian la velocidad (solo en partidas locales). F refuerza (nivel 1), V mejora un muro a nivel 2, C reclama, U deshace marcas, Supr vende, Esc vuelve a excavar, B abofetea a la criatura bajo el cursor, Y cancela la Llamada a las armas, Z y X giran la cámara
  * (Q W E R T quedan para hechizos). Las flechas y WASD mueven la cámara y no pasan por aquí.
  */
 /** Teclas de las trampas, en el orden de traps.json (las salas usan 1 a 9). */
@@ -74,6 +75,8 @@ export function keyAction(key: string, data: DataSet): KeyAction | null {
       return { type: 'tool', tool: { kind: 'sell' } };
     case 'b':
       return { type: 'slap' };
+    case 'y':
+      return { type: 'cancelRally' };
     case 'Escape':
       return { type: 'cancel' };
     case 'z':

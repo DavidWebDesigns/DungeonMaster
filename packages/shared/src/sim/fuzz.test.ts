@@ -18,6 +18,7 @@ const TYPES = [
   'cancelDig',
   'claim',
   'reinforce',
+  'cancelRally',
   'buildRoom',
   'sellRoom',
   'castSpell',
