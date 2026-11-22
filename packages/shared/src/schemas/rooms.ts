@@ -42,6 +42,14 @@ export const RoomDef = z.strictObject({
   trainingMaxLevel: PositiveInt.optional(),
   trainingGoldPerSecond: NonNegativeInt.optional(),
   tilesPerTrainee: PositiveInt.optional(),
+  /** Cementerio: un cadáver enterrado se convierte en Esqueleto del dueño del Cementerio a los `skeletonRiseSeconds`. */
+  skeletonRiseSeconds: PositiveNumber.optional(),
+  /**
+   * Cámara de tortura: una criatura enemiga derrotada que un Imp lleva allí se convierte en aliada con probabilidad
+   * `convertChance`; si no, muere y da su sueldo × `deathGoldWages` en oro al dueño de la Cámara.
+   */
+  convertChance: Fraction.optional(),
+  deathGoldWages: PositiveNumber.optional(),
   /** Templo: maná por segundo que da cada tile (se suma al maná normal, sin pasar por su tope). */
   manaPerTilePerSecond: PositiveNumber.optional(),
   /** Biblioteca: con al menos `manaPulseMinLevel` tiles (su nivel), da `manaPulseAmount` de maná cada `manaPulseSeconds`. */

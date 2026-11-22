@@ -284,6 +284,7 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
         (c) =>
           c.owner === playerId &&
           !c.held &&
+          c.downedUntil === 0 && // una derrotada no se cura: la salvan los Imps
           c.hp < creatureMaxHp(rules, c) * 0.4 &&
           c.healTicksLeft === 0,
       )
@@ -403,6 +404,7 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
           !c.held &&
           // Las que combaten (o acaban de ser atacadas) no se pueden retirar del mapa.
           !isInCombat(state, rules, c) &&
+          c.downedUntil === 0 &&
           c.goal !== 'flee' &&
           c.hp > creatureMaxHp(rules, c) * 0.6,
       )

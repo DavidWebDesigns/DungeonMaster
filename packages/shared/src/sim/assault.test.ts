@@ -92,6 +92,7 @@ describe('soltar con la mano = asalto al objetivo visible más cercano', () => {
 
   it('el asalto termina cuando el objetivo muere y entonces vuelve a su comportamiento normal', () => {
     const { state, data } = duel();
+    data.global.downed.seconds = 0; // muerte inmediata: aquí solo importa el asalto
     noImps(state);
     const enemy = spawn(state, data, 2, 'goblin', 8.5, 4.5, { mood: 50, hp: 20 });
     const g = spawn(state, data, 1, 'troll', 3.5, 8.5, { mood: 50 });

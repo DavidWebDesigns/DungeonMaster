@@ -33,7 +33,16 @@ export interface PlayerState {
   seen: number[];
 }
 
-export type TaskKind = 'dig' | 'claim' | 'reinforce' | 'buildTrap' | 'repairTrap';
+export type TaskKind =
+  | 'dig'
+  | 'claim'
+  | 'reinforce'
+  | 'buildTrap'
+  | 'repairTrap'
+  /** Llevar una criatura derrotada a la Guarida (si es propia) o a la Cámara de tortura (si es enemiga). */
+  | 'rescue'
+  /** Llevar un cadáver al Cementerio. */
+  | 'bury';
 
 export interface Task {
   id: number;
@@ -47,11 +56,13 @@ export interface Task {
   blockedVersion: number;
   /** Creada sola por un Imp ocioso (reclamar suelo cercano), no marcada por el jugador. */
   auto: boolean;
+  /** Rescatar o enterrar: id de la criatura derrotada o del cadáver al que se refiere. */
+  bodyId?: number;
 }
 
 export type ImpMode = 'idle' | 'needPath' | 'moving' | 'working';
 /** `loaf`: pasea sin trabajo mientras holgazanea. */
-export type ImpGoal = 'none' | 'task' | 'haul' | 'loaf';
+export type ImpGoal = 'none' | 'task' | 'haul' | 'loaf' | 'carry';
 
 export interface Imp {
   id: number;
@@ -77,6 +88,9 @@ export interface Imp {
   held: boolean;
   /** Hasta qué tick trabaja más rápido por una bofetada (0 = nunca). */
   slapUntil: number;
+  /** Lo que lleva en brazos: una criatura derrotada o un cadáver (`none` = nada). */
+  carryKind: 'none' | 'creature' | 'corpse';
+  carryId: number;
   /** Hasta qué tick holgazanea sin coger trabajo (0 = no holgazanea). Una bofetada lo despierta. */
   loafUntil: number;
   /** Tile al que pasea mientras holgazanea o sin objetivo (-1 = ninguno). */
@@ -86,6 +100,25 @@ export interface Imp {
   /** Criatura que lo atacó la última vez (0 = nadie) y cuándo. */
   attackedBy: number;
   attackedTick: number;
+}
+
+/** El cuerpo sin vida de una criatura (suyo o ajeno): los Imps lo llevan al Cementerio y, enterrado, se levanta Esqueleto. */
+export interface Corpse {
+  id: number;
+  type: string;
+  level: number;
+  /** Jugador al que pertenecía la criatura. */
+  origin: PlayerId;
+  x: number;
+  y: number;
+  /** Imp que lo lleva en brazos (0 = nadie). */
+  carriedBy: number;
+  /** Sala del Cementerio donde está enterrado (0 = sin enterrar). */
+  buriedIn: number;
+  /** Tick en que, ya enterrado, se levanta como Esqueleto. */
+  riseAt: number;
+  /** Tick en que murió (para que desaparezca solo si nadie lo entierra). */
+  born: number;
 }
 
 export interface Room {
@@ -196,6 +229,10 @@ export interface Creature {
   ignoring: boolean;
   /** Por tipo de objetivo: versión de mapa en la que no se encontró ruta. */
   blocked: Record<string, number>;
+  /** Hasta qué tick está derrotada y aturdida (0 = no lo está). Con la vida a 0, un Imp puede llevársela. */
+  downedUntil: number;
+  /** Imp que la lleva en brazos (0 = nadie). */
+  carriedBy: number;
   /** Tile de la puerta enemiga que le corta el paso y que va a atacar hasta romperla (-1 = ninguna). */
   doorTarget: number;
   /** A quién ataca: una criatura, un Imp o un tile de sala (índice) / el Corazón (tile del Corazón). */
@@ -277,6 +314,9 @@ export interface MatchState {
   goldLeft: number[];
   /** Id de la sala que cubre cada tile (0 = ninguna). */
   roomAt: number[];
+  /** Cadáveres sin vida (sueltos, en brazos de un Imp o enterrados). */
+  corpses: Corpse[];
+  nextCorpseId: number;
   /** Dueño de la puerta construida en cada tile (0 = no hay): una puerta solo deja pasar a su dueño (sim/doors.ts). */
   doorAt: number[];
   players: PlayerState[];
@@ -362,6 +402,38 @@ export type SimEvent =
   | { type: 'payday'; tick: number }
   | { type: 'pigletEaten'; playerId: PlayerId; creatureId: number; healed: number }
   | { type: 'rallyCancelled'; playerId: PlayerId }
+  /** Una criatura cae derrotada: queda aturdida `seconds` segundos antes de morir. */
+  | {
+      type: 'creatureDowned';
+      playerId: PlayerId;
+      creatureId: number;
+      x: number;
+      y: number;
+      seconds: number;
+    }
+  /** Un Imp deja a una criatura derrotada en la Guarida y se recupera. */
+  | { type: 'creatureRescued'; playerId: PlayerId; creatureId: number; x: number; y: number }
+  /** Una criatura enemiga derrotada pasa por la Cámara de tortura y se convierte en aliada (`playerId` es su nuevo dueño). */
+  | {
+      type: 'creatureConverted';
+      playerId: PlayerId;
+      victimOwner: PlayerId;
+      creatureId: number;
+      x: number;
+      y: number;
+    }
+  /** Una criatura enemiga derrotada muere en la Cámara de tortura y su dueño actual cobra su oro. */
+  | {
+      type: 'creatureTortured';
+      playerId: PlayerId;
+      victimOwner: PlayerId;
+      creatureId: number;
+      x: number;
+      y: number;
+      gold: number;
+    }
+  | { type: 'corpseBuried'; playerId: PlayerId; corpseId: number; x: number; y: number }
+  | { type: 'skeletonRose'; playerId: PlayerId; creatureId: number; x: number; y: number }
   | { type: 'gambled'; playerId: PlayerId; creatureId: number; amount: number }
   | { type: 'paid'; playerId: PlayerId; creatureId: number; amount: number; ok: boolean }
   | { type: 'moodBand'; playerId: PlayerId; creatureId: number; band: string }
@@ -371,7 +443,7 @@ export type SimEvent =
       type: 'creatureDied';
       playerId: PlayerId;
       creatureId: number;
-      cause: 'starvation' | 'combat' | 'spell' | 'eliminated';
+      cause: 'starvation' | 'combat' | 'spell' | 'eliminated' | 'tortured';
     }
   | { type: 'impDied'; playerId: PlayerId; impId: number }
   | { type: 'trapPlaced'; playerId: PlayerId; trapId: number; trap: string; tile: number }

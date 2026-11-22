@@ -81,6 +81,58 @@ describe('el consejero', () => {
     );
   });
 
+  it('cuenta lo que pasa con las criaturas derrotadas: caída, rescate, conversión, tortura y esqueletos', () => {
+    const fallen = advise([
+      { type: 'creatureDowned', playerId: 1, creatureId: 1, x: 5, y: 5, seconds: 60 },
+    ])[0]!;
+    expect(fallen.text).toContain('ha caído');
+    expect(fallen.text).toContain('sin Guarida'); // la partida de prueba no tiene Guarida
+    expect(
+      advise([{ type: 'creatureRescued', playerId: 1, creatureId: 1, x: 5, y: 5 }])[0]!.text,
+    ).toContain('se recupera en la Guarida');
+    // Conversión: el que gana la criatura y el que la pierde reciben textos distintos.
+    const conv = {
+      type: 'creatureConverted',
+      playerId: 1,
+      victimOwner: 2,
+      creatureId: 1,
+      x: 5,
+      y: 5,
+    } as const;
+    expect(advise([conv])[0]!.text).toContain('se ha unido a tu mazmorra');
+    expect(
+      adviceFor([{ ...conv, playerId: 2, victimOwner: 1 }], sb.state, data, 1, typeOf)[0]!.text,
+    ).toContain('Han convertido');
+    expect(
+      advise([
+        {
+          type: 'creatureTortured',
+          playerId: 1,
+          victimOwner: 2,
+          creatureId: 1,
+          x: 5,
+          y: 5,
+          gold: 300,
+        },
+      ])[0]!.text,
+    ).toContain('300 de oro');
+    expect(
+      advise([{ type: 'skeletonRose', playerId: 1, creatureId: 9, x: 5, y: 5 }])[0]!.text,
+    ).toContain('Esqueleto');
+    // Los eventos de otros jugadores que no me afectan no salen.
+    expect(advise([{ type: 'creatureRescued', playerId: 2, creatureId: 1, x: 5, y: 5 }])).toEqual(
+      [],
+    );
+  });
+
+  it('muerte por combate y por hambre tienen cada una su texto', () => {
+    const t = (cause: 'starvation' | 'combat') =>
+      advise([{ type: 'creatureDied', playerId: 1, creatureId: 1, cause }])[0]!.text;
+    expect(t('starvation')).toContain('de hambre');
+    expect(t('combat')).toContain('Cementerio');
+    expect(t('combat')).not.toContain('de hambre');
+  });
+
   it('avisa de que han derribado un muro reforzado propio, y no de los ajenos', () => {
     const e = { type: 'wallBreached', playerId: 1, tile: 7 } as const;
     expect(advise([e])[0]!.text).toContain('derribado uno de tus muros');

@@ -102,6 +102,8 @@ export interface CreatureRow {
   held: boolean;
   /** Está en combate: no se puede retirar del mapa. */
   inCombat: boolean;
+  /** Derrotada y aturdida: segundos que le quedan antes de morir (`null` si no lo está). */
+  downedSeconds: number | null;
 }
 
 export interface GameOverInfo {
@@ -401,6 +403,10 @@ export function buildHudModel(
         activity: activityLabel(c),
         held: c.held,
         inCombat: isInCombat(state, rules, c),
+        downedSeconds:
+          c.downedUntil > 0
+            ? Math.max(0, (c.downedUntil - state.tick) / data.global.tickRate)
+            : null,
       };
     });
 

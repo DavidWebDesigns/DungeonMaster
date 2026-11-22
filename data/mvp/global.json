@@ -66,5 +66,6 @@
     "standoffFactor": 0.95,
     "wakeOnAttackSeconds": 0.3
   },
+  "downed": { "seconds": 60, "reviveHpFraction": 0.3, "corpseDecaySeconds": 300 },
   "tiebreak": ["heartHpFraction", "creaturePower", "gold"]
 }

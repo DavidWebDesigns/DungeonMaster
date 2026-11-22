@@ -46,7 +46,9 @@ export function adviceFor(
   const out: Advice[] = [];
 
   for (const e of events) {
-    if ('playerId' in e && e.playerId !== localPlayer) continue;
+    // Solo lo mío; salvo cuando me quitan una criatura (conversión o tortura), que también me afecta.
+    const aboutMe = 'victimOwner' in e && e.victimOwner === localPlayer;
+    if ('playerId' in e && e.playerId !== localPlayer && !aboutMe) continue;
     switch (e.type) {
       case 'creatureArrived':
         out.push({
@@ -162,9 +164,57 @@ export function adviceFor(
         break;
       case 'creatureDied':
         out.push({
-          text: `${cap(unOf(e.creatureId))} ha ${femOf(e.creatureId) ? 'muerto' : 'muerto'} de hambre.`,
+          text:
+            e.cause === 'starvation'
+              ? `${cap(unOf(e.creatureId))} ha muerto de hambre.`
+              : `${cap(unOf(e.creatureId))} ha muerto. Su cadáver puede enterrarse en un Cementerio.`,
           key: `died${e.creatureId}`,
           cooldownTicks: 0,
+        });
+        break;
+      case 'creatureDowned': {
+        const hasLair = state.rooms.some((r) => r.owner === localPlayer && r.type === 'lair');
+        out.push({
+          text: hasLair
+            ? `${cap(unOf(e.creatureId))} ha caído: tus Imps pueden llevarla a la Guarida en ${e.seconds} s.`
+            : `${cap(unOf(e.creatureId))} ha caído: sin Guarida tus Imps no pueden salvarla.`,
+          key: `downed${e.creatureId}`,
+          cooldownTicks: 0,
+        });
+        break;
+      }
+      case 'creatureRescued':
+        out.push({
+          text: `${cap(unOf(e.creatureId))} se recupera en la Guarida.`,
+          key: `rescued${e.creatureId}`,
+          cooldownTicks: 0,
+        });
+        break;
+      case 'creatureConverted':
+        out.push({
+          text:
+            e.playerId === localPlayer
+              ? `${cap(unOf(e.creatureId))} enemig${femOf(e.creatureId) ? 'a' : 'o'} se ha unido a tu mazmorra.`
+              : `Han convertido a ${unOf(e.creatureId)} tuy${femOf(e.creatureId) ? 'a' : 'o'}.`,
+          key: `converted${e.creatureId}`,
+          cooldownTicks: 0,
+        });
+        break;
+      case 'creatureTortured':
+        out.push({
+          text:
+            e.playerId === localPlayer
+              ? `La Cámara de tortura te da ${e.gold} de oro por ${unOf(e.creatureId)} enemig${femOf(e.creatureId) ? 'a' : 'o'}.`
+              : `Han torturado hasta la muerte a ${unOf(e.creatureId)} tuy${femOf(e.creatureId) ? 'a' : 'o'}.`,
+          key: `tortured${e.creatureId}`,
+          cooldownTicks: 0,
+        });
+        break;
+      case 'skeletonRose':
+        out.push({
+          text: 'Un Esqueleto se ha levantado del Cementerio.',
+          key: 'skeletonRose',
+          cooldownTicks: 300,
         });
         break;
       default:

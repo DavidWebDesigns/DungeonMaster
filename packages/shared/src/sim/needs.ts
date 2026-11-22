@@ -41,6 +41,8 @@ export function tickNeeds(state: MatchState, rules: Rules, events: SimEvent[]): 
   for (const c of state.creatures) {
     const def = rules.creatureDefs[c.type];
     if (!def) continue;
+    // Derrotada y aturdida: ni hambre, ni sueño, ni ánimo hasta que la salven o muera.
+    if (c.downedUntil > 0) continue;
     const maxHp = creatureMaxHp(rules, c);
 
     if (def.needs.eats)

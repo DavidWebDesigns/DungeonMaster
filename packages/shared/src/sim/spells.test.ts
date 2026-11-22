@@ -55,6 +55,7 @@ describe('Rayo', () => {
 
   it('mata a una criatura débil: cuenta como muerte por hechizo y no da experiencia', () => {
     const { state, data } = duel();
+    data.global.downed.seconds = 0;
     state.players[0]!.mana = 5000;
     const victim = spawn(state, data, 2, 'goblin', 5.5, 8.5, { hp: 300 });
     const events = (() => {

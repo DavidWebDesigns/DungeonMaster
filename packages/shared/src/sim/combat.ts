@@ -7,7 +7,7 @@ import { creatureMaxHp, moodBandOf, scaledStat } from './creatureStats';
 import { computeVisible } from './fog';
 import { resetImp } from './imps';
 import { tileIndex } from './grid';
-import { removeCreature } from './needs';
+import { dieDowned, enterDowned } from './bodies';
 import { removeRoomTile } from './rooms';
 import { nextFloat } from './rng';
 import { secondsToTicks, walkDistances, type Rules } from './rules';
@@ -478,7 +478,8 @@ export function areaDamage(
   events: SimEvent[],
 ): void {
   for (const o of state.creatures) {
-    if (o.owner === caster || o.held || !ownerAlive(state, o.owner)) continue;
+    // Las derrotadas (hp 0, aturdidas) ya no reciben más daño.
+    if (o.owner === caster || o.held || o.hp <= 0 || !ownerAlive(state, o.owner)) continue;
     if (Math.hypot(o.x - x, o.y - y) > radius) continue;
     o.hp -= damage;
     o.attackedByKind = 'none';
@@ -517,7 +518,19 @@ export function areaDamage(
  */
 export function processDeaths(state: MatchState, rules: Rules, events: SimEvent[]): void {
   for (const victim of state.creatures.filter((c) => c.hp <= 0)) {
-    // Rearmarse: una vez por vida, con cierta probabilidad vuelve con parte de la vida en vez de morir.
+    // Ya derrotada: espera a que la salve un Imp o se le acabe el tiempo.
+    if (victim.downedUntil > 0) {
+      if (state.tick >= victim.downedUntil)
+        dieDowned(
+          state,
+          rules,
+          victim,
+          events,
+          victim.attackedByKind === 'none' ? 'spell' : 'combat',
+        );
+      continue;
+    }
+    // Rearmarse: una vez por vida, con cierta probabilidad vuelve con parte de la vida en vez de caer.
     const re = passive(rules, victim, 'reassemble');
     if (re && !victim.reassembled && nextFloat(state) < re.effect.chance) {
       victim.reassembled = true;
@@ -534,20 +547,7 @@ export function processDeaths(state: MatchState, rules: Rules, events: SimEvent[
       });
       continue;
     }
-    // Inmortal: con la sala pedida y nivel de sobra, volverá a la vida pasado un rato con un nivel menos.
-    const un = passive(rules, victim, 'undying');
-    if (
-      un &&
-      victim.level > un.effect.levelLoss &&
-      state.rooms.some((r) => r.owner === victim.owner && r.type === un.effect.requiresRoom)
-    ) {
-      state.revives.push({
-        owner: victim.owner,
-        type: victim.type,
-        level: victim.level - un.effect.levelLoss,
-        at: state.tick + Math.round(un.effect.reviveSeconds * rules.data.global.tickRate),
-      });
-    }
+    // Quien la derrotó gana 20 × su nivel en experiencia (en el momento de caer, no al morir).
     if (victim.attackedByKind === 'creature') {
       const killer = state.creatures.find((k) => k.id === victim.attackedBy && k.hp > 0);
       if (killer)
@@ -559,13 +559,16 @@ export function processDeaths(state: MatchState, rules: Rules, events: SimEvent[
           events,
         );
     }
-    events.push({
-      type: 'creatureDied',
-      playerId: victim.owner,
-      creatureId: victim.id,
-      cause: victim.attackedByKind === 'none' ? 'spell' : 'combat',
-    });
-    removeCreature(state, victim.id);
+    // Cae derrotada y aturdida (o muere ya, si el tiempo de derrota es 0).
+    if (rules.data.global.downed.seconds > 0) enterDowned(state, rules, victim, events);
+    else
+      dieDowned(
+        state,
+        rules,
+        victim,
+        events,
+        victim.attackedByKind === 'none' ? 'spell' : 'combat',
+      );
   }
   for (const imp of state.imps.filter((i) => i.hp <= 0)) {
     resetImp(state, imp);

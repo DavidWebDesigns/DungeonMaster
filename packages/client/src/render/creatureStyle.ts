@@ -94,8 +94,11 @@ export function hpColor(fraction: number): RGB {
 }
 
 /** Lo que está haciendo la criatura, en palabras para la lista. */
-export function activityLabel(c: Pick<Creature, 'held' | 'goal' | 'mode'>): string {
+export function activityLabel(
+  c: Pick<Creature, 'held' | 'goal' | 'mode'> & { downedUntil?: number },
+): string {
   if (c.held) return 'En tu mano';
+  if ((c.downedUntil ?? 0) > 0) return 'Derrotada y aturdida';
   switch (c.goal) {
     case 'portal':
       return c.mode === 'acting' ? 'Junto al Portal' : 'Va al Portal';

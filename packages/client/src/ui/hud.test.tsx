@@ -165,6 +165,24 @@ describe('buildHudModel', () => {
     expect(buildHudModel(sb.state, data, 1, dig, []).rally).toBeNull();
   });
 
+  it('una criatura derrotada sale en la lista con su cuenta atrás y sin poder recogerse', () => {
+    const sb = fresh();
+    const rules = rulesOf(data);
+    const c = newCreature(sb.state, rules, 1, 'goblin', 9 * 64 + 9);
+    c.hp = 0;
+    c.downedUntil = sb.state.tick + 450; // 45 s
+    sb.state.creatures.push(c);
+    const model = buildHudModel(sb.state, data, 1, dig, []);
+    expect(model.creatures[0]).toMatchObject({
+      downedSeconds: 45,
+      activity: 'Derrotada y aturdida',
+    });
+    const out = render(<Hud model={model} onTool={() => {}} />);
+    expect(out).toContain('Derrotada y aturdida · 45 s');
+    expect(out).toContain('un Imp puede llevarla a la Guarida');
+    expect(out).toMatch(/creature [a-z]+ held" disabled/);
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

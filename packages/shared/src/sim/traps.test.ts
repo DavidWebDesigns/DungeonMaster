@@ -357,6 +357,7 @@ describe('disparar trampas', () => {
 
   it('las criaturas muertas por una trampa no dan XP a nadie (no hay asesino)', () => {
     const { state, data } = armed('spikeTrap');
+    data.global.downed.seconds = 0;
     const victim = spawn(state, data, 2, 'goblin', 9.5, 12.5, { hp: 100 });
     const events = run(state, data, 2);
     expect(events.some((e) => e.type === 'creatureDied' && e.creatureId === victim.id)).toBe(true);

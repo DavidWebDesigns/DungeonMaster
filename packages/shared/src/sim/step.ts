@@ -5,6 +5,7 @@ import { runQueuedCommands } from './applyCommand';
 import { updateCreatures } from './behavior';
 import { tickPayday, tickHatcheries, tickPiglets } from './creatureEconomy';
 import { tickEconomy } from './economy';
+import { tickCorpses } from './bodies';
 import { tickLairHealing, tickNeeds } from './needs';
 import { updateCombat, processDeaths } from './combat';
 import { updateSeen } from './fog';
@@ -50,6 +51,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
   updateTraps(state, rules, events);
   tickSpells(state, rules);
   processDeaths(state, rules, events);
+  tickCorpses(state, rules, events);
   tickVictory(state, rules, events);
   updateSeen(state, rules);
   state.tick++;

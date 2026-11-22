@@ -64,6 +64,8 @@ interface CreatureMesh {
   mark?: Mesh;
   /** Marco de la barra de vida con el color del dueño (solo en las criaturas rivales). */
   frame?: Mesh;
+  /** Estrellitas de aturdimiento sobre una criatura derrotada (suelta, no cuelga del cuerpo aplastado). */
+  stars: Mesh;
   height: number;
 }
 
@@ -203,6 +205,7 @@ export class EntitiesView {
       const pose = deathPose(timeSeconds - d.born);
       if (pose.done) {
         d.mesh.body.dispose(false, true);
+        d.mesh.stars.dispose();
         this.dying.splice(i, 1);
         continue;
       }
@@ -214,6 +217,7 @@ export class EntitiesView {
     this.updateTraps(state, data, localPlayer, visible);
     this.updateHeartBars(state, data, localPlayer, visible);
     this.updatePiglets(state, localPlayer, timeSeconds);
+    this.updateCorpses(state, localPlayer, visible);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
@@ -318,7 +322,29 @@ export class EntitiesView {
     const mark = ownerMarkOf(owner, localPlayer).show
       ? this.makeEnemyMark(`enemyMark${id}`, owner, body, look.height / 2 + 0.55 * S)
       : undefined;
-    return { body, mood, barBack, barFill, fillMat, moodMat, mark, frame, height: look.height };
+    const stars = CreateTorus(
+      `stars${id}`,
+      { diameter: 0.34 * S, thickness: 0.05 * S, tessellation: 12 },
+      this.scene,
+    );
+    const starsMat = new StandardMaterial(`starsMat${id}`, this.scene);
+    starsMat.disableLighting = true;
+    starsMat.emissiveColor = new Color3(1, 0.9, 0.3);
+    stars.material = starsMat;
+    stars.isPickable = false;
+    stars.setEnabled(false);
+    return {
+      body,
+      mood,
+      barBack,
+      barFill,
+      fillMat,
+      moodMat,
+      mark,
+      frame,
+      stars,
+      height: look.height,
+    };
   }
 
   /** Criaturas: cápsulas de color por tipo con barra de vida (si están heridas) e icono de ánimo. */
@@ -363,7 +389,21 @@ export class EntitiesView {
       const hovered = hoverUnit?.kind === 'creature' && hoverUnit.id === c.id && !c.held;
       const anim = this.anims.sample(c.id, timeSeconds);
       const base = hovered ? 1.3 : 1;
-      m.body.scaling.set(base * anim.sx, base * anim.sy, base * anim.sx);
+      // Derrotada y aturdida: aplastada en el suelo, con estrellitas encima y sin barras.
+      const downed = c.downedUntil > 0 && !c.held;
+      if (downed) {
+        m.body.scaling.set(1.5, 0.35, 1.5);
+        m.body.position.y = 0.1 * S + (m.height * 0.35) / 2;
+      } else m.body.scaling.set(base * anim.sx, base * anim.sy, base * anim.sx);
+      m.stars.setEnabled(downed && m.body.isEnabled());
+      if (downed) {
+        m.stars.position.set(
+          m.body.position.x,
+          0.1 * S + m.height * 0.35 + 0.18 * S,
+          m.body.position.z,
+        );
+        m.stars.rotation.y = timeSeconds * 3;
+      }
       const bodyMat = m.body.material as StandardMaterial | null;
       if (bodyMat) {
         const glow = hovered ? HOVER_GLOW : NO_GLOW;
@@ -375,17 +415,18 @@ export class EntitiesView {
       }
       const frac = hpFraction(c, creatureMaxHp(rules, c));
       const bar = creatureBarOf(c.owner, localPlayer, frac);
-      m.barBack.setEnabled(bar.show);
-      m.barFill.setEnabled(bar.show);
-      m.frame?.setEnabled(bar.show);
-      if (bar.show) {
+      const showBar = bar.show && !downed;
+      m.barBack.setEnabled(showBar);
+      m.barFill.setEnabled(showBar);
+      m.frame?.setEnabled(showBar);
+      if (showBar) {
         m.barFill.scaling.x = Math.max(0.001, frac);
         m.barFill.position.x = -0.35 * S * (1 - frac);
         const col = hpColor(frac);
         m.fillMat.emissiveColor = new Color3(...col);
       }
       const icon = moodIconOf(c.band);
-      m.mood.setEnabled(icon.showOverHead);
+      m.mood.setEnabled(icon.showOverHead && !downed);
       const cloud = moodCloudOf(c.band, timeSeconds);
       m.moodMat.emissiveColor = new Color3(...cloud.color);
       m.mood.scaling.set(cloud.scale.x, cloud.scale.y, cloud.scale.x);
@@ -401,9 +442,92 @@ export class EntitiesView {
           m.barFill.setEnabled(false);
           m.frame?.setEnabled(false);
           m.mark?.setEnabled(false);
+          m.stars.setEnabled(false);
           this.dying.push({ mesh: m, born: timeSeconds });
-        } else m.body.dispose(false, true);
+        } else {
+          m.body.dispose(false, true);
+          m.stars.dispose();
+        }
       }
+    }
+  }
+
+  private readonly corpseMeshes = new Map<number, { mesh: Mesh; buried: boolean }>();
+
+  /**
+   * Cadáveres: la criatura tumbada y gris donde cayó, o un montículo con una cruz si está enterrada en un Cementerio. Solo
+   * se dibujan los que se ven.
+   */
+  private updateCorpses(state: MatchState, localPlayer: number, visible: Uint8Array | null): void {
+    const alive = new Set<number>();
+    for (const b of state.corpses) {
+      const tile = Math.floor(b.y) * state.width + Math.floor(b.x);
+      if (visible !== null && visible[tile] !== 1 && b.origin !== localPlayer) continue;
+      alive.add(b.id);
+      const buried = b.buriedIn !== 0;
+      let entry = this.corpseMeshes.get(b.id);
+      if (entry && entry.buried !== buried) {
+        entry.mesh.dispose(false, true);
+        entry = undefined;
+      }
+      if (!entry) {
+        let mesh: Mesh;
+        if (buried) {
+          mesh = CreateCylinder(
+            `grave${b.id}`,
+            { diameterTop: 0.15, diameterBottom: 0.6, height: 0.22, tessellation: 10 },
+            this.scene,
+          );
+          mesh.material = material(this.scene, [0.3, 0.24, 0.2]);
+          const cross = CreateBox(
+            `graveCross${b.id}`,
+            { width: 0.07, height: 0.42, depth: 0.07 },
+            this.scene,
+          );
+          cross.material = material(this.scene, [0.75, 0.72, 0.66]);
+          cross.parent = mesh;
+          cross.position.y = 0.3;
+          cross.isPickable = false;
+          const arm = CreateBox(
+            `graveArm${b.id}`,
+            { width: 0.26, height: 0.07, depth: 0.07 },
+            this.scene,
+          );
+          arm.material = material(this.scene, [0.75, 0.72, 0.66]);
+          arm.parent = mesh;
+          arm.position.y = 0.38;
+          arm.isPickable = false;
+        } else {
+          const look = lookOf(b.type);
+          mesh = CreateCapsule(
+            `corpse${b.id}`,
+            { height: look.height, radius: look.radius },
+            this.scene,
+          );
+          mesh.material = material(this.scene, mix(look.color, [0.55, 0.55, 0.58], 0.65));
+          mesh.rotation.z = Math.PI / 2;
+          // Una marca del color de quien era, para saber de quién fue.
+          const tag = CreateDisc(
+            `corpseTag${b.id}`,
+            { radius: look.radius + 0.1 * S, tessellation: 16 },
+            this.scene,
+          );
+          tag.material = material(this.scene, playerColor(b.origin), 0.5);
+          tag.parent = mesh;
+          tag.rotation.y = Math.PI / 2;
+          tag.position.x = -look.radius - 0.02;
+          tag.isPickable = false;
+        }
+        mesh.isPickable = false;
+        entry = { mesh, buried };
+        this.corpseMeshes.set(b.id, entry);
+      }
+      entry.mesh.position.set(b.x, buried ? 0.26 : 0.1 + lookOf(b.type).radius, b.y);
+    }
+    for (const [id, e] of this.corpseMeshes) {
+      if (alive.has(id)) continue;
+      e.mesh.dispose(false, true);
+      this.corpseMeshes.delete(id);
     }
   }
 

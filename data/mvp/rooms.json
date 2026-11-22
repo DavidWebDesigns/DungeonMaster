@@ -114,7 +114,9 @@
       "h": 1
     },
     "maxTiles": 10,
-    "sellRefund": 0.5
+    "sellRefund": 0.5,
+    "convertChance": 0.5,
+    "deathGoldWages": 3
   },
   {
     "id": "workshop",
@@ -142,7 +144,8 @@
       "h": 1
     },
     "maxTiles": 10,
-    "sellRefund": 0.5
+    "sellRefund": 0.5,
+    "skeletonRiseSeconds": 60
   },
   {
     "id": "temple",

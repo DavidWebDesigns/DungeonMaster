@@ -494,7 +494,8 @@ export class Game {
     };
     const { state } = this.sandbox;
     for (const c of state.creatures)
-      if (c.owner === this.me && !c.held) test('creature', c.id, c.x, c.y, 0.35);
+      if (c.owner === this.me && !c.held && c.downedUntil === 0)
+        test('creature', c.id, c.x, c.y, 0.35);
     for (const i of state.imps)
       if (i.owner === this.me && !i.held) test('imp', i.id, i.x, i.y, 0.3);
     return best;

@@ -24,9 +24,9 @@ const REQUIRED_ROOM_FIELDS: Record<string, readonly string[]> = {
     'tilesPerTrainee',
   ],
   library: ['manaPulseMinLevel', 'manaPulseAmount', 'manaPulseSeconds'],
-  tortureChamber: [],
+  tortureChamber: ['convertChance', 'deathGoldWages'],
   workshop: [],
-  graveyard: [],
+  graveyard: ['skeletonRiseSeconds'],
   temple: ['manaPerTilePerSecond'],
   casino: [
     'casinoTilesPerSeat',

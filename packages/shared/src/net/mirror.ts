@@ -8,7 +8,16 @@ import { makeImp } from '../sim/createMatch';
 import { syncDoors } from '../sim/doors';
 import { newCreature } from './../sim/portal';
 import { rulesOf } from '../sim/rules';
-import type { Creature, MatchState, PlayerId, PlayerState, Room, Task, Trap } from '../sim/types';
+import type {
+  Corpse,
+  Creature,
+  MatchState,
+  PlayerId,
+  PlayerState,
+  Room,
+  Task,
+  Trap,
+} from '../sim/types';
 import { STATUS_KINDS, type Delta, type EntityRec } from './view';
 
 const num = (v: unknown, d = 0): number => (typeof v === 'number' ? v : d);
@@ -23,6 +32,7 @@ export class Mirror {
   private rooms = new Map<number, Room>();
   private traps = new Map<number, Trap>();
   private tasks = new Map<number, Task>();
+  private corpses = new Map<number, Corpse>();
   /** Mensajes recibidos (para medir ancho de banda en pruebas). */
   deltas = 0;
 
@@ -49,6 +59,8 @@ export class Mirror {
       owner: new Array<number>(n).fill(0),
       goldLeft: new Array<number>(n).fill(0),
       roomAt: new Array<number>(n).fill(0),
+      corpses: [],
+      nextCorpseId: 1,
       doorAt: new Array<number>(n).fill(0),
       players: [],
       imps: [],
@@ -132,6 +144,7 @@ export class Mirror {
     s.imps = [...this.imps.values()].sort((a, b) => a.id - b.id);
     s.traps = [...this.traps.values()].sort((a, b) => a.id - b.id);
     s.tasks = [...this.tasks.values()].sort((a, b) => a.id - b.id);
+    s.corpses = [...this.corpses.values()].sort((a, b) => a.id - b.id);
     if (tilesChanged) s.mapVersion++;
     // Las puertas que conoce este cliente (las suyas y las rivales a la vista) cierran el paso en sus vistas previas.
     syncDoors(s, this.rules);
@@ -185,6 +198,7 @@ export class Mirror {
         if ('l' in rec) c.level = num(rec['l']);
         if ('h' in rec) c.hp = num(rec['h']);
         if ('hd' in rec) c.held = rec['hd'] === 1;
+        if ('dn' in rec) c.downedUntil = num(rec['dn']);
         if ('m' in rec) c.mood = num(rec['m']);
         if ('b' in rec) c.band = str(rec['b']);
         if ('g' in rec) c.goal = str(rec['g']) as Creature['goal'];
@@ -234,6 +248,32 @@ export class Mirror {
         if ('t' in rec) r.type = str(rec['t']);
         if ('o' in rec) r.owner = num(rec['o']);
         if ('pg' in rec) r.piglets = num(rec['pg']);
+        break;
+      }
+      case 'x': {
+        let b = this.corpses.get(id);
+        if (!b) {
+          b = {
+            id,
+            type: '',
+            level: 1,
+            origin: 0,
+            x: 0,
+            y: 0,
+            carriedBy: 0,
+            buriedIn: 0,
+            riseAt: 0,
+            born: 0,
+          };
+          this.corpses.set(id, b);
+        }
+        if ('t' in rec) b.type = str(rec['t']);
+        if ('o' in rec) b.origin = num(rec['o']);
+        if ('x' in rec) b.x = num(rec['x']);
+        if ('y' in rec) b.y = num(rec['y']);
+        if ('l' in rec) b.level = num(rec['l']);
+        // En el cliente solo importa si está enterrado (para dibujarlo); la sala concreta no se sabe.
+        if ('bu' in rec) b.buriedIn = rec['bu'] === 1 ? 1 : 0;
         break;
       }
       case 't': {
@@ -289,6 +329,7 @@ export class Mirror {
     else if (key[0] === 'i') this.imps.delete(id);
     else if (key[0] === 't') this.traps.delete(id);
     else if (key[0] === 'k') this.tasks.delete(id);
+    else if (key[0] === 'x') this.corpses.delete(id);
   }
 
   /** Reparte los tiles conocidos entre las salas y retira las que ya no cubren ninguno. */

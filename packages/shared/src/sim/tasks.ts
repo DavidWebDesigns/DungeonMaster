@@ -1,5 +1,6 @@
 import { inBounds, neighbors4, octile, tileIndex } from './grid';
 import { doorBlocks, syncDoors } from './doors';
+import { isBodyTaskValid } from './bodies';
 import { maxRoomLevel, removeRoomTile } from './rooms';
 import { isVeinTerrain, type Rules } from './rules';
 import type { Imp, MatchState, PlayerId, SimEvent, Task, TaskKind } from './types';
@@ -17,6 +18,11 @@ export function taskPriority(task: Task): number {
       return 2;
     case 'reinforce':
       return 3;
+    // Salvar a una criatura (tiene el tiempo contado) pasa por delante; enterrar cadáveres, lo último.
+    case 'rescue':
+      return 0;
+    case 'bury':
+      return 4;
   }
 }
 
@@ -178,6 +184,9 @@ export function isTaskValid(state: MatchState, rules: Rules, task: Task): boolea
         !!trap && trap.built && trap.hp < max && isOwnGround(state, rules, task.tile, task.owner)
       );
     }
+    case 'rescue':
+    case 'bury':
+      return isBodyTaskValid(state, task);
   }
 }
 
@@ -208,12 +217,22 @@ export function taskSeconds(state: MatchState, rules: Rules, task: Task): number
       const max = rules.data.traps.find((d) => d.id === trap?.type)?.hp ?? 0;
       return Math.max(0, max - (trap?.hp ?? max)) / w.trapRepairHpPerSecond;
     }
+    // Coger a una criatura o un cadáver en brazos es instantáneo al llegar.
+    case 'rescue':
+    case 'bury':
+      return 0;
   }
 }
 
 /** Tiles desde los que se puede trabajar la tarea: el propio tile (reclamar) o sus vecinos caminables. */
 export function workTiles(state: MatchState, rules: Rules, task: Task): number[] {
-  if (task.kind === 'claim' || task.kind === 'buildTrap' || task.kind === 'repairTrap')
+  if (
+    task.kind === 'claim' ||
+    task.kind === 'buildTrap' ||
+    task.kind === 'repairTrap' ||
+    task.kind === 'rescue' ||
+    task.kind === 'bury'
+  )
     return [task.tile];
   return neighbors4(state, task.tile).filter(
     (n) => rules.walkable[state.terrain[n] as number] && !doorBlocks(state, n, task.owner),
@@ -228,6 +247,11 @@ export function completeTask(
   events: SimEvent[],
 ): void {
   const i = task.tile;
+  if (task.kind === 'rescue' || task.kind === 'bury') {
+    // Se resuelve en imps.ts (el Imp coge el cuerpo en brazos); aquí solo se retira.
+    removeTask(state, task.id);
+    return;
+  }
   if (task.kind === 'repairTrap') {
     // Reparar no toca el terreno: al terminar (vida completa) la tarea simplemente se retira.
     removeTask(state, task.id);

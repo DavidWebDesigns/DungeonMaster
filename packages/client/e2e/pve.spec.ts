@@ -30,10 +30,13 @@ test('la raíz abre una partida PvE con 3 rivales y niebla, sin errores', async 
   const t1 = await page.evaluate(
     () => (window as unknown as { __dm: Hook }).__dm.sandbox.state.tick,
   );
-  await page.waitForTimeout(3000);
-  expect(
-    await page.evaluate(() => (window as unknown as { __dm: Hook }).__dm.sandbox.state.tick),
-  ).toBeGreaterThan(t1 + 30);
+  // El reloj avanza (con la máquina cargada o recién arrancada tarda más: se espera hasta 15 s en vez de un tiempo fijo).
+  await expect
+    .poll(
+      () => page.evaluate(() => (window as unknown as { __dm: Hook }).__dm.sandbox.state.tick),
+      { timeout: 15_000 },
+    )
+    .toBeGreaterThan(t1 + 60);
   expect(errors).toEqual([]);
 });
 

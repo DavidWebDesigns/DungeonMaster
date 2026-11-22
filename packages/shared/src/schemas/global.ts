@@ -111,6 +111,16 @@ export const GlobalConfig = z.strictObject({
     /** Ventana tras un golpe en la que una criatura dormida se considera atacada y se despierta. */
     wakeOnAttackSeconds: PositiveNumber,
   }),
+  /**
+   * Una criatura derrotada no muere al instante: queda aturdida `seconds` segundos. En ese tiempo un Imp puede llevarla a
+   * la Guarida (si es tuya, y se recupera con `reviveHpFraction` de su vida) o a la Cámara de tortura (si es enemiga). Si
+   * nadie la salva muere y deja un cadáver, que desaparece solo a los `corpseDecaySeconds` si nadie lo entierra.
+   */
+  downed: z.strictObject({
+    seconds: Seconds,
+    reviveHpFraction: Fraction,
+    corpseDecaySeconds: PositiveNumber,
+  }),
   tiebreak: z.array(z.enum(['heartHpFraction', 'creaturePower', 'gold'])).min(1),
 });
 export type GlobalConfig = z.infer<typeof GlobalConfig>;

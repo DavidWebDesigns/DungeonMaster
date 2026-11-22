@@ -88,8 +88,92 @@ describe('vistas por jugador: lo que se ve', () => {
     const delta = computeDelta(state, d, 1, new ClientKnowledge(64 * 64));
     const rec = (id: number) => delta.set![`c:${id}`]!;
     expect(rec(mine.id)).toMatchObject({ m: 77, hu: 33 });
-    expect(Object.keys(rec(enemy.id)).sort()).toEqual(['h', 'l', 'o', 't', 'x', 'y']);
+    expect(Object.keys(rec(enemy.id)).sort()).toEqual(['dn', 'h', 'l', 'o', 't', 'x', 'y']);
     void f;
+  });
+
+  it('una criatura derrotada (con la vida a 0) también la ven los rivales: pueden llevársela', () => {
+    const { state, data: d } = duel();
+    state.imps = [];
+    const victim = spawn(state, d, 1, 'goblin', 6.5, 6.5);
+    spawn(state, d, 2, 'goblin', 7.5, 6.5); // un rival que la ve
+    victim.hp = 0;
+    victim.downedUntil = state.tick + 600;
+    const rival = new Follower(2, state);
+    rival.update(state);
+    const seen = rival.mirror.state.creatures.find((c) => c.id === victim.id);
+    expect(seen).toBeDefined();
+    expect(seen!.downedUntil).toBe(victim.downedUntil);
+    expect(seen!.hp).toBe(0);
+    // Y el dueño sigue viéndola.
+    const own = new Follower(1, state);
+    own.update(state);
+    expect(own.mirror.state.creatures.find((c) => c.id === victim.id)?.downedUntil).toBe(
+      victim.downedUntil,
+    );
+  });
+
+  it('los cadáveres llegan solo a quien ve donde están y se borran al perderlos de vista', () => {
+    const { state, data: d } = duel();
+    state.imps = [];
+    const watcher = spawn(state, d, 2, 'goblin', 7.5, 6.5);
+    state.corpses.push({
+      id: 1,
+      type: 'goblin',
+      level: 2,
+      origin: 1,
+      x: 6.5,
+      y: 6.5,
+      carriedBy: 0,
+      buriedIn: 0,
+      riseAt: 0,
+      born: 0,
+    });
+    state.nextCorpseId = 2;
+    const rival = new Follower(2, state);
+    rival.update(state);
+    expect(rival.mirror.state.corpses).toEqual([
+      expect.objectContaining({ id: 1, type: 'goblin', origin: 1, level: 2, buriedIn: 0 }),
+    ]);
+    // Enterrado: el cliente lo sabe.
+    state.corpses[0]!.buriedIn = 5;
+    rival.update(state);
+    expect(rival.mirror.state.corpses[0]!.buriedIn).toBeGreaterThan(0);
+    // El rival se aleja y deja de verlo.
+    watcher.x = 55.5;
+    watcher.y = 55.5;
+    step(state, d);
+    rival.update(state);
+    expect(rival.mirror.state.corpses).toEqual([]);
+  });
+
+  it('el evento de caída lo recibe su dueño y quien ve el sitio; la conversión, también el dueño al que se la quitan', () => {
+    const { state, data: d } = duel();
+    state.imps = [];
+    spawn(state, d, 2, 'goblin', 7.5, 6.5); // un rival junto al sitio
+    const down = {
+      type: 'creatureDowned',
+      playerId: 1,
+      creatureId: 3,
+      x: 6.5,
+      y: 6.5,
+      seconds: 60,
+    } as const;
+    const v1 = visibleMask(state, rules, 1);
+    const v2 = visibleMask(state, rules, 2);
+    expect(eventsFor([down], state, 1, v1)).toEqual([down]);
+    expect(eventsFor([down], state, 2, v2)).toEqual([down]); // el rival está al lado
+    expect(eventsFor([{ ...down, x: 50.5, y: 50.5 }], state, 2, v2)).toEqual([]);
+    const conv = {
+      type: 'creatureConverted',
+      playerId: 2,
+      victimOwner: 1,
+      creatureId: 3,
+      x: 6.5,
+      y: 6.5,
+    } as const;
+    expect(eventsFor([conv], state, 1, v1)).toEqual([conv]);
+    expect(eventsFor([conv], state, 2, v2)).toEqual([conv]);
   });
 
   it('cuántos cerditos tiene un Criadero solo lo sabe su dueño', () => {

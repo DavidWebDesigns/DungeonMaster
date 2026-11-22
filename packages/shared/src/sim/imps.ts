@@ -1,4 +1,12 @@
 import { doorBlocks } from './doors';
+import {
+  carryDestination,
+  deliverBody,
+  pickUpBody,
+  releaseBody,
+  scanBodyTasks,
+  syncCarried,
+} from './bodies';
 import { getPlayer, goldRoom, treasuryCapacity } from './economy';
 import { octile, tileIndex, tileOfPosition, tileX, tileY } from './grid';
 import { findPath } from './pathfinding';
@@ -27,6 +35,8 @@ const AUTO_CLAIM_SCAN_TICKS = 5;
 export function resetImp(state: MatchState, imp: Imp): void {
   const task = imp.taskId ? getTask(state, imp.taskId) : undefined;
   if (task && task.reservedBy === imp.id) task.reservedBy = 0;
+  // Si llevaba a alguien en brazos, lo deja donde está.
+  releaseBody(state, imp);
   imp.mode = 'idle';
   imp.goal = 'none';
   imp.taskId = 0;
@@ -147,6 +157,9 @@ export function assignTasks(state: MatchState, rules: Rules): void {
       setTask(state, trap.owner, 'repairTrap', trap.tile);
   }
 
+  // Criaturas derrotadas y cadáveres a la vista: tareas para llevárselos.
+  scanBodyTasks(state, rules);
+
   for (const player of state.players) {
     if (player.eliminated) continue;
     const capacity = treasuryCapacity(state, rules, player.id);
@@ -171,6 +184,8 @@ export function assignTasks(state: MatchState, rules: Rules): void {
         if (t.owner !== player.id || t.reservedBy !== 0 || t.blockedVersion === state.mapVersion)
           continue;
         if (isMining(state, rules, t) && !hasRoom) continue;
+        // Con oro encima no coge cuerpos: primero lo entrega.
+        if ((t.kind === 'rescue' || t.kind === 'bury') && imp.carry > 0) continue;
         // Sin ningún suelo caminable pegado todavía (pasillo marcado de una vez): espera su turno.
         if (workTiles(state, rules, t).length === 0) continue;
         const key: [number, number, number] = [
@@ -217,7 +232,12 @@ function computePath(state: MatchState, rules: Rules, imp: Imp): boolean {
   let isGoal: (i: number) => boolean;
   let heuristic: (i: number) => number = () => 0;
 
-  if (imp.goal === 'loaf') {
+  if (imp.goal === 'carry') {
+    // Lleva un cuerpo: a la Guarida, la Cámara de tortura o el Cementerio, según de quién y de qué sea.
+    const dest = carryDestination(state, imp);
+    if (dest.size === 0) return false;
+    isGoal = (i) => dest.has(i);
+  } else if (imp.goal === 'loaf') {
     if (imp.loafTile < 0) return false;
     const target = imp.loafTile;
     isGoal = (i) => i === target;
@@ -280,6 +300,20 @@ function arrive(state: MatchState, rules: Rules, imp: Imp, events: SimEvent[]): 
     maybeLoaf(state, rules, imp);
     return;
   }
+  if (imp.goal === 'carry') {
+    // Llegó con el cuerpo: lo deja (recuperar, convertir o enterrar) y la tarea termina.
+    const task = getTask(state, imp.taskId);
+    if (deliverBody(state, rules, imp, events)) {
+      if (task) removeTask(state, task.id);
+      imp.taskId = 0;
+      resetImp(state, imp);
+      maybeLoaf(state, rules, imp);
+    } else {
+      if (task) task.blockedVersion = state.mapVersion;
+      resetImp(state, imp);
+    }
+    return;
+  }
   if (imp.goal === 'loaf') {
     // Llegó a donde iba a pasear: se queda ahí quieto (hasta que se le pase la holgazanería o termine su pausa).
     imp.loafTile = -1;
@@ -321,6 +355,21 @@ function work(state: MatchState, rules: Rules, imp: Imp, task: Task, events: Sim
   if (!player) return;
   // Tras una bofetada trabaja y mina más rápido (el mismo bono que las criaturas).
   const speed = state.tick < imp.slapUntil ? 1 + rules.data.global.slap.workSpeedBonus : 1;
+
+  if (task.kind === 'rescue' || task.kind === 'bury') {
+    // Llegó al cuerpo: lo coge en brazos y lo lleva a donde toca (la tarea sigue reservada hasta entregarlo).
+    if (pickUpBody(state, imp, task)) {
+      imp.goal = 'carry';
+      imp.mode = 'needPath';
+      imp.path = [];
+      imp.work = 0;
+    } else {
+      removeTask(state, task.id);
+      imp.taskId = 0;
+      resetImp(state, imp);
+    }
+    return;
+  }
 
   if (isMining(state, rules, task)) {
     const carryMax = rules.data.economy.impCarryGold;
@@ -391,6 +440,15 @@ export function updateImps(
 ): void {
   for (const imp of state.imps) {
     if (imp.held) continue;
+    // Con un cuerpo en brazos: sigue valiendo mientras la criatura o el cadáver siga siendo suyo.
+    if (imp.goal === 'carry') {
+      const task = getTask(state, imp.taskId);
+      if (!task || !isTaskValid(state, rules, task)) {
+        if (task) removeTask(state, task.id);
+        imp.taskId = 0;
+        resetImp(state, imp);
+      }
+    }
     // ¿Sigue siendo válida su tarea?
     if (imp.goal === 'task') {
       const task = getTask(state, imp.taskId);
@@ -427,6 +485,8 @@ export function updateImps(
 
     if (imp.mode === 'moving') {
       move(state, rules, imp);
+      // Lo que lleva en brazos se mueve con él.
+      if (imp.carryKind !== 'none') syncCarried(state, imp);
       if (imp.path.length === 0) arrive(state, rules, imp, events);
     }
 

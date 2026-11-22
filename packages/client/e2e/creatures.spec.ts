@@ -21,7 +21,11 @@ interface Hook {
         slapUntil: number;
         goal: string;
         attackedTick: number;
+        hp: number;
+        downedUntil: number;
+        owner: number;
       }>;
+      corpses: Array<{ id: number; buriedIn: number }>;
       rooms: Array<{ id: number; type: string }>;
     };
   };
@@ -364,4 +368,81 @@ test('las criaturas enemigas llevan la barra de vida con un marco del color de s
   expect(meshes.myFrame).toBeNull(); // las propias no llevan marco
   expect(meshes.myBar).toBe(false); // y solo enseñan la barra si están heridas
   await page.screenshot({ path: 'test-results/enemybar.png' });
+});
+
+test('una criatura derrotada queda aplastada con estrellas, los Imps la llevan a la Guarida y se recupera', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await advance(page, 26);
+  const id = await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 6.5;
+    c.y = 7.5;
+    c.hp = 0;
+    return c.id;
+  });
+  await advance(page, 1);
+  // Derrotada: fila bloqueada con la cuenta atrás y las estrellitas de aturdimiento sobre ella.
+  await expect(page.locator('.creature').first()).toBeDisabled();
+  await expect(page.locator('.creature').first()).toContainText('Derrotada y aturdida');
+  const stars = await page.evaluate(
+    (i) =>
+      (
+        dm() as unknown as {
+          renderer: { scene: { getMeshByName(n: string): { isEnabled(): boolean } | null } };
+        }
+      ).renderer.scene
+        .getMeshByName(`stars${i}`)
+        ?.isEnabled() ?? null,
+    id,
+  );
+  expect(stars).toBe(true);
+  await expect(page.locator('.notice', { hasText: 'ha caído' }).first()).toBeVisible();
+  // Los Imps la salvan: vuelve a estar en pie, en la Guarida.
+  await advance(page, 40);
+  const after = await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    return { downed: c.downedUntil, hp: c.hp };
+  });
+  expect(after.downed).toBe(0);
+  expect(after.hp).toBeGreaterThan(0);
+});
+
+test('un cadáver se entierra en el Cementerio y a los 60 s se levanta un Esqueleto', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await page.evaluate(() => {
+    const g = dm() as unknown as {
+      sandbox: { send(c: unknown): unknown; advance(ms: number): void };
+    };
+    g.sandbox.send({ type: 'buildRoom', room: 'library', rect: { x: 2, y: 14, w: 3, h: 1 } });
+    g.sandbox.advance(300); // el Cementerio pide una Biblioteca ya construida
+    g.sandbox.send({ type: 'buildRoom', room: 'graveyard', rect: { x: 6, y: 14, w: 3, h: 2 } });
+  });
+  await advance(page, 26);
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 9.5;
+    c.y = 13.5;
+    c.hp = 0;
+    c.downedUntil = dm().sandbox.state.tick + 2; // se le acaba el tiempo: muere y deja un cadáver
+  });
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.corpses.length)).toBe(1);
+  // Los Imps lo llevan al Cementerio y lo entierran.
+  await advance(page, 25);
+  await expect
+    .poll(() => page.evaluate(() => dm().sandbox.state.corpses[0]?.buriedIn ?? -1))
+    .toBeGreaterThan(0);
+  await page.screenshot({ path: 'test-results/grave.png' });
+  // A los 60 s se levanta.
+  await advance(page, 65);
+  const skeletons = await page.evaluate(
+    () => dm().sandbox.state.creatures.filter((c) => c.type === 'skeleton' && c.owner === 1).length,
+  );
+  // (el Portal también puede traer Esqueletos por el Cementerio: basta con que haya y que el cadáver ya no esté)
+  expect(skeletons).toBeGreaterThanOrEqual(1);
+  expect(await page.evaluate(() => dm().sandbox.state.corpses.length)).toBe(0);
 });

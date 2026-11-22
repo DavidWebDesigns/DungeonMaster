@@ -207,6 +207,48 @@ export function deriveEffects(
       out.push({ type: 'sound', sound: 'death', volume: 0.7 });
       continue;
     }
+    if (e.type === 'creatureDowned') {
+      // Cae derrotada: polvo gris y "¡Derrotada!" (la ve su dueño siempre y los rivales si ven el sitio).
+      if (!seesAt(e.x, e.y) && e.playerId !== localPlayer) continue;
+      burst(e.x, 0.3, e.y, [0.7, 0.7, 0.75], 12, 1.4, 1.6, 0.14);
+      out.push({ type: 'floater', x: e.x, y: e.y, text: '¡Derrotada!', color: '#d8d8e8' });
+      out.push({ type: 'sound', sound: 'death', volume: 0.6 });
+      continue;
+    }
+    if (e.type === 'creatureRescued') {
+      burst(e.x, 0.6, e.y, [0.45, 1, 0.55], 12, 1.4, 2.4, 0.12);
+      out.push({ type: 'floater', x: e.x, y: e.y, text: 'Rescatada', color: '#8ff0a0' });
+      out.push({ type: 'sound', sound: 'pop', volume: 0.7 });
+      continue;
+    }
+    if (e.type === 'creatureConverted') {
+      if (e.playerId !== localPlayer && e.victimOwner !== localPlayer) continue;
+      burst(e.x, 0.7, e.y, PURPLE, 16, 1.6, 2.8, 0.14);
+      out.push({ type: 'floater', x: e.x, y: e.y, text: '¡Convertida!', color: '#d9a6ff' });
+      out.push({ type: 'sound', sound: 'pop', volume: 0.9 });
+      continue;
+    }
+    if (e.type === 'creatureTortured') {
+      if (e.playerId !== localPlayer && e.victimOwner !== localPlayer) continue;
+      burst(e.x, 0.7, e.y, GOLD, Math.min(14, 5 + Math.floor(e.gold / 100)), 1.6, 3, 0.13);
+      if (e.playerId === localPlayer)
+        out.push({ type: 'floater', x: e.x, y: e.y, text: `+${e.gold} oro`, color: '#ffd86a' });
+      out.push({ type: 'sound', sound: 'death', volume: 0.8 });
+      continue;
+    }
+    if (e.type === 'corpseBuried') {
+      if (e.playerId !== localPlayer) continue;
+      burst(e.x, 0.3, e.y, DUST, 8, 1.2, 1.4, 0.12);
+      out.push({ type: 'sound', sound: 'build', volume: 0.5 });
+      continue;
+    }
+    if (e.type === 'skeletonRose') {
+      if (e.playerId !== localPlayer) continue;
+      burst(e.x, 0.6, e.y, PURPLE, 14, 1.6, 2.6, 0.13);
+      out.push({ type: 'floater', x: e.x, y: e.y, text: 'Esqueleto', color: '#e8e4d0' });
+      out.push({ type: 'sound', sound: 'pop', volume: 0.9 });
+      continue;
+    }
     if (e.type === 'trapTriggered') {
       if (!seesAt(e.x, e.y)) continue;
       // El color y el tamaño salen del efecto de la trampa (los datos), no de su nombre.

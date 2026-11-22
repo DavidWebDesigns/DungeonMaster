@@ -418,7 +418,7 @@ La vida máxima no cambia con el ánimo. Imps inmunes al ánimo.
 ### 6.10 Comportamiento de las criaturas (prioridad de arriba abajo)
 
 1. En la mano: no actúa.
-2. **Combate:** enemigo visible a menos de 6 tiles, o la atacan: persigue y ataca. Elige al más cercano, prefiriendo a quien la ataca.
+2. **Combate:** (una criatura que se queda sin vida cae **derrotada y aturdida 60 s** antes de morir: ver ASSETS.md §1.1) enemigo visible a menos de 6 tiles, o la atacan: persigue y ataca. Elige al más cercano, prefiriendo a quien la ataca.
 3. **Huida:** con menos del 25 % de vida y guarida accesible, huye a su cama y se cura allí igual que al dormir (3 % cada 2,5 s). Si no hay salida, sigue luchando.
 4. **Llamada a las armas:** va al punto marcado y ataca lo que encuentre.
 5. Comer si el hambre pasa de 70.

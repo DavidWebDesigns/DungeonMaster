@@ -13,7 +13,7 @@ export function tickPayday(state: MatchState, rules: Rules, events: SimEvent[]):
   events.push({ type: 'payday', tick: state.tick });
   for (const c of state.creatures) {
     const def = rules.creatureDefs[c.type];
-    if (!def?.needs.paid || creatureWage(rules, c) <= 0) continue;
+    if (!def?.needs.paid || creatureWage(rules, c) <= 0 || c.downedUntil > 0) continue;
     // Si el pago anterior no llegó a cobrarse, cuenta como impago.
     if (c.payPending) {
       c.wageSat = -1;

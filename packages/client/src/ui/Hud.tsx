@@ -168,22 +168,27 @@ export function Hud({
           {model.creatures.map((c) => (
             <div class="creature-row" key={c.id}>
               <button
-                class={`creature ${c.band}${c.held || c.inCombat ? ' held' : ''}`}
-                disabled={c.held || c.inCombat}
+                class={`creature ${c.band}${c.held || c.inCombat || c.downedSeconds !== null ? ' held' : ''}`}
+                disabled={c.held || c.inCombat || c.downedSeconds !== null}
                 onClick={() => onPickCreature?.(c.id)}
                 title={
                   c.held
                     ? 'Ya la llevas en la mano'
-                    : c.inCombat
-                      ? 'Está en combate: no se puede retirar del mapa'
-                      : `${c.bandName} · ánimo ${c.mood} · clic: recogerla (clic derecho en tu territorio: soltarla)`
+                    : c.downedSeconds !== null
+                      ? `Derrotada: un Imp puede llevarla a la Guarida (${Math.ceil(c.downedSeconds)} s antes de morir)`
+                      : c.inCombat
+                        ? 'Está en combate: no se puede retirar del mapa'
+                        : `${c.bandName} · ánimo ${c.mood} · clic: recogerla (clic derecho en tu territorio: soltarla)`
                 }
               >
                 <span class="glyph">{c.glyph}</span>
                 <span class="cname">
                   {c.name} <small>nv {c.level}</small>
                 </span>
-                <span class="cact">{c.activity}</span>
+                <span class="cact">
+                  {c.activity}
+                  {c.downedSeconds !== null && ` · ${Math.ceil(c.downedSeconds)} s`}
+                </span>
                 <span class="hpbar">
                   <span class="hpfill" style={{ width: `${Math.round(c.hpFraction * 100)}%` }} />
                 </span>

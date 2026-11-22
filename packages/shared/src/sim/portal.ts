@@ -115,6 +115,8 @@ export function newCreature(
     beds: [],
     payPending: false,
     purse: 0,
+    downedUntil: 0,
+    carriedBy: 0,
     funUntil: 0,
     gambled: 0,
     goal: 'none',

@@ -191,7 +191,7 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
       if (spell.target === 'ownCreature') {
         if (!isInt(cmd.creature)) return fail('INVALID_COMMAND');
         const c = state.creatures.find((k) => k.id === cmd.creature);
-        if (!c || c.held) return fail('INVALID_TARGET');
+        if (!c || c.held || c.downedUntil > 0) return fail('INVALID_TARGET');
         if (c.owner !== pid) return fail('NOT_OWNER');
         tile = tileIndex(state, Math.floor(c.x), Math.floor(c.y));
       } else {
@@ -223,6 +223,8 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
           : state.creatures.find((k) => k.id === cmd.id);
       if (!unit || unit.held) return fail('INVALID_TARGET');
       if (unit.owner !== pid) return fail('NOT_OWNER');
+      // Una derrotada no se coge con la mano: la llevan los Imps.
+      if (cmd.kind !== 'imp' && (unit as Creature).downedUntil > 0) return fail('INVALID_TARGET');
       // Una criatura que está combatiendo no se puede retirar del mapa.
       if (cmd.kind !== 'imp' && isInCombat(state, rules, unit as Creature))
         return fail('IN_COMBAT');
@@ -270,6 +272,7 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
           : state.creatures.find((k) => k.id === cmd.id);
       if (!c || c.held) return fail('INVALID_TARGET');
       if (c.owner !== pid) return fail('NOT_OWNER');
+      if ('downedUntil' in c && c.downedUntil > 0) return fail('INVALID_TARGET');
       if (state.tick < player.slapReadyTick) return fail('COOLDOWN');
       return { ok: true, tiles: [] };
     }

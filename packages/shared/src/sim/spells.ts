@@ -57,7 +57,7 @@ export function castEffect(
 /** Paso 8 del tick: curaciones en marcha y caducidad de la Llamada a las armas. */
 export function tickSpells(state: MatchState, rules: Rules): void {
   for (const c of state.creatures) {
-    if (c.healTicksLeft > 0) {
+    if (c.healTicksLeft > 0 && c.downedUntil === 0) {
       c.hp = Math.min(creatureMaxHp(rules, c), c.hp + c.healPerTick);
       c.healTicksLeft--;
     }

@@ -68,6 +68,8 @@ function creatureRec(c: MatchState['creatures'][number], own: boolean): EntityRe
     y: q2(c.y),
     l: c.level,
     h: Math.round(c.hp),
+    // Hasta qué tick está derrotada y aturdida (los rivales también la ven: pueden llevársela a su Cámara de tortura).
+    dn: c.downedUntil,
   };
   if (own) {
     r['hd'] = c.held ? 1 : 0;
@@ -186,6 +188,15 @@ export function eventsFor(
       case 'tileDestroyed':
         if (vis[e.tile] === 1) out.push(e);
         break;
+      case 'creatureDowned':
+        // La ve su dueño siempre y los demás si ven el lugar.
+        if (e.playerId === pid || sees(e.x, e.y)) out.push(e);
+        break;
+      case 'creatureConverted':
+      case 'creatureTortured':
+        // El que la convierte o la tortura y también el dueño al que se la quitan.
+        if (e.playerId === pid || e.victimOwner === pid) out.push(e);
+        break;
       case 'trapDestroyed':
         // Su dueño lo sabe siempre; un rival, solo si ve el tile (y la trampa ya estaba revelada).
         if (e.playerId === pid || sees(e.x, e.y)) out.push(e);
@@ -243,9 +254,20 @@ export function computeDelta(
   const seesTile = (x: number, y: number) => vis[Math.floor(y) * state.width + Math.floor(x)] === 1;
   for (const c of state.creatures) {
     const own = c.owner === pid;
-    if (own || (!c.held && c.hp > 0 && seesTile(c.x, c.y)))
+    if (own || (!c.held && (c.hp > 0 || c.downedUntil > 0) && seesTile(c.x, c.y)))
       current.set(`c:${c.id}`, creatureRec(c, own));
   }
+  // Los cadáveres, mientras se ve donde están.
+  for (const b of state.corpses)
+    if (seesTile(b.x, b.y))
+      current.set(`x:${b.id}`, {
+        t: b.type,
+        o: b.origin,
+        x: q2(b.x),
+        y: q2(b.y),
+        l: b.level,
+        bu: b.buriedIn !== 0 ? 1 : 0,
+      });
   for (const i of state.imps) {
     const own = i.owner === pid;
     if (own || (!i.held && i.hp > 0 && seesTile(i.x, i.y)))

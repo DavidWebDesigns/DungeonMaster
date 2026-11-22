@@ -173,6 +173,7 @@ describe('a quién ataca', () => {
 describe('combate completo', () => {
   it('dos criaturas se pelean hasta que una muere; el asesino gana 20 × nivel y la víctima desaparece', () => {
     const { state, data, a, b } = fight('troll', 'goblin', 1);
+    data.global.downed.seconds = 0; // muerte inmediata (la derrota con tiempo se prueba en bodies.test)
     a.level = 4;
     a.hp = creatureMaxHp(rulesOf(data), a);
     const events = run(state, data, 600);
@@ -200,6 +201,7 @@ describe('combate completo', () => {
 
   it('la criatura muerta suelta su cama y su lugar en la mano', () => {
     const { state, data, a } = fight('goblin', 'troll', 1);
+    data.global.downed.seconds = 0;
     a.beds = [11 * 64 + 2];
     state.players[0]!.hand = [{ kind: 'creature', id: a.id }];
     a.held = false;

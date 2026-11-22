@@ -35,6 +35,9 @@ const MARK: Readonly<Record<TaskKind, { color: RGB; amount: number }>> = {
   reinforce: { color: [0.45, 0.65, 1], amount: 0.42 },
   claim: { color: [1, 1, 1], amount: 0.3 },
   buildTrap: { color: [1, 0.55, 0.25], amount: 0.4 },
+  // Llevar cuerpos no tiñe el tile.
+  rescue: { color: [1, 1, 1], amount: 0 },
+  bury: { color: [1, 1, 1], amount: 0 },
   repairTrap: { color: [0.5, 1, 0.6], amount: 0.35 },
 };
 

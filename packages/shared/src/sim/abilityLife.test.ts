@@ -8,6 +8,8 @@ import type { MatchState } from './types';
 
 const setup = (mutate?: (d: ReturnType<typeof duel>['data']) => void) => {
   const m = duel();
+  // Estas pruebas son de Rearmarse e Inmortal: la muerte es inmediata (el estado de derrotada se prueba en bodies.test).
+  m.data.global.downed.seconds = 0;
   mutate?.(m.data);
   m.state.imps = [];
   return { ...m, rules: rulesOf(m.data) };
