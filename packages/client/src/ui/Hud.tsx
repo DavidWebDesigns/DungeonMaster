@@ -83,6 +83,11 @@ export function Hud({
         <div class={model.population.full ? 'chip full' : 'chip'} title={model.population.hint}>
           Criaturas {model.population.count}/{model.population.max}
         </div>
+        {model.piglets && (
+          <div class="chip" title={model.piglets.hint}>
+            Cerditos {model.piglets.count}/{model.piglets.cap}
+          </div>
+        )}
         <div class="chip clock">
           {model.clock}
           {speedLabel && <span class="speed"> {speedLabel}</span>}
@@ -157,13 +162,15 @@ export function Hud({
           {model.creatures.map((c) => (
             <div class="creature-row" key={c.id}>
               <button
-                class={`creature ${c.band}${c.held ? ' held' : ''}`}
-                disabled={c.held}
+                class={`creature ${c.band}${c.held || c.inCombat ? ' held' : ''}`}
+                disabled={c.held || c.inCombat}
                 onClick={() => onPickCreature?.(c.id)}
                 title={
                   c.held
                     ? 'Ya la llevas en la mano'
-                    : `${c.bandName} · ánimo ${c.mood} · clic: recogerla (clic derecho en tu territorio: soltarla)`
+                    : c.inCombat
+                      ? 'Está en combate: no se puede retirar del mapa'
+                      : `${c.bandName} · ánimo ${c.mood} · clic: recogerla (clic derecho en tu territorio: soltarla)`
                 }
               >
                 <span class="glyph">{c.glyph}</span>

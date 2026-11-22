@@ -219,6 +219,8 @@ test('las salas con requisitos salen bloqueadas y se desbloquean al construir lo
         tiles: number[];
         timer: number;
         stock: number;
+        piglets: number;
+        pigletTimer: number;
       }>
     ).push({
       id: 998,
@@ -227,6 +229,8 @@ test('las salas con requisitos salen bloqueadas y se desbloquean al construir lo
       tiles: [],
       timer: 0,
       stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
     });
   });
   await page.waitForTimeout(400);

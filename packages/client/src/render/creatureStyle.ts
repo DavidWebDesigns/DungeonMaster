@@ -107,6 +107,8 @@ export function activityLabel(c: Pick<Creature, 'held' | 'goal' | 'mode'>): stri
       return 'Va a cobrar';
     case 'training':
       return c.mode === 'acting' ? 'Entrenando' : 'Va a entrenar';
+    case 'piglet':
+      return 'Va a por un cerdito';
     case 'casino':
       return c.mode === 'acting' ? 'En el Casino' : 'Va al Casino';
     case 'wander':

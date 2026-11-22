@@ -536,7 +536,16 @@ describe('trampas e Imps con el ratón', () => {
     sandbox.state.players[0]!.gold = 9000;
     // Taller y Sala de entrenamiento ya construidos (sus requisitos).
     for (const [i, type] of ['trainingRoom', 'workshop'].entries())
-      sandbox.state.rooms.push({ id: 90 + i, type, owner: 1, tiles: [], timer: 0, stock: 0 });
+      sandbox.state.rooms.push({
+        id: 90 + i,
+        type,
+        owner: 1,
+        tiles: [],
+        timer: 0,
+        stock: 0,
+        piglets: 0,
+        pigletTimer: 0,
+      });
     sandbox.advance(100);
     ctx.sent.length = 0;
     return ctx;

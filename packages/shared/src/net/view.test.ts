@@ -92,6 +92,23 @@ describe('vistas por jugador: lo que se ve', () => {
     void f;
   });
 
+  it('cuántos cerditos tiene un Criadero solo lo sabe su dueño', () => {
+    const { state, data: d } = duel();
+    buildRooms(state, d, ['hatchery']);
+    const room = state.rooms.find((r) => r.type === 'hatchery' && r.owner === 1)!;
+    room.piglets = 7;
+    // Un rival que ve el Criadero (se acerca) no recibe el número.
+    spawn(state, d, 2, 'goblin', 8.5, 12.5);
+    const own = computeDelta(state, d, 1, new ClientKnowledge(64 * 64));
+    expect(own.set![`r:${room.id}`]).toMatchObject({ pg: 7 });
+    const f1 = new Follower(1, state);
+    f1.update(state);
+    expect(f1.mirror.state.rooms.find((r) => r.id === room.id)?.piglets).toBe(7);
+    const rival = computeDelta(state, d, 2, new ClientKnowledge(64 * 64));
+    const rec = rival.set?.[`r:${room.id}`];
+    expect(rec === undefined || !('pg' in rec)).toBe(true);
+  });
+
   it('que un Imp holgazanea solo lo sabe su dueño', () => {
     const { state, data: d } = duel();
     const mine = state.imps.find((i) => i.owner === 1)!;

@@ -3,7 +3,14 @@
  * a la frecuencia de la pantalla. El cliente nunca cambia el estado por su cuenta: solo envía comandos.
  */
 import { render as renderUi } from 'preact';
-import { canSee, rulesOf, treasuryCapacity, type DataSet, type SimEvent } from '@dm/shared';
+import {
+  canSee,
+  isInCombat,
+  rulesOf,
+  treasuryCapacity,
+  type DataSet,
+  type SimEvent,
+} from '@dm/shared';
 import { deriveEffects, takeSnapshot, type FeelSnapshot, type SoundName } from './feel/effects';
 import { ParticleSim } from './feel/particleSim';
 import { AudioEngine } from './feel/sounds';
@@ -404,7 +411,10 @@ export class Game {
     const u = this.input.hoverUnit;
     const c = u?.kind === 'creature' ? state.creatures.find((k) => k.id === u.id) : undefined;
     const imp = u?.kind === 'imp' ? state.imps.find((k) => k.id === u.id) : undefined;
-    canvas.style.cursor = hand > 0 ? 'copy' : c || imp ? 'grab' : 'default';
+    const rulesNow = rulesOf(this.data);
+    const locked = c !== undefined && isInCombat(state, rulesNow, c);
+    canvas.style.cursor =
+      hand > 0 ? 'copy' : locked ? 'not-allowed' : c || imp ? 'grab' : 'default';
     const mouse = this.dom.cameraInput().mouse;
     if ((!c && !imp) || !mouse) {
       this.hoverCard.style.display = 'none';
@@ -413,7 +423,13 @@ export class Game {
     const rules = rulesOf(this.data);
     const spellTarget = this.input.tool.kind === 'spell' && !!c;
     const full = hand >= this.data.global.hand.capacity;
-    const action = spellTarget ? 'Clic: lanzar el hechizo' : full ? 'Mano llena' : 'Clic: recoger';
+    const action = spellTarget
+      ? 'Clic: lanzar el hechizo'
+      : locked
+        ? 'En combate: no se puede retirar'
+        : full
+          ? 'Mano llena'
+          : 'Clic: recoger';
     if (c) {
       const name = rules.creatureDefs[c.type]?.name ?? c.type;
       const band = rules.bands.find((b) => b.id === c.band)?.name ?? '';

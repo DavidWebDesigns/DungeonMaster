@@ -28,6 +28,15 @@ export const RoomDef = z.strictObject({
   chickenIntervalSeconds: PositiveNumber.optional(),
   tilesPerProducer: PositiveInt.optional(),
   maxChickensPerTile: PositiveInt.optional(),
+  /**
+   * Criadero, cerditos: cada tile de Criadero cría un cerdito cada `pigletIntervalSeconds`; en total, hasta
+   * `pigletCapPerMaxCreature` por cada criatura de la población máxima actual. Una criatura que tenga como mucho
+   * `pigletEatBelowHpFraction` de su vida se come uno y recupera `pigletHealFraction` de su vida máxima.
+   */
+  pigletIntervalSeconds: PositiveNumber.optional(),
+  pigletCapPerMaxCreature: PositiveInt.optional(),
+  pigletHealFraction: Fraction.optional(),
+  pigletEatBelowHpFraction: Fraction.optional(),
   /** Sala de entrenamiento. */
   trainingXpPerSecond: PositiveNumber.optional(),
   trainingMaxLevel: PositiveInt.optional(),

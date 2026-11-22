@@ -202,6 +202,17 @@ export function chooseTarget(state: MatchState, rules: Rules, c: Creature): Enem
   return enemies.sort(byDist)[0] as Enemy;
 }
 
+/**
+ * ¿Está la criatura en combate? Va a pelear o a asediar, o la han atacado hace menos de `retaliationSeconds`. Mientras lo
+ * esté, el jugador no puede retirarla del mapa con la mano.
+ */
+export function isInCombat(state: MatchState, rules: Rules, c: Creature): boolean {
+  if (c.goal === 'combat' || c.goal === 'siege') return true;
+  return (
+    state.tick - c.attackedTick < secondsToTicks(rules, rules.data.global.combat.retaliationSeconds)
+  );
+}
+
 /** Trampa enemiga que se puede golpear: construida, ya revelada por un disparo y de un jugador en juego. */
 export function attackableTrap(state: MatchState, owner: PlayerId, tile: number): Trap | undefined {
   const trap = state.traps.find((t) => t.tile === tile);

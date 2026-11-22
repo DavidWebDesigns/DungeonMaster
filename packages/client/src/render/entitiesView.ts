@@ -210,6 +210,7 @@ export class EntitiesView {
     }
     this.updateTraps(state, data, localPlayer, visible);
     this.updateHeartBars(state, data, localPlayer, visible);
+    this.updatePiglets(state, localPlayer, timeSeconds);
     this.updateRally(state, localPlayer, timeSeconds);
     this.syncProps(state, data);
     for (const p of this.pulsing) p.scaling.setAll(1 + 0.06 * Math.sin(timeSeconds * 3));
@@ -376,6 +377,66 @@ export class EntitiesView {
           this.dying.push({ mesh: m, born: timeSeconds });
         } else m.body.dispose(false, true);
       }
+    }
+  }
+
+  private readonly pigMeshes = new Map<number, Mesh[]>();
+
+  /**
+   * Cerditos de los Criaderos del jugador: unas bolitas rosas que se pasean por los tiles del Criadero (hasta 3 por tile
+   * a la vista; el HUD da la cuenta exacta). Solo se dibujan los propios: del rival no se sabe cuántos hay.
+   */
+  private updatePiglets(state: MatchState, localPlayer: number, timeSeconds: number): void {
+    const alive = new Set<number>();
+    for (const room of state.rooms) {
+      if (room.type !== 'hatchery' || room.owner !== localPlayer || room.piglets <= 0) continue;
+      alive.add(room.id);
+      const shown = Math.min(room.piglets, room.tiles.length * 3);
+      let pigs = this.pigMeshes.get(room.id);
+      if (!pigs) this.pigMeshes.set(room.id, (pigs = []));
+      while (pigs.length < shown) {
+        const n = pigs.length;
+        const pig = CreateSphere(
+          `piglet${room.id}_${n}`,
+          { diameter: 0.3 * S, segments: 6 },
+          this.scene,
+        );
+        pig.material = material(this.scene, [0.98, 0.66, 0.74], 0.3);
+        pig.scaling.set(1.3, 0.95, 1);
+        pig.isPickable = false;
+        const snout = CreateCylinder(
+          `pigletSnout${room.id}_${n}`,
+          { diameter: 0.1 * S, height: 0.06 * S, tessellation: 8 },
+          this.scene,
+        );
+        snout.material = material(this.scene, [0.9, 0.45, 0.55]);
+        snout.parent = pig;
+        snout.rotation.z = Math.PI / 2;
+        snout.position.x = 0.15 * S;
+        snout.isPickable = false;
+        pigs.push(pig);
+      }
+      while (pigs.length > shown) pigs.pop()?.dispose(false, true);
+      pigs.forEach((pig, n) => {
+        const tile = room.tiles[n % room.tiles.length] as number;
+        const slot = Math.floor(n / room.tiles.length); // 0, 1 o 2 cerditos en el mismo tile
+        // Rincones del tile, fuera del nido que ocupa el centro.
+        const corner = [
+          [-0.3, -0.3],
+          [0.3, -0.3],
+          [-0.3, 0.3],
+        ][slot] as [number, number];
+        const baseX = (tile % state.width) + 0.5 + corner[0];
+        const baseZ = Math.floor(tile / state.width) + 0.5 + corner[1];
+        const t = timeSeconds * 0.9 + n * 1.7;
+        pig.position.set(baseX + 0.07 * Math.sin(t), 0.3, baseZ + 0.07 * Math.cos(t * 1.3));
+        pig.rotation.y = -t;
+      });
+    }
+    for (const [id, pigs] of this.pigMeshes) {
+      if (alive.has(id)) continue;
+      for (const pig of pigs) pig.dispose(false, true);
+      this.pigMeshes.delete(id);
     }
   }
 

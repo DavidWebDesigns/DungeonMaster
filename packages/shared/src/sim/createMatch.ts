@@ -104,7 +104,16 @@ export function createMatch(config: MatchConfig, data: DataSet, seed: number): M
     owner: number,
     rect: { x: number; y: number; w: number; h: number },
   ) => {
-    const room: Room = { id: state.nextRoomId++, type, owner, tiles: [], timer: 0, stock: 0 };
+    const room: Room = {
+      id: state.nextRoomId++,
+      type,
+      owner,
+      tiles: [],
+      timer: 0,
+      stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
+    };
     for (let y = rect.y; y < rect.y + rect.h; y++) {
       for (let x = rect.x; x < rect.x + rect.w; x++) {
         const i = tileIndex(state, x, y);

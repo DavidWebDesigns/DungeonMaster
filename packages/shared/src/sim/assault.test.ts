@@ -110,6 +110,10 @@ describe('soltar con la mano = asalto al objetivo visible más cercano', () => {
     const g = spawn(state, data, 1, 'goblin', 3.5, 8.5);
     moveWithHand(state, data, g.id, 3, 8);
     expect(g.assaultKind).not.toBe('none');
+    // Si ya está peleando no se puede retirar (IN_COMBAT): se prueba cuando ha dejado de combatir.
+    g.goal = 'none';
+    g.mode = 'idle';
+    g.attackedTick = -1_000_000;
     applyCommand(state, data, 1, { type: 'pickUp', id: g.id });
     step(state, data);
     expect(g.assaultKind).toBe('none');

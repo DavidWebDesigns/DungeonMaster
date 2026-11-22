@@ -54,6 +54,8 @@ describe('buildHudModel', () => {
       tiles: Array.from({ length: 10 }, (_, k) => 20 * 64 + k),
       timer: 0,
       stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
     });
     expect(find().locked).toBe(false);
     expect(find().hint).toContain('30 s');
@@ -82,6 +84,45 @@ describe('buildHudModel', () => {
     expect(out).toContain('Ya la llevas en la mano');
     expect(out.match(/class="locate"/g)).toHaveLength(2);
     expect(out).toMatch(/creature [a-z]+ held" disabled/);
+  });
+
+  it('una criatura en combate sale en la lista sin poder recogerse', () => {
+    const sb = fresh();
+    const rules = rulesOf(data);
+    const fighting = newCreature(sb.state, rules, 1, 'troll', 9 * 64 + 9);
+    fighting.goal = 'combat';
+    const calm = newCreature(sb.state, rules, 1, 'goblin', 9 * 64 + 9);
+    sb.state.creatures.push(fighting, calm);
+    const model = buildHudModel(sb.state, data, 1, dig, []);
+    expect(model.creatures.map((c) => [c.name, c.inCombat])).toEqual([
+      ['Troll', true],
+      ['Goblin', false],
+    ]);
+    const out = render(<Hud model={model} onTool={() => {}} />);
+    expect(out).toContain('Está en combate: no se puede retirar del mapa');
+    expect(out).toContain('recogerla'); // la tranquila sí se puede
+  });
+
+  it('el chip de cerditos solo sale con un Criadero y dice la cuenta y el tope', () => {
+    const sb = fresh();
+    expect(buildHudModel(sb.state, data, 1, dig, []).piglets).toBeNull();
+    sb.state.rooms.push({
+      id: 90,
+      type: 'hatchery',
+      owner: 1,
+      tiles: [3 * 64 + 3, 3 * 64 + 4],
+      timer: 0,
+      stock: 0,
+      piglets: 5,
+      pigletTimer: 0,
+    });
+    const piglets = buildHudModel(sb.state, data, 1, dig, []).piglets!;
+    expect(piglets.count).toBe(5);
+    expect(piglets.cap).toBe(0); // sin Guarida no hay población máxima: no se crían más
+    expect(piglets.hint).toContain('30 %');
+    expect(piglets.hint).toContain('70 %');
+    const out = render(<Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />);
+    expect(out).toContain('Cerditos 5/0');
   });
 
   it('avisa de Tesorería llena', () => {
@@ -133,7 +174,16 @@ describe('buildHudModel', () => {
     expect(by('temple').requires).toBe('Cámara de tortura y Cementerio');
     expect(by('lair').requires).toBe('');
     // Al construir el requisito, la sala se desbloquea.
-    sb.state.rooms.push({ id: 90, type: 'trainingRoom', owner: 1, tiles: [], timer: 0, stock: 0 });
+    sb.state.rooms.push({
+      id: 90,
+      type: 'trainingRoom',
+      owner: 1,
+      tiles: [],
+      timer: 0,
+      stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
+    });
     const after = buildHudModel(sb.state, data, 1, dig, []).rooms;
     expect(after.find((r) => r.id === 'workshop')!.available).toBe(true);
     expect(after.find((r) => r.id === 'graveyard')!.available).toBe(false);
@@ -374,7 +424,16 @@ describe('trampas en el HUD', () => {
   it('quedan disponibles al construir sus salas y marcan la activa y las que no se pueden pagar', () => {
     const sb = fresh();
     for (const [i, type] of ['workshop', 'tortureChamber', 'library'].entries())
-      sb.state.rooms.push({ id: 90 + i, type, owner: 1, tiles: [], timer: 0, stock: 0 });
+      sb.state.rooms.push({
+        id: 90 + i,
+        type,
+        owner: 1,
+        tiles: [],
+        timer: 0,
+        stock: 0,
+        piglets: 0,
+        pigletTimer: 0,
+      });
     sb.state.players[0]!.gold = 400;
     const m = buildHudModel(sb.state, data, 1, { kind: 'trap', trap: 'fireTrap' }, []);
     expect(m.traps.every((t) => t.available)).toBe(true);

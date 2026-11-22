@@ -3,7 +3,7 @@ import { tickAbilityState } from './abilities';
 import { updateAbilities } from './abilityActions';
 import { runQueuedCommands } from './applyCommand';
 import { updateCreatures } from './behavior';
-import { tickPayday, tickHatcheries } from './creatureEconomy';
+import { tickPayday, tickHatcheries, tickPiglets } from './creatureEconomy';
 import { tickEconomy } from './economy';
 import { tickLairHealing, tickNeeds } from './needs';
 import { updateCombat, processDeaths } from './combat';
@@ -32,6 +32,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
   tickEconomy(state, rules);
   tickPayday(state, rules, events);
   tickHatcheries(state, rules);
+  tickPiglets(state, rules);
   tickPortals(state, rules, events);
   tickRevives(state, rules, events);
   assignTasks(state, rules);

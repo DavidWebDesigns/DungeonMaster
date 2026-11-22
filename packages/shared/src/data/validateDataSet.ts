@@ -8,7 +8,15 @@ const REQUIRED_ROOM_FIELDS: Record<string, readonly string[]> = {
   portal: [],
   treasury: ['goldCapacityPerTile'],
   lair: [],
-  hatchery: ['chickenIntervalSeconds', 'tilesPerProducer', 'maxChickensPerTile'],
+  hatchery: [
+    'chickenIntervalSeconds',
+    'tilesPerProducer',
+    'maxChickensPerTile',
+    'pigletIntervalSeconds',
+    'pigletCapPerMaxCreature',
+    'pigletHealFraction',
+    'pigletEatBelowHpFraction',
+  ],
   trainingRoom: [
     'trainingXpPerSecond',
     'trainingMaxLevel',

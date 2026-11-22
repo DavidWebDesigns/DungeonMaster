@@ -320,6 +320,22 @@ export function deriveEffects(
         out.push({ type: 'sound', sound: 'slap', volume: 1 });
         break;
       }
+      case 'pigletEaten': {
+        // Una criatura se come un cerdito: destello verde y la vida que recupera.
+        const c = state.creatures.find((k) => k.id === e.creatureId);
+        if (c) {
+          burst(c.x, 0.7, c.y, [0.45, 0.95, 0.55], 10, 1.5, 2.4, 0.12);
+          out.push({
+            type: 'floater',
+            x: c.x,
+            y: c.y,
+            text: `+${e.healed} vida`,
+            color: '#8ff0a0',
+          });
+        }
+        out.push({ type: 'sound', sound: 'pop', volume: 0.7 });
+        break;
+      }
       case 'gambled': {
         // Una criatura sale del Casino: lo que gastó va a la Tesorería (flotante dorado sobre ella).
         const c = state.creatures.find((k) => k.id === e.creatureId);

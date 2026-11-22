@@ -187,6 +187,16 @@ function decide(state: MatchState, rules: Rules, c: Creature): Desire {
   // Enfadada: este segundo ignora lo demás y va hacia el Portal.
   if (c.ignoring && portal) return { goal: 'portal', room: 0 };
 
+  // Herida y con un cerdito a mano en algún Criadero: va a devorarlo (cura el 30 % de su vida máxima).
+  const hatch = rules.roomDefs['hatchery'];
+  if (
+    hatch?.pigletEatBelowHpFraction !== undefined &&
+    hpFrac <= hatch.pigletEatBelowHpFraction &&
+    !blocked('piglet') &&
+    roomsOf(state, c.owner, 'hatchery').some((r) => r.piglets > 0)
+  )
+    return { goal: 'piglet', room: 0 };
+
   if (
     def.needs.eats &&
     c.hunger >= economy.hunger.eatThreshold &&
@@ -316,6 +326,9 @@ function goalTiles(state: MatchState, rules: Rules, c: Creature): Set<number> {
     case 'hatchery':
       add(roomsOf(state, c.owner, 'hatchery').filter((r) => r.stock > 0));
       break;
+    case 'piglet':
+      add(roomsOf(state, c.owner, 'hatchery').filter((r) => r.piglets > 0));
+      break;
     case 'treasury':
       add(roomsOf(state, c.owner, 'treasury'));
       break;
@@ -422,6 +435,25 @@ function arrive(state: MatchState, rules: Rules, c: Creature, events: SimEvent[]
         room.stock--;
         c.hunger = 0;
         events.push({ type: 'ate', playerId: c.owner, creatureId: c.id });
+      }
+      stopCreature(c);
+      return;
+    }
+    case 'piglet': {
+      // Ya en el Criadero: se come un cerdito y se cura (si por el camino se lo comió otra, se queda con hambre de más).
+      const room = state.rooms.find((r) => r.id === state.roomAt[here] && r.type === 'hatchery');
+      const hatch = rules.roomDefs['hatchery'];
+      if (room && room.piglets > 0 && hatch?.pigletHealFraction !== undefined) {
+        room.piglets--;
+        const maxHp = creatureMaxHp(rules, c);
+        const before = c.hp;
+        c.hp = Math.min(maxHp, c.hp + maxHp * hatch.pigletHealFraction);
+        events.push({
+          type: 'pigletEaten',
+          playerId: c.owner,
+          creatureId: c.id,
+          healed: Math.round(c.hp - before),
+        });
       }
       stopCreature(c);
       return;

@@ -18,6 +18,7 @@ const MESSAGES: Readonly<Record<ErrorCode, string>> = {
   LIMIT_REACHED: 'Has alcanzado el máximo.',
   INVALID_COMMAND: 'Esa orden no es válida.',
   REQUIRES_ROOM: 'Te falta construir una sala que esto necesita.',
+  IN_COMBAT: 'No puedes retirar del mapa a una criatura que está combatiendo.',
 };
 
 /** Qué orden falló y en qué partida, para que el mensaje pueda nombrar lo que falta. */

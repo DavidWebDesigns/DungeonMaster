@@ -97,6 +97,10 @@ export interface Room {
   timer: number;
   /** Pollos listos para comer (Criadero). */
   stock: number;
+  /** Cerditos listos para devorar y curar a una criatura herida (Criadero). */
+  piglets: number;
+  /** Ticks desde el último cerdito criado (Criadero). */
+  pigletTimer: number;
 }
 
 /** Qué está haciendo o a dónde va una criatura. */
@@ -104,6 +108,8 @@ export type CreatureGoal =
   | 'none'
   | 'portal'
   | 'hatchery'
+  /** Va a devorar un cerdito del Criadero para curarse. */
+  | 'piglet'
   | 'bed'
   | 'treasury'
   | 'training'
@@ -328,6 +334,8 @@ export type ErrorCode =
   | 'LIMIT_REACHED'
   /** Falta construir la sala que pide esa trampa. [PROPUESTO] */
   | 'REQUIRES_ROOM'
+  /** La criatura está en combate: el jugador no puede retirarla del mapa. [PROPUESTO] */
+  | 'IN_COMBAT'
   /** Comando mal formado o no disponible todavía. [PROPUESTO] */
   | 'INVALID_COMMAND';
 
@@ -350,6 +358,7 @@ export type SimEvent =
       reason: 'noLair' | 'noRoom' | 'noSlots' | 'noLevel' | 'full';
     }
   | { type: 'payday'; tick: number }
+  | { type: 'pigletEaten'; playerId: PlayerId; creatureId: number; healed: number }
   | { type: 'gambled'; playerId: PlayerId; creatureId: number; amount: number }
   | { type: 'paid'; playerId: PlayerId; creatureId: number; amount: number; ok: boolean }
   | { type: 'moodBand'; playerId: PlayerId; creatureId: number; band: string }

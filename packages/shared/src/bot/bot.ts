@@ -13,6 +13,7 @@
  */
 import type { DataSet } from '../data';
 import { previewCommand } from '../sim/applyCommand';
+import { isInCombat } from '../sim/combat';
 import { creatureMaxHp } from '../sim/creatureStats';
 import { treasuryCapacity, createImpCost, impCount } from '../sim/economy';
 import { freeLairTiles } from '../sim/lairs';
@@ -400,8 +401,8 @@ export function createBot(playerId: PlayerId, seed: number, options: BotOptions 
       .filter(
         (c) =>
           !c.held &&
-          c.goal !== 'combat' &&
-          c.goal !== 'siege' &&
+          // Las que combaten (o acaban de ser atacadas) no se pueden retirar del mapa.
+          !isInCombat(state, rules, c) &&
           c.goal !== 'flee' &&
           c.hp > creatureMaxHp(rules, c) * 0.6,
       )

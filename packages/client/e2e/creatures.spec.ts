@@ -19,8 +19,10 @@ interface Hook {
         y: number;
         mood: number;
         slapUntil: number;
+        goal: string;
+        attackedTick: number;
       }>;
-      rooms: Array<{ type: string }>;
+      rooms: Array<{ id: number; type: string }>;
     };
   };
   data: { terrain: Array<{ id: string }> };
@@ -276,4 +278,54 @@ test('Tab salta a la siguiente criatura propia y centra la cámara en ella', asy
   expect(Math.abs(seen.cam.targetX - seen.x)).toBeLessThan(1.5);
   expect(Math.abs(seen.cam.targetZ - seen.y)).toBeLessThan(1.5);
   await expect(page.locator('.notice, .notices').first()).toContainText('nivel');
+});
+
+test('una criatura en combate sale bloqueada en la lista y no se puede coger con el ratón', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await advance(page, 61);
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 6.5;
+    c.y = 6.5;
+    // Marcada como en combate: la simulación la trata así mientras dure el objetivo.
+    c.goal = 'combat';
+    c.attackedTick = dm().sandbox.state.tick;
+  });
+  await expect(page.locator('.creature').first()).toBeDisabled();
+  const at = await page.evaluate(() => dm().creatureToScreen(dm().sandbox.state.creatures[0]!.id));
+  await page.mouse.move(at!.x, at!.y);
+  await page.mouse.click(at!.x, at!.y);
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
+  await expect(page.locator('.notice', { hasText: 'combatiendo' }).first()).toBeVisible();
+});
+
+test('el Criadero muestra sus cerditos: chip en el HUD y bolitas en el mapa', async ({ page }) => {
+  await buildLair(page);
+  await page.keyboard.press('2'); // Criadero
+  const a = await page.evaluate(() => dm().tileToScreen(5, 11));
+  const b = await page.evaluate(() => dm().tileToScreen(7, 12));
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 5 });
+  await page.mouse.up();
+  await advance(page, 1);
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => {
+    const room = dm().sandbox.state.rooms.find((r) => r.type === 'hatchery')!;
+    (room as unknown as { piglets: number }).piglets = 4;
+  });
+  await expect(page.locator('.chip', { hasText: 'Cerditos 4/' })).toBeVisible();
+  const hasPig = await page.evaluate(() => {
+    const room = dm().sandbox.state.rooms.find((r) => r.type === 'hatchery')!;
+    return (
+      (
+        dm() as unknown as { renderer: { scene: { getMeshByName(n: string): unknown } } }
+      ).renderer.scene.getMeshByName(`piglet${room.id}_0`) !== null
+    );
+  });
+  expect(hasPig).toBe(true);
+  await page.screenshot({ path: 'test-results/piglets.png' });
 });

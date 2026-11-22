@@ -34,6 +34,8 @@ function arena() {
     tiles: [lair],
     timer: 0,
     stock: 0,
+    piglets: 0,
+    pigletTimer: 0,
   });
   state.roomAt[lair] = state.rooms[state.rooms.length - 1]!.id;
   state.mapVersion++;

@@ -228,11 +228,12 @@ export class Mirror {
       case 'r': {
         let r = this.rooms.get(id);
         if (!r) {
-          r = { id, type: '', owner: 0, tiles: [], timer: 0, stock: 0 };
+          r = { id, type: '', owner: 0, tiles: [], timer: 0, stock: 0, piglets: 0, pigletTimer: 0 };
           this.rooms.set(id, r);
         }
         if ('t' in rec) r.type = str(rec['t']);
         if ('o' in rec) r.owner = num(rec['o']);
+        if ('pg' in rec) r.piglets = num(rec['pg']);
         break;
       }
       case 't': {

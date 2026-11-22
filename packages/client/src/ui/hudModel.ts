@@ -6,7 +6,10 @@ import {
   createImpCost,
   creatureMaxHp,
   impCount,
+  isInCombat,
   manaPulsePerSecond,
+  pigletCap,
+  pigletCount,
   manaRegenPerSecond,
   templeManaPerSecond,
   maxRoomLevel,
@@ -97,6 +100,8 @@ export interface CreatureRow {
   hpFraction: number;
   activity: string;
   held: boolean;
+  /** Está en combate: no se puede retirar del mapa. */
+  inCombat: boolean;
 }
 
 export interface GameOverInfo {
@@ -120,6 +125,8 @@ export interface HudModel {
   impsLoafing: number;
   /** Criaturas vivas y máximo actual (camas, Portal y tope global). */
   population: { count: number; max: number; full: boolean; hint: string };
+  /** Cerditos de los Criaderos (`null` si no tienes Criadero). */
+  piglets: { count: number; cap: number; hint: string } | null;
   clock: string;
   tools: ToolButton[];
   rooms: RoomButton[];
@@ -191,6 +198,27 @@ function manaHint(state: MatchState, rules: ReturnType<typeof rulesOf>, playerId
   if (temple > 0) parts.push(`Templo ${temple.toFixed(0)}`);
   if (pulses > 0) parts.push(`Bibliotecas de nivel alto ${pulses.toFixed(1)}`);
   return `Maná por segundo: ${parts.join(' + ')}`;
+}
+
+/** Cerditos para el HUD: cuántos hay, el tope y qué hacen. */
+function pigletsModel(
+  state: MatchState,
+  rules: ReturnType<typeof rulesOf>,
+  playerId: number,
+): HudModel['piglets'] {
+  const def = rules.roomDefs['hatchery'];
+  if (
+    !def?.pigletIntervalSeconds ||
+    !state.rooms.some((r) => r.owner === playerId && r.type === 'hatchery')
+  )
+    return null;
+  const heal = Math.round((def.pigletHealFraction ?? 0) * 100);
+  const below = Math.round((def.pigletEatBelowHpFraction ?? 0) * 100);
+  return {
+    count: pigletCount(state, playerId),
+    cap: pigletCap(state, rules, playerId),
+    hint: `Cerditos: cada tile de Criadero cría uno cada ${def.pigletIntervalSeconds} s (hasta ${def.pigletCapPerMaxCreature} por criatura de la población máxima). Una criatura con menos del ${below} % de vida se come uno y recupera el ${heal} % de su vida máxima.`,
+  };
 }
 
 /** Población para el HUD: "6/9" y de dónde sale el máximo. */
@@ -369,6 +397,7 @@ export function buildHudModel(
         hpFraction: hpFraction(c, creatureMaxHp(rules, c)),
         activity: activityLabel(c),
         held: c.held,
+        inCombat: isInCombat(state, rules, c),
       };
     });
 
@@ -386,6 +415,7 @@ export function buildHudModel(
     impsMax: data.global.imps.max,
     impsLoafing: state.imps.filter((i) => i.owner === playerId && i.loafUntil > state.tick).length,
     population: populationModel(state, rules, playerId),
+    piglets: pigletsModel(state, rules, playerId),
     clock: formatClock(state.tick, data.global.tickRate),
     tools: toolDefs.map((t) => ({ ...t, active: sameTool(t.tool, tool) })),
     rooms,

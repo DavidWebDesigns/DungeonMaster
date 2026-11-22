@@ -107,6 +107,8 @@ export function removeRoomTile(state: MatchState, rules: Rules, tile: number): v
         tiles: p,
         timer: 0,
         stock: 0,
+        piglets: 0,
+        pigletTimer: 0,
       };
       for (const t of p) state.roomAt[t] = piece.id;
       state.rooms.push(piece);
@@ -242,7 +244,16 @@ export function buildRoomNow(
   for (const piece of plan) {
     let room = piece.roomId === null ? undefined : getRoom(state, piece.roomId);
     if (!room) {
-      room = { id: state.nextRoomId++, type, owner: player.id, tiles: [], timer: 0, stock: 0 };
+      room = {
+        id: state.nextRoomId++,
+        type,
+        owner: player.id,
+        tiles: [],
+        timer: 0,
+        stock: 0,
+        piglets: 0,
+        pigletTimer: 0,
+      };
       state.rooms.push(room);
     }
     room.tiles = piece.tiles;

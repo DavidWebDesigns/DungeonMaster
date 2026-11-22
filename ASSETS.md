@@ -91,6 +91,8 @@ Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cem
 - **Descanso en la Guarida:** una criatura que duerme (o se recupera tras huir) en su cama se cura el 3 % de su vida máxima cada 2,5 s.
 - **Casino:** tras cobrar, las criaturas con sueldo van al Casino (1 asiento por cada 2 tiles) y se quedan 15 s: gastan el 40 % de su sueldo, que va entero a la Tesorería (`casinoHouseShare` 1; hasta donde quepa), y salen divertidas: 90 s de entrenamiento con +50 % de experiencia. Cupos: Bandido 1 por cada 3 tiles de Casino; el Asesino pide 10 bandidos vivos y un Casino de nivel 10. Todo en `rooms.json` (`casino*`).
 - **Tiempos:** el Portal atrae una criatura cada 25 s (si hay cama libre y cupo) y el día de pago es cada 3 minutos.
+- **Cerditos (Criadero):** cada tile de Criadero cría un cerdito cada 20 s, hasta 3 por cada criatura de la población máxima actual (el "N/M" del HUD). Una criatura con el 70 % de vida o menos va al Criadero, se come uno y recupera el 30 % de su vida máxima. Los cerditos se dibujan en el Criadero y el HUD lleva la cuenta (`pigletIntervalSeconds`, `pigletCapPerMaxCreature`, `pigletHealFraction`, `pigletEatBelowHpFraction`). Los pollos siguen quitando el hambre.
+- **Combate:** una criatura que combate (o la han atacado hace menos de `combat.retaliationSeconds`) no se puede retirar del mapa con la mano (`IN_COMBAT`).
 - El Criadero no invoca nada: solo produce pollos. El Demonio de bilis conserva su regla (Criadero + Sala de entrenamiento, sin cupo).
 
 | Sala | Nivel | Coste por tile (mínimo) | Requiere tener antes | Invoca |

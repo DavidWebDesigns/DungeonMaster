@@ -50,7 +50,11 @@
     "sellRefund": 0.5,
     "chickenIntervalSeconds": 20,
     "tilesPerProducer": 3,
-    "maxChickensPerTile": 2
+    "maxChickensPerTile": 2,
+    "pigletIntervalSeconds": 20,
+    "pigletCapPerMaxCreature": 3,
+    "pigletHealFraction": 0.3,
+    "pigletEatBelowHpFraction": 0.7
   },
   {
     "id": "treasury",

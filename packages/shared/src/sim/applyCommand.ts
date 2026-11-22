@@ -4,7 +4,7 @@ import { createImpCost, getPlayer, impCount } from './economy';
 import { inBounds, neighbors4, tileIndex } from './grid';
 import { makeImp } from './createMatch';
 import { stopCreature } from './behavior';
-import { findAssaultTarget } from './combat';
+import { findAssaultTarget, isInCombat } from './combat';
 import { dropImp, resetImp, wakeImp } from './imps';
 import { checkBuildTrap, placeTrapNow, sellTrapNow, trapAt } from './traps';
 import { isVisible } from './fog';
@@ -24,6 +24,7 @@ import {
 import type {
   Command,
   CommandResult,
+  Creature,
   ErrorCode,
   MatchState,
   PlayerId,
@@ -222,6 +223,9 @@ function validate(state: MatchState, rules: Rules, player: PlayerState, cmd: Com
           : state.creatures.find((k) => k.id === cmd.id);
       if (!unit || unit.held) return fail('INVALID_TARGET');
       if (unit.owner !== pid) return fail('NOT_OWNER');
+      // Una criatura que está combatiendo no se puede retirar del mapa.
+      if (cmd.kind !== 'imp' && isInCombat(state, rules, unit as Creature))
+        return fail('IN_COMBAT');
       if (player.hand.length >= rules.data.global.hand.capacity) return fail('LIMIT_REACHED');
       return { ok: true, tiles: [] };
     }

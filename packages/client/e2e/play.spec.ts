@@ -316,6 +316,8 @@ test('V mejora un muro reforzado a nivel 2 cuando hay un Taller de nivel 10', as
       tiles: Array.from({ length: 10 }, (_, k) => 30 * s.width + k),
       timer: 0,
       stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
     });
     s.mapVersion++;
   });
@@ -422,6 +424,8 @@ test('0 construye el Casino (décima sala) cuando ya hay una Sala de entrenamien
       tiles: [30 * s.width + 2],
       timer: 0,
       stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
     });
     s.mapVersion++;
     s.players[0]!.gold = 5000;

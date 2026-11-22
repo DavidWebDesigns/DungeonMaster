@@ -254,7 +254,12 @@ export function computeDelta(
   for (const room of state.rooms) {
     // Una sala propia siempre; una enemiga cuando se ve alguno de sus tiles.
     if (room.owner === pid || room.tiles.some((t) => vis[t] === 1))
-      current.set(`r:${room.id}`, { t: room.type, o: room.owner });
+      current.set(`r:${room.id}`, {
+        t: room.type,
+        o: room.owner,
+        // Solo su dueño sabe cuántos cerditos tiene su Criadero.
+        ...(room.owner === pid && room.type === 'hatchery' ? { pg: room.piglets } : {}),
+      });
   }
   for (const t of state.traps) {
     // Las propias siempre. Las del rival solo si ya se revelaron (se dispararon), están construidas y su tile se ve

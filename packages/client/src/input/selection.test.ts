@@ -106,6 +106,8 @@ describe('highlightSelection', () => {
       tiles: Array.from({ length: 10 }, (_, k) => 20 * state.width + k),
       timer: 0,
       stock: 0,
+      piglets: 0,
+      pigletTimer: 0,
     });
     expect(highlightSelection('reinforce', state, rules, [{ x: 11, y: 4 }], 1, 2).valid).toEqual([
       { x: 11, y: 4 },

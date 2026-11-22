@@ -13,6 +13,7 @@ export { hashState } from './hashState';
 export { replay } from './replay';
 export * from './creatureStats';
 export * from './lairs';
+export { pigletCap, pigletCount } from './creatureEconomy';
 export {
   creatureCount,
   attractionCandidates,

@@ -45,6 +45,8 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - **Coste al construir:** una etiqueta junto al cursor dice el precio del tile que vas a poner, su número dentro de la sala y cuánto sube (+20 % por tile).
 - **Niveles de sala:** observa cómo cambia la forma de una sala al crecer (torre en el nivel 4, anillo en el 7, joya en el 10).
 - **Lista de criaturas:** clic en una fila la recoge y clic derecho en un tile tuyo ya reclamado la suelta; la mira ⌖ centra la cámara. Las criaturas del rival no se pueden coger.
+- **Combate y mano:** una criatura que está peleando (o la acaban de atacar) no se puede recoger: sale bloqueada en la lista y avisa si lo intentas. ¿Se nota demasiado? ¿Debería poder recogerse a una que huye?
+- **Cerditos:** el Criadero cría uno por tile cada 20 s (chip "Cerditos N/M" en el HUD) y las criaturas con el 70 % de vida o menos se lo comen y recuperan el 30 %. ¿Basta para sustituir a la Guarida como cura?
 - **Muros:** **F** refuerza (nivel 1) y **V** mejora a nivel 2 (pide un Taller de 10 tiles). Los rivales pueden derribarlos con Imps, despacio; ¿hace falta algo más para defenderlos?
 - Recoger criaturas con el ratón (hasta 10) y soltarlas con clic derecho: ¿es natural? ¿Van al objetivo marcado más cercano?
 
