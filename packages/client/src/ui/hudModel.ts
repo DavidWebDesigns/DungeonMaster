@@ -6,7 +6,9 @@ import {
   createImpCost,
   creatureMaxHp,
   impCount,
+  manaPulsePerSecond,
   manaRegenPerSecond,
+  templeManaPerSecond,
   maxRoomLevel,
   missingRooms,
   populationOf,
@@ -110,6 +112,8 @@ export interface HudModel {
   mana: number;
   manaMax: number;
   manaRegen: number;
+  /** De dónde sale el maná por segundo (tooltip de la barra). */
+  manaHint: string;
   imps: number;
   impsMax: number;
   /** Imps propios que holgazanean ahora (sin hacer nada hasta que se les abofetee). */
@@ -176,6 +180,17 @@ export function formatClock(tick: number, tickRate: number): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/** "Base 12,1 + Templo 30 + Bibliotecas 5 por segundo". */
+function manaHint(state: MatchState, rules: ReturnType<typeof rulesOf>, playerId: number): string {
+  const temple = templeManaPerSecond(state, rules, playerId);
+  const pulses = manaPulsePerSecond(state, rules, playerId);
+  const base = manaRegenPerSecond(state, rules, playerId) - temple;
+  const parts = [`Territorio ${base.toFixed(1)}`];
+  if (temple > 0) parts.push(`Templo ${temple.toFixed(0)}`);
+  if (pulses > 0) parts.push(`Bibliotecas de nivel alto ${pulses.toFixed(1)}`);
+  return `Maná por segundo: ${parts.join(' + ')}`;
 }
 
 /** Población para el HUD: "6/9" y de dónde sale el máximo. */
@@ -363,7 +378,10 @@ export function buildHudModel(
     goldFull: capacity > 0 && player.gold >= capacity - 0.5,
     mana: Math.floor(player.mana),
     manaMax: data.global.mana.max,
-    manaRegen: manaRegenPerSecond(state, rules, playerId),
+    // Lo continuo más el promedio de los pulsos de las Bibliotecas de nivel alto.
+    manaRegen:
+      manaRegenPerSecond(state, rules, playerId) + manaPulsePerSecond(state, rules, playerId),
+    manaHint: manaHint(state, rules, playerId),
     imps: impCount(state, playerId),
     impsMax: data.global.imps.max,
     impsLoafing: state.imps.filter((i) => i.owner === playerId && i.loafUntil > state.tick).length,

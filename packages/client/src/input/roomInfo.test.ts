@@ -4,7 +4,7 @@ import { loadGameData } from '../data/loadGameData';
 import { Sandbox } from '../sandbox/sandbox';
 import { overlayTiles } from '../render/overlayView';
 import { previewRoom } from './buildPreview';
-import { roomHoverText, roomPreviewText } from './roomInfo';
+import { roomCostTag, roomHoverText, roomPreviewText } from './roomInfo';
 
 const data = loadGameData();
 /** Territorio libre amplio para construir (x 2..10, y 11..19) y oro de sobra. */
@@ -103,5 +103,68 @@ describe('tarjeta de sala', () => {
     expect(roomHoverText(sb.state, data, 11 * 64 + 2)).toBe('Guarida · nivel 6/10');
     expect(roomHoverText(sb.state, data, 14 * 64 + 2)).toBe('Biblioteca · nivel 10/10 (completa)');
     expect(roomHoverText(sb.state, data, 18 * 64 + 9)).toBe('');
+  });
+});
+
+describe('etiqueta de coste en vivo', () => {
+  const tag = (
+    sb: ReturnType<typeof world>,
+    room: string,
+    rect: { x: number; y: number; w: number; h: number },
+  ) => {
+    const preview = previewRoom(sb.state, data, 1, room, rect);
+    return roomCostTag(
+      data,
+      preview,
+      room,
+      sb.state.players[0]!.gold,
+      'No se puede hacer eso ahí.',
+    );
+  };
+
+  it('un tile suelto en sitio libre: precio base y sala nueva', () => {
+    const sb = world();
+    const t = tag(sb, 'lair', { x: 2, y: 11, w: 1, h: 1 });
+    expect(t.tone).toBe('ok');
+    expect(t.text).toContain('tile n.º 1');
+    expect(t.text).toContain('precio base');
+    expect(t.text).toContain('sala nueva de nivel 1');
+  });
+
+  it('pegado a una sala del mismo tipo sube el precio un 20 % por tile y lo dice', () => {
+    const sb = world();
+    applyCommand(sb.state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 2, y: 11, w: 3, h: 1 },
+    });
+    step(sb.state, data);
+    // El 4.º tile de la Biblioteca (250 × 1,2³ = 432): +73 % sobre el precio base.
+    const t = tag(sb, 'library', { x: 5, y: 11, w: 1, h: 1 });
+    expect(t.text).toContain('tile n.º 4');
+    expect(t.text).toContain('432');
+    expect(t.text).toContain('+73 %');
+    expect(t.text).toContain('amplía la sala a nivel 4');
+    // Lejos de ella, vuelve al precio base.
+    const far = tag(sb, 'library', { x: 9, y: 17, w: 1, h: 1 });
+    expect(far.text).toContain('precio base');
+  });
+
+  it('con poco oro avisa de cuánto falta; en un sitio inválido, por qué', () => {
+    const sb = world();
+    sb.state.players[0]!.gold = 100;
+    const poor = tag(sb, 'lair', { x: 2, y: 11, w: 1, h: 1 });
+    expect(poor.tone).toBe('poor');
+    expect(poor.text).toContain('te faltan 200');
+    const bad = tag(sb, 'lair', { x: 40, y: 40, w: 1, h: 1 });
+    expect(bad.tone).toBe('invalid');
+    expect(bad.text).toBe('Guarida: No se puede hacer eso ahí.');
+  });
+
+  it('un arrastre largo enseña los niveles resultantes y el total', () => {
+    const sb = world();
+    const t = tag(sb, 'library', { x: 2, y: 11, w: 6, h: 2 });
+    expect(t.text).toContain('nivel 10 + nivel 2');
+    expect(t.text).toContain('7');
   });
 });

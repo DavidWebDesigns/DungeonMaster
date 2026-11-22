@@ -15,11 +15,11 @@ const REQUIRED_ROOM_FIELDS: Record<string, readonly string[]> = {
     'trainingGoldPerSecond',
     'tilesPerTrainee',
   ],
-  library: [],
+  library: ['manaPulseMinLevel', 'manaPulseAmount', 'manaPulseSeconds'],
   tortureChamber: [],
   workshop: [],
   graveyard: [],
-  temple: [],
+  temple: ['manaPerTilePerSecond'],
   casino: [
     'casinoTilesPerSeat',
     'casinoStaySeconds',

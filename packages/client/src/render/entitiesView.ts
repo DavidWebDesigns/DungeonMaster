@@ -17,7 +17,7 @@ import { Mesh as BabylonMesh } from '@babylonjs/core/Meshes/mesh';
 import { creatureMaxHp, rulesOf, type DataSet, type MatchState, type Room } from '@dm/shared';
 import type { GameSource } from '../sandbox/source';
 import { mix, playerColor, ROOM_COLORS, type RGB } from './palette';
-import { treasuryFill } from './roomProps';
+import { roomLook, treasuryFill } from './roomProps';
 import { IMP_HEIGHT, IMP_RADIUS, UNIT_SCALE as S } from './scale';
 import { AnimBoard, deathPose } from '../feel/anim';
 import {
@@ -600,6 +600,7 @@ export class EntitiesView {
       return m;
     };
 
+    const first = this.props.length;
     switch (room.type) {
       case 'heart': {
         const m = add(CreateSphere(`heart${room.id}`, { diameter: 1.6, segments: 12 }, this.scene));
@@ -761,6 +762,89 @@ export class EntitiesView {
         }
         break;
     }
-    void data;
+    // La sala crece con su nivel (su número de tiles): accesorios más grandes, torre central, anillo y joya.
+    const def = data.rooms.find((r) => r.id === room.type);
+    if (def?.buildable)
+      this.applyLevelLook(
+        room,
+        color,
+        cx,
+        cz,
+        first,
+        roomLook(room.tiles.length, def.maxTiles ?? 10),
+        tileXY,
+      );
+  }
+
+  /** Engorda los accesorios ya creados de una sala según su nivel y añade la torre, el anillo y la joya. */
+  private applyLevelLook(
+    room: Room,
+    color: RGB,
+    cx: number,
+    cz: number,
+    first: number,
+    look: ReturnType<typeof roomLook>,
+    tileXY: (t: number) => [number, number],
+  ): void {
+    for (const m of this.props.slice(first)) {
+      // Los montones de la Tesorería suben y bajan con el oro: solo engordan.
+      const treasury = m.name.startsWith('gold');
+      const sy = treasury ? 1 : look.height;
+      m.scaling.set(look.girth, m.scaling.y * sy, look.girth);
+      if (!treasury) m.position.y += (sy - 1) * m.getBoundingInfo().boundingBox.extendSize.y;
+    }
+    if (!look.tower) return;
+    // La torre se levanta en el tile de la sala más cercano al centro.
+    let best = room.tiles[0] as number;
+    let bestD = Infinity;
+    for (const t of room.tiles) {
+      const [x, z] = tileXY(t);
+      const d = Math.hypot(x - cx, z - cz);
+      if (d < bestD) {
+        bestD = d;
+        best = t;
+      }
+    }
+    const [x, z] = tileXY(best);
+    const tint = mix(color, [1, 1, 1], 0.35);
+    const add = (m: Mesh) => {
+      m.isPickable = false;
+      this.props.push(m);
+      return m;
+    };
+    const tower = add(
+      CreateCylinder(
+        `tower${room.id}`,
+        {
+          height: look.tower.height,
+          diameterTop: look.tower.topDiameter,
+          diameterBottom: look.tower.baseDiameter,
+          tessellation: 8,
+        },
+        this.scene,
+      ),
+    );
+    tower.material = material(this.scene, tint, 0.15);
+    tower.position.set(x, look.tower.height / 2, z);
+    if (look.ring) {
+      const ring = add(
+        CreateTorus(
+          `towerRing${room.id}`,
+          { diameter: look.tower.baseDiameter * 2.4, thickness: 0.07, tessellation: 20 },
+          this.scene,
+        ),
+      );
+      ring.material = material(this.scene, [0.95, 0.8, 0.3], 0.5);
+      ring.position.set(x, look.tower.height * 0.55, z);
+      this.spinning.push(ring);
+    }
+    if (look.crown) {
+      const gem = add(
+        CreateSphere(`towerGem${room.id}`, { diameter: 0.34, segments: 8 }, this.scene),
+      );
+      gem.material = material(this.scene, [1, 0.9, 0.45], 0.9);
+      gem.position.set(x, look.tower.height + 0.22, z);
+      this.pulsing.push(gem);
+    }
   }
 }

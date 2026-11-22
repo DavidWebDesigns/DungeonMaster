@@ -400,7 +400,7 @@ Portal y Corazón vienen construidos en el mapa y no se pueden vender.
 
 **Hambre [PROPUESTO]:** contador 0 a 100 que sube 70 puntos en 180 s. Con 70 o más, la criatura va al Criadero y come un pollo (vuelve a 0). En 100, inanición: pierde 1 % de vida máxima por segundo. Los Imps no comen.
 
-**Sueño:** sube 1 punto cada 3 s. Con 80 o más va a su cama y descansa 20 s (vuelve a 0). Allí recupera 1 % de vida por segundo.
+**Sueño:** sube 1 punto cada 3 s. Con 80 o más va a su cama y descansa 20 s (vuelve a 0). Allí se cura de forma progresiva: **3 % de su vida máxima cada 2,5 s** (`economy.sleep.lairHealFraction` y `lairHealIntervalSeconds`).
 
 **Bandas:**
 
@@ -419,7 +419,7 @@ La vida máxima no cambia con el ánimo. Imps inmunes al ánimo.
 
 1. En la mano: no actúa.
 2. **Combate:** enemigo visible a menos de 6 tiles, o la atacan: persigue y ataca. Elige al más cercano, prefiriendo a quien la ataca.
-3. **Huida:** con menos del 25 % de vida y guarida accesible, huye a su cama y se cura allí 1 % por segundo. Si no hay salida, sigue luchando.
+3. **Huida:** con menos del 25 % de vida y guarida accesible, huye a su cama y se cura allí igual que al dormir (3 % cada 2,5 s). Si no hay salida, sigue luchando.
 4. **Llamada a las armas:** va al punto marcado y ataca lo que encuentre.
 5. Comer si el hambre pasa de 70.
 6. Dormir si el sueño pasa de 80.

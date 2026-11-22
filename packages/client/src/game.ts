@@ -14,7 +14,7 @@ import { keyAction } from './input/keymap';
 import { decay, heartHit, initialScreenFx, shakeOffset } from './feel/screenFx';
 import { FloaterList, floaterPose } from './feel/anim';
 import { speedLabel } from './ui/speedLabel';
-import { roomHoverText, roomPreviewText } from './input/roomInfo';
+import { roomCostTag, roomHoverText, roomPreviewText } from './input/roomInfo';
 import { impActivityLabel } from './render/creatureStyle';
 import { minimapPixels } from './ui/minimap';
 import { MinimapView } from './ui/minimapView';
@@ -71,6 +71,8 @@ export class Game {
   private feelSnapshot: FeelSnapshot;
   private readonly hudHost: HTMLElement;
   private readonly hoverCard: HTMLElement;
+  /** Etiqueta con el coste en vivo de lo que se va a construir (sigue al cursor). */
+  private readonly buildTag: HTMLElement;
   private hudKey = '';
   private wasFull = false;
   private lastFeelTick = -1;
@@ -177,6 +179,10 @@ export class Game {
     this.hoverCard.className = 'hovercard';
     this.hoverCard.style.display = 'none';
     host.appendChild(this.hoverCard);
+    this.buildTag = document.createElement('div');
+    this.buildTag.className = 'buildtag';
+    this.buildTag.style.display = 'none';
+    host.appendChild(this.buildTag);
     window.addEventListener('resize', () => this.renderer.resize());
   }
 
@@ -223,6 +229,7 @@ export class Game {
         this.input.hoverUnit,
       );
       this.updateHover();
+      this.updateBuildTag();
       this.countFps(nowMs);
       requestAnimationFrame(frame);
     };
@@ -371,8 +378,10 @@ export class Game {
         infoLine: info,
         onSurrender: () => this.surrender(),
         onRestart: () => window.location.reload(),
-        onSelectCreature: (id) => {
-          const c = state.creatures.find((k) => k.id === id);
+        // Clic en la lista: la recoge (solo las propias; la simulación también lo exige).
+        onPickCreature: (id) => this.input.pickUpCreature(id),
+        onLocateCreature: (id) => {
+          const c = state.creatures.find((k) => k.id === id && k.owner === this.me);
           if (c) this.camera = centerOn(this.camera, { x: Math.floor(c.x), y: Math.floor(c.y) });
         },
       }),
@@ -535,6 +544,31 @@ export class Game {
     this.say(this.audio.muted ? 'Sonido desactivado (M para activarlo).' : 'Sonido activado.');
   }
 
+  /** Coste en vivo junto al cursor mientras se elige dónde construir una sala (también donde no se puede). */
+  private updateBuildTag(): void {
+    const tool = this.input.tool;
+    const mouse = this.dom.cameraInput().mouse;
+    const preview = tool.kind === 'build' ? this.input.preview() : null;
+    if (!preview || preview.kind !== 'room' || !mouse) {
+      this.buildTag.style.display = 'none';
+      return;
+    }
+    const me = this.sandbox.state.players.find((p) => p.id === this.me);
+    const tag = roomCostTag(
+      this.data,
+      preview.room,
+      (tool as { room: string }).room,
+      me?.gold ?? 0,
+      errorMessage(preview.room.error ?? 'INVALID_TARGET'),
+    );
+    const r = this.renderer.canvas.getBoundingClientRect();
+    this.buildTag.textContent = tag.text;
+    this.buildTag.className = `buildtag ${tag.tone}`;
+    this.buildTag.style.display = 'block';
+    this.buildTag.style.left = `${r.left + mouse.x * r.width + 18}px`;
+    this.buildTag.style.top = `${r.top + mouse.y * r.height - 34}px`;
+  }
+
   /** Qué se va a construir (con niveles y coste) o, con el cursor sobre una sala, su nivel. */
   private roomInfoLine(): string {
     const preview = this.input.preview();
@@ -544,6 +578,9 @@ export class Game {
         '';
       return roomPreviewText(preview.room, name);
     }
+    const inHand = this.input.handSize;
+    if (inHand > 0)
+      return `En la mano: ${inHand} · clic derecho en un tile tuyo ya reclamado para soltarlas`;
     const hover = this.input.hover;
     if (!hover) return '';
     return roomHoverText(

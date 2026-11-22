@@ -5,7 +5,7 @@ import { runQueuedCommands } from './applyCommand';
 import { updateCreatures } from './behavior';
 import { tickPayday, tickHatcheries } from './creatureEconomy';
 import { tickEconomy } from './economy';
-import { tickNeeds } from './needs';
+import { tickLairHealing, tickNeeds } from './needs';
 import { updateCombat, processDeaths } from './combat';
 import { updateSeen } from './fog';
 import { tickPortals, tickRevives } from './portal';
@@ -35,6 +35,7 @@ export function step(state: MatchState, data: DataSet): SimEvent[] {
   tickPortals(state, rules, events);
   tickRevives(state, rules, events);
   assignTasks(state, rules);
+  tickLairHealing(state, rules);
   tickNeeds(state, rules, events);
   tickAbilityState(state);
   // Los cálculos de ruta por tick y jugador se reparten entre Imps y criaturas (los Imps primero).

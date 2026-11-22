@@ -13,7 +13,8 @@
     "risePerSecond": 0.3333,
     "sleepThreshold": 80,
     "restSeconds": 20,
-    "lairHealFractionPerSecond": 0.01
+    "lairHealFraction": 0.03,
+    "lairHealIntervalSeconds": 2.5
   },
   "roomCostGrowthPerTile": 1.2,
   "wanderRadius": 6,

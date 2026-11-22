@@ -144,14 +144,60 @@ test('B abofetea a la criatura bajo el cursor y baja su ánimo', async ({ page }
   await expect(page.locator('.floater')).toContainText('+25% velocidad');
 });
 
-test('el panel de criaturas centra la cámara al hacer clic en una', async ({ page }) => {
+test('la mira de la lista centra la cámara en la criatura', async ({ page }) => {
   await buildLair(page);
   await advance(page, 61);
-  await page.locator('.creature').first().click();
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 8.5;
+    c.y = 6.5;
+  });
+  await page.locator('.creature-row .locate').first().click();
   await page.waitForTimeout(200);
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(String(e)));
-  expect(errors).toEqual([]);
+  const { cam, pos } = await page.evaluate(() => ({
+    cam: (dm() as unknown as { camera: { targetX: number; targetZ: number } }).camera,
+    pos: dm().sandbox.state.creatures[0]!,
+  }));
+  // La cámara apunta a donde está la criatura (que puede haber andado un poco mientras tanto).
+  expect(Math.hypot(cam.targetX - pos.x, cam.targetZ - pos.y)).toBeLessThan(3);
+  // Centrar no la recoge.
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
+});
+
+test('un clic en la lista recoge la criatura y el clic derecho la suelta solo en suelo ya reclamado', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await advance(page, 61);
+  await page.evaluate(() => {
+    const c = dm().sandbox.state.creatures[0]!;
+    c.x = 6.5;
+    c.y = 6.5;
+  });
+  await page.locator('.creature').first().click();
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(1);
+  await expect(page.locator('.chip.hand')).toContainText('Mano 1/10');
+  await expect(page.locator('.creature').first()).toBeDisabled(); // ya va en la mano
+  // En un muro (no es suelo reclamado): no se suelta y avisa.
+  const wall = await page.evaluate(() => dm().tileToScreen(12, 6, 1));
+  await page.mouse.move(wall.x, wall.y);
+  await page.mouse.click(wall.x, wall.y, { button: 'right' });
+  await advance(page, 1);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(1);
+  await expect(
+    page.locator('.notice', { hasText: 'ya reclamados como tuyos' }).first(),
+  ).toBeVisible();
+  // En un tile propio reclamado: la suelta ahí.
+  const own = await page.evaluate(() => dm().tileToScreen(7, 7));
+  await page.mouse.move(own.x, own.y);
+  await page.mouse.click(own.x, own.y, { button: 'right' });
+  await advance(page, 1);
+  const c = await page.evaluate(() => dm().sandbox.state.creatures[0]!);
+  expect(c.held).toBe(false);
+  expect(await page.evaluate(() => dm().sandbox.state.players[0]!.hand.length)).toBe(0);
+  // Cayó en (7,7) (en el segundo que avanzó puede haber echado a andar): cerca de ahí, no en el muro de antes.
+  expect(Math.hypot(c.x - 7.5, c.y - 7.5)).toBeLessThan(3);
 });
 
 test('hover resalta la criatura, muestra su tarjeta y se recoge aunque esté activa la herramienta de construir', async ({

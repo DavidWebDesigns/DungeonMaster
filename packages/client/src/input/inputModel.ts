@@ -151,6 +151,17 @@ export class InputModel {
     return state.tasks.some((k) => k.owner === player && k.tile === i && k.kind === 'dig');
   }
 
+  /**
+   * Recoge una criatura propia desde la lista del HUD (igual que hacerlo con el ratón sobre ella). Solo las propias y
+   * que no estén ya en la mano: las de otros jugadores nunca se pueden coger (la simulación también lo rechaza).
+   */
+  pickUpCreature(id: number): boolean {
+    const c = this.host.state.creatures.find((k) => k.id === id);
+    if (!c || c.owner !== this.host.player || c.held) return false;
+    this.dispatch({ type: 'pickUp', id });
+    return true;
+  }
+
   pointerUp(tile: Point | null): void {
     const drag = this.drag;
     if (!drag) return;

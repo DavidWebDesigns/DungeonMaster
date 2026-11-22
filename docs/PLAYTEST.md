@@ -41,6 +41,10 @@ todo el mapa (solo en partidas locales). El minimapa (arriba a la izquierda) se 
 - **Escala y encuadre:** los tiles son un 30 % más grandes que los personajes; ¿se ve bien o se pierde demasiado mapa? Al empezar (y con Espacio) la base queda por encima de la botonera.
 - **Portal:** llega una criatura por minuto y la especie sale según el tamaño de tus salas (más Guarida = más Goblins). ¿Es demasiado lento ahora? Tampoco olvides mirar la distancia entre el Corazón y el Portal y la barra de vida del Corazón al atacarlo.
 - **Casino:** construye Sala de entrenamiento y luego Casino (tecla **0**). Tras el día de pago (ahora cada 3 min) las criaturas con sueldo van a jugar 15 s: sale un "+N oro" sobre ellas y entrenan con +50 % de XP un rato. ¿Se nota el ingreso? ¿Es demasiado o poco? El Portal trae una criatura cada 25 s si hay camas.
+- **Maná:** el Templo da 10/s por tile y la Biblioteca de nivel 10 da 50 cada 10 s (la barra de maná lo desglosa al pasar el cursor). ¿Se ve muy fuerte o justo?
+- **Coste al construir:** una etiqueta junto al cursor dice el precio del tile que vas a poner, su número dentro de la sala y cuánto sube (+20 % por tile).
+- **Niveles de sala:** observa cómo cambia la forma de una sala al crecer (torre en el nivel 4, anillo en el 7, joya en el 10).
+- **Lista de criaturas:** clic en una fila la recoge y clic derecho en un tile tuyo ya reclamado la suelta; la mira ⌖ centra la cámara. Las criaturas del rival no se pueden coger.
 - **Muros:** **F** refuerza (nivel 1) y **V** mejora a nivel 2 (pide un Taller de 10 tiles). Los rivales pueden derribarlos con Imps, despacio; ¿hace falta algo más para defenderlos?
 - Recoger criaturas con el ratón (hasta 10) y soltarlas con clic derecho: ¿es natural? ¿Van al objetivo marcado más cercano?
 

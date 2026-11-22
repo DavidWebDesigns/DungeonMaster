@@ -50,5 +50,10 @@ export function errorMessage(code: ErrorCode, ctx?: ErrorContext): string {
     );
     if (names.length > 0) return `Te falta construir: ${listNames(names)}.`;
   }
+  // Las criaturas solo se sueltan en suelo ya reclamado como propio; y solo se recogen las propias.
+  if (ctx?.cmd.type === 'drop' && (code === 'NOT_OWNER' || code === 'INVALID_TARGET'))
+    return 'Solo puedes soltar criaturas en tiles ya reclamados como tuyos.';
+  if (ctx?.cmd.type === 'pickUp' && code === 'NOT_OWNER')
+    return 'No puedes coger criaturas de otro jugador.';
   return MESSAGES[code];
 }

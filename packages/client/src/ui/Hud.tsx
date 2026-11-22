@@ -5,8 +5,10 @@ import type { HudModel } from './hudModel';
 export interface HudProps {
   model: HudModel;
   onTool(tool: Tool): void;
-  /** Clic en una criatura de la lista (centra la cámara en ella). */
-  onSelectCreature?(id: number): void;
+  /** Clic en una criatura de la lista: la recoge (pasa a la mano; se suelta con clic derecho en suelo propio). */
+  onPickCreature?(id: number): void;
+  /** Botón de mira de una criatura de la lista: centra la cámara en ella. */
+  onLocateCreature?(id: number): void;
   /** Pulsó el botón de rendirse (el juego pide confirmación). */
   onSurrender?(): void;
   /** Pulsó "Jugar de nuevo" en la pantalla final. */
@@ -23,10 +25,16 @@ export interface HudProps {
 
 const fmt = (n: number) => n.toLocaleString('es');
 
-function Bar(props: { value: number; max: number; kind: 'gold' | 'mana'; label: string }) {
+function Bar(props: {
+  value: number;
+  max: number;
+  kind: 'gold' | 'mana';
+  label: string;
+  title?: string;
+}) {
   const pct = props.max > 0 ? Math.max(0, Math.min(100, (props.value / props.max) * 100)) : 0;
   return (
-    <div class={`bar ${props.kind}`} title={props.label}>
+    <div class={`bar ${props.kind}`} title={props.title ?? props.label}>
       <div class="bar-fill" style={{ width: `${pct}%` }} />
       <span class="bar-text">{props.label}</span>
     </div>
@@ -36,7 +44,8 @@ function Bar(props: { value: number; max: number; kind: 'gold' | 'mana'; label: 
 export function Hud({
   model,
   onTool,
-  onSelectCreature,
+  onPickCreature,
+  onLocateCreature,
   onSurrender,
   onRestart,
   surrenderArmed,
@@ -58,6 +67,7 @@ export function Hud({
           value={model.mana}
           max={model.manaMax}
           label={`Maná ${fmt(model.mana)} (+${model.manaRegen.toFixed(1)}/s)`}
+          title={model.manaHint}
         />
         <div
           class="chip"
@@ -145,21 +155,34 @@ export function Hud({
         <div class="creatures panel">
           <div class="creatures-title">Criaturas ({model.creatures.length})</div>
           {model.creatures.map((c) => (
-            <button
-              key={c.id}
-              class={`creature ${c.band}`}
-              onClick={() => onSelectCreature?.(c.id)}
-              title={`${c.bandName} · ánimo ${c.mood}`}
-            >
-              <span class="glyph">{c.glyph}</span>
-              <span class="cname">
-                {c.name} <small>nv {c.level}</small>
-              </span>
-              <span class="cact">{c.activity}</span>
-              <span class="hpbar">
-                <span class="hpfill" style={{ width: `${Math.round(c.hpFraction * 100)}%` }} />
-              </span>
-            </button>
+            <div class="creature-row" key={c.id}>
+              <button
+                class={`creature ${c.band}${c.held ? ' held' : ''}`}
+                disabled={c.held}
+                onClick={() => onPickCreature?.(c.id)}
+                title={
+                  c.held
+                    ? 'Ya la llevas en la mano'
+                    : `${c.bandName} · ánimo ${c.mood} · clic: recogerla (clic derecho en tu territorio: soltarla)`
+                }
+              >
+                <span class="glyph">{c.glyph}</span>
+                <span class="cname">
+                  {c.name} <small>nv {c.level}</small>
+                </span>
+                <span class="cact">{c.activity}</span>
+                <span class="hpbar">
+                  <span class="hpfill" style={{ width: `${Math.round(c.hpFraction * 100)}%` }} />
+                </span>
+              </button>
+              <button
+                class="locate"
+                title="Ver en el mapa"
+                onClick={() => onLocateCreature?.(c.id)}
+              >
+                ⌖
+              </button>
+            </div>
           ))}
         </div>
       )}

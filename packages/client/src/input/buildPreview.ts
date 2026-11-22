@@ -60,7 +60,7 @@ export interface RoomPreview {
   cost: number;
   /**
    * Cómo se repartirá lo construido (la misma función que usa la simulación): una entrada por sala resultante, con su
-   * nivel final (= tiles) y si amplía una sala que ya existía. Vacío si no se puede construir.
+   * nivel final (= tiles) y si amplía una sala que ya existía. Vacío si el sitio no vale (con `NO_GOLD` sí se rellena).
    */
   pieces: RoomPiece[];
 }
@@ -86,11 +86,19 @@ export function previewRoom(
   const plan = planRoomBuild(state, rules, playerId, room, rect);
   const cost = planCost(state, rules, room, plan);
   const res = previewCommand(state, data, playerId, { type: 'buildRoom', room, rect });
-  if (!res.ok) return { rect, valid: false, error: res.error, cost, pieces: [] };
   const pieces = plan.map((p) => ({
     tiles: p.tiles,
     level: p.tiles.length,
     extends: p.roomId !== null,
   }));
+  // Sin oro el sitio es bueno: se enseña igual cómo quedaría (niveles y coste) para que se vea cuánto falta.
+  if (!res.ok)
+    return {
+      rect,
+      valid: false,
+      error: res.error,
+      cost,
+      pieces: res.error === 'NO_GOLD' ? pieces : [],
+    };
   return { rect, valid: true, cost, pieces };
 }

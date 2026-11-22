@@ -94,7 +94,10 @@
       "h": 1
     },
     "maxTiles": 10,
-    "sellRefund": 0.5
+    "sellRefund": 0.5,
+    "manaPulseMinLevel": 10,
+    "manaPulseAmount": 50,
+    "manaPulseSeconds": 10
   },
   {
     "id": "tortureChamber",
@@ -149,7 +152,8 @@
       "h": 1
     },
     "maxTiles": 10,
-    "sellRefund": 0.5
+    "sellRefund": 0.5,
+    "manaPerTilePerSecond": 10
   },
   {
     "id": "casino",

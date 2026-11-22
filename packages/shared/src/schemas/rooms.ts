@@ -33,6 +33,12 @@ export const RoomDef = z.strictObject({
   trainingMaxLevel: PositiveInt.optional(),
   trainingGoldPerSecond: NonNegativeInt.optional(),
   tilesPerTrainee: PositiveInt.optional(),
+  /** Templo: maná por segundo que da cada tile (se suma al maná normal, sin pasar por su tope). */
+  manaPerTilePerSecond: PositiveNumber.optional(),
+  /** Biblioteca: con al menos `manaPulseMinLevel` tiles (su nivel), da `manaPulseAmount` de maná cada `manaPulseSeconds`. */
+  manaPulseMinLevel: PositiveInt.optional(),
+  manaPulseAmount: PositiveNumber.optional(),
+  manaPulseSeconds: PositiveNumber.optional(),
   /**
    * Casino: las criaturas con sueldo van a gastar parte de lo que cobran y salen divertidas. Un asiento por cada
    * `casinoTilesPerSeat` tiles; la visita dura `casinoStaySeconds`; gastan `casinoSpendFraction` de su sueldo, y la casa

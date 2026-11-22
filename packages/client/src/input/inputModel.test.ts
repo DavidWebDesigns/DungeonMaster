@@ -384,6 +384,21 @@ describe('atajos de teclado', () => {
   });
 });
 
+describe('mensajes de la mano', () => {
+  const ctx = (type: 'drop' | 'pickUp') => {
+    const sb = new Sandbox(data, 1);
+    const cmd = type === 'drop' ? { type, tile: { x: 1, y: 1 } } : { type, id: 5 };
+    return { cmd, data, state: sb.state, player: LOCAL_PLAYER } as Parameters<
+      typeof errorMessage
+    >[1];
+  };
+  it('soltar fuera de tu territorio y coger criaturas ajenas tienen su texto', () => {
+    expect(errorMessage('NOT_OWNER', ctx('drop'))).toContain('ya reclamados como tuyos');
+    expect(errorMessage('INVALID_TARGET', ctx('drop'))).toContain('ya reclamados como tuyos');
+    expect(errorMessage('NOT_OWNER', ctx('pickUp'))).toContain('otro jugador');
+  });
+});
+
 describe('mensajes', () => {
   it('todos los códigos de error tienen texto en español', () => {
     for (const code of [
@@ -622,5 +637,41 @@ describe('bofetada con B', () => {
     input.pointerMove(null, null);
     input.slapHovered();
     expect(sent).toHaveLength(2);
+  });
+});
+
+describe('recoger criaturas desde la lista', () => {
+  const addCreature = (sandbox: ReturnType<typeof setup>['sandbox'], owner: number) => {
+    const c = newCreature(sandbox.state, rulesOf(data), owner, 'goblin', 6 * 64 + 6);
+    sandbox.state.creatures.push(c);
+    return c;
+  };
+
+  it('una criatura propia se recoge y pasa a la mano', () => {
+    const { input, sent, sandbox } = setup();
+    const mine = addCreature(sandbox, LOCAL_PLAYER);
+    expect(input.pickUpCreature(mine.id)).toBe(true);
+    expect(sent.map((s) => s.cmd)).toEqual([{ type: 'pickUp', id: mine.id }]);
+    expect(sent[0]!.res.ok).toBe(true);
+    sandbox.advance(100);
+    expect(mine.held).toBe(true);
+    expect(input.handSize).toBe(1);
+  });
+
+  it('las de otro jugador no se pueden coger: no se envía ni una orden', () => {
+    const { input, sent, sandbox } = setup();
+    const theirs = addCreature(sandbox, 2);
+    expect(input.pickUpCreature(theirs.id)).toBe(false);
+    expect(sent).toEqual([]);
+    expect(theirs.held).toBe(false);
+  });
+
+  it('una que ya está en la mano, o que no existe, tampoco', () => {
+    const { input, sent, sandbox } = setup();
+    const mine = addCreature(sandbox, LOCAL_PLAYER);
+    mine.held = true;
+    expect(input.pickUpCreature(mine.id)).toBe(false);
+    expect(input.pickUpCreature(99999)).toBe(false);
+    expect(sent).toEqual([]);
   });
 });

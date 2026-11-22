@@ -85,7 +85,10 @@ Salas nuevas de la tanda de salas y cupos: `workshop` (Taller), `graveyard` (Cem
 - **Cupos:** una especie puede tener tantas criaturas vivas como indique su sala: 1 cupo por cada `tilesPerSlot` tiles de ese tipo (Goblin 2, el resto 3), sumando todas las salas. Las que ya llegaron no se van si baja el cupo.
 - **Criatura superior:** hacen falta **10 criaturas vivas de la especie base y una sala de ese tipo en nivel 10** (Troll por goblins y Guarida, Bruja por warlocks y Biblioteca, Vampiro por esqueletos y Cementerio, Verdugo por torturadoras y Cámara). 1 criatura superior por cada 10 de la base.
 - **Guarida:** da camas (población neta de toda la mazmorra) y además cupos de Goblin. La criatura sin cama (Esqueleto) no la necesita.
-- **Templo:** cupos de Ángel caído y `maxPerPlayer: 1`: nunca más de uno vivo.
+- **Templo:** cupos de Ángel caído y `maxPerPlayer: 1`: nunca más de uno vivo. Además **da maná: 10 por segundo por cada tile** (`manaPerTilePerSecond`), que se suma al maná normal sin pasar por su tope.
+- **Biblioteca de nivel 10** (10 tiles conectados): da **50 de maná cada 10 segundos** (`manaPulse*`), por cada Biblioteca de ese nivel.
+- **Aspecto por nivel:** a medida que sube el nivel de una sala sus accesorios engordan y se alargan; desde el nivel 4 aparece una torre central, desde el 7 un anillo dorado y en el nivel 10 una joya encima.
+- **Descanso en la Guarida:** una criatura que duerme (o se recupera tras huir) en su cama se cura el 3 % de su vida máxima cada 2,5 s.
 - **Casino:** tras cobrar, las criaturas con sueldo van al Casino (1 asiento por cada 2 tiles) y se quedan 15 s: gastan el 40 % de su sueldo, que va entero a la Tesorería (`casinoHouseShare` 1; hasta donde quepa), y salen divertidas: 90 s de entrenamiento con +50 % de experiencia. Cupos: Bandido 1 por cada 3 tiles de Casino; el Asesino pide 10 bandidos vivos y un Casino de nivel 10. Todo en `rooms.json` (`casino*`).
 - **Tiempos:** el Portal atrae una criatura cada 25 s (si hay cama libre y cupo) y el día de pago es cada 3 minutos.
 - El Criadero no invoca nada: solo produce pollos. El Demonio de bilis conserva su regla (Criadero + Sala de entrenamiento, sin cupo).

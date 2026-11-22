@@ -69,6 +69,21 @@ describe('buildHudModel', () => {
     expect(buildHudModel(sb.state, data, 1, dig, []).impsLoafing).toBe(2);
   });
 
+  it('la lista de criaturas permite recogerlas (clic) y centrarlas (mira); la que va en la mano sale desactivada', () => {
+    const sb = fresh();
+    const rules = rulesOf(data);
+    const a = newCreature(sb.state, rules, 1, 'troll', 9 * 64 + 9);
+    const b = newCreature(sb.state, rules, 1, 'goblin', 9 * 64 + 9);
+    b.held = true;
+    sb.state.creatures.push(a, b);
+    const out = render(<Hud model={buildHudModel(sb.state, data, 1, dig, [])} onTool={() => {}} />);
+    expect(out).toContain('recogerla');
+    expect(out).toContain('Ver en el mapa');
+    expect(out).toContain('Ya la llevas en la mano');
+    expect(out.match(/class="locate"/g)).toHaveLength(2);
+    expect(out).toMatch(/creature [a-z]+ held" disabled/);
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

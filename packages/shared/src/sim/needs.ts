@@ -17,6 +17,21 @@ export function removeCreature(state: MatchState, id: number): void {
  * Paso 4 del tick, una vez por segundo: hambre, sueño, inanición, curación en la cama, ánimo, bandas
  * y abandono de la mazmorra por Furioso.
  */
+/**
+ * Cada tick: las criaturas que descansan en su cama (durmiendo o recuperándose tras huir) se curan de forma progresiva:
+ * `lairHealFraction` de su vida máxima (3 %) cada `lairHealIntervalSeconds` (2,5 s), repartido entre los ticks.
+ */
+export function tickLairHealing(state: MatchState, rules: Rules): void {
+  const { lairHealFraction, lairHealIntervalSeconds } = rules.data.economy.sleep;
+  const perTick = (lairHealFraction / lairHealIntervalSeconds) * rules.dt;
+  for (const c of state.creatures) {
+    if (c.held || c.hp <= 0 || c.mode !== 'acting' || (c.goal !== 'bed' && c.goal !== 'flee'))
+      continue;
+    const maxHp = creatureMaxHp(rules, c);
+    if (c.hp < maxHp) c.hp = Math.min(maxHp, c.hp + maxHp * perTick);
+  }
+}
+
 export function tickNeeds(state: MatchState, rules: Rules, events: SimEvent[]): void {
   const rate = rules.data.global.tickRate;
   if (state.tick === 0 || state.tick % rate !== 0) return;
@@ -40,10 +55,6 @@ export function tickNeeds(state: MatchState, rules: Rules, events: SimEvent[]): 
         leaving.push({ c, cause: 'starved' });
         continue;
       }
-    }
-    // Descansando en la cama se cura un 1 % por segundo.
-    if ((c.goal === 'bed' || c.goal === 'flee') && c.mode === 'acting') {
-      c.hp = Math.min(maxHp, c.hp + maxHp * economy.sleep.lairHealFractionPerSecond);
     }
     if (c.beds.length === 0) assignBed(state, rules, c);
 

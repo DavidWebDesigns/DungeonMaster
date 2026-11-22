@@ -18,7 +18,9 @@ export const EconomyConfig = z.strictObject({
     risePerSecond: PositiveNumber,
     sleepThreshold: PositiveNumber,
     restSeconds: Seconds,
-    lairHealFractionPerSecond: Fraction,
+    /** Descansando en una cama de la Guarida se recupera `lairHealFraction` de la vida máxima cada `lairHealIntervalSeconds`. */
+    lairHealFraction: Fraction,
+    lairHealIntervalSeconds: PositiveNumber,
   }),
   /**
    * Cada tile de una sala cuesta este factor más que el anterior de la misma sala (1,2 = +20 %): el tile n cuesta

@@ -401,3 +401,56 @@
   color: #ffd27a;
   border-color: #a8742a;
 }
+
+/* Coste en vivo al construir: sigue al cursor; verde si se puede, ámbar si falta oro, rojo si el sitio no vale. */
+.buildtag {
+  position: fixed;
+  z-index: 6;
+  pointer-events: none;
+  padding: 5px 10px;
+  background: rgba(20, 14, 26, 0.95);
+  border: 1px solid #6fd08c;
+  border-radius: 6px;
+  color: #dff5e5;
+  font:
+    600 12px system-ui,
+    sans-serif;
+  white-space: nowrap;
+}
+.buildtag.poor {
+  border-color: #e0a63a;
+  color: #ffe3a8;
+}
+.buildtag.invalid {
+  border-color: #d05a5a;
+  color: #ffc9c9;
+}
+
+/* Fila de la lista de criaturas: recoger (clic) y centrar la cámara (mira). */
+.creature-row {
+  display: flex;
+  gap: 4px;
+  align-items: stretch;
+}
+.creature-row .creature {
+  flex: 1;
+  min-width: 0;
+}
+.creature.held {
+  opacity: 0.55;
+  cursor: default;
+}
+.creature .locate,
+.locate {
+  flex: 0 0 26px;
+  padding: 0;
+  background: #2b2234;
+  color: inherit;
+  border: 1px solid #54405f;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.locate:hover {
+  background: #3a2d47;
+}
