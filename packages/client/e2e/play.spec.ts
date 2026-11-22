@@ -462,3 +462,58 @@ test('0 construye el Casino (décima sala) cuando ya hay una Sala de entrenamien
   expect(tiles).toBe(6);
   await page.screenshot({ path: 'test-results/casino.png' });
 });
+
+test('el coste se ve en vivo al pasar el cursor y un tile que conecta dos salas se paga sobre el total', async ({
+  page,
+}) => {
+  await page.evaluate(() => {
+    const g = (window as unknown as { __dm: DmHook }).__dm;
+    const s = g.sandbox.state;
+    const claimed = g.data.terrain.findIndex((t) => t.id === 'claimedFloor');
+    for (let y = 11; y < 20; y++)
+      for (let x = 2; x < 11; x++) {
+        s.terrain[y * s.width + x] = claimed;
+        (s as unknown as { owner: number[] }).owner[y * s.width + x] = 1;
+      }
+    s.mapVersion++;
+    s.players[0]!.gold = 50000;
+    const send = (g.sandbox as unknown as { send(c: unknown): unknown }).send.bind(g.sandbox);
+    send({ type: 'buildRoom', room: 'library', rect: { x: 2, y: 11, w: 4, h: 1 } });
+    send({ type: 'buildRoom', room: 'library', rect: { x: 7, y: 11, w: 3, h: 1 } });
+    g.sandbox.advance(300);
+    (g as unknown as { camera: { targetX: number; targetZ: number } }).camera = {
+      ...(g as unknown as { camera: { targetX: number; targetZ: number } }).camera,
+      targetX: 9,
+      targetZ: 16,
+    };
+  });
+  await page.waitForTimeout(300);
+  await page.keyboard.press('5'); // Biblioteca
+  const at = (x: number, y: number) =>
+    page.evaluate(
+      ([tx, ty]) => (window as unknown as { __dm: DmHook }).__dm.tileToScreen(tx!, ty!),
+      [x, y] as const,
+    );
+  // El tile del hueco que une las dos bibliotecas (4 + 3 + 1 = 8): se paga como el tile n.º 8.
+  const gap = await at(6, 11);
+  await page.mouse.move(gap.x, gap.y);
+  await expect(page.locator('.buildtag')).toContainText('tile n.º 8');
+  await expect(page.locator('.buildtag')).toContainText('une 2 salas');
+  await expect(page.locator('.panel.rooms .btn.active .cost.live')).toContainText('896');
+  // Lejos de ambas, el precio vuelve a ser el del primer tile (250).
+  const far = await at(5, 17);
+  await page.mouse.move(far.x, far.y);
+  await expect(page.locator('.buildtag')).toContainText('precio base');
+  await expect(page.locator('.panel.rooms .btn.active .cost.live')).toContainText('250');
+  // Construirlo une las dos salas en una de nivel 8.
+  await page.mouse.move(gap.x, gap.y);
+  await page.mouse.down();
+  await page.mouse.up();
+  await fastForward(page, 1);
+  const levels = await page.evaluate(() =>
+    (window as unknown as { __dm: DmHook }).__dm.sandbox.state.rooms
+      .filter((r) => r.type === 'library')
+      .map((r) => r.tiles.length),
+  );
+  expect(levels).toEqual([8]);
+});

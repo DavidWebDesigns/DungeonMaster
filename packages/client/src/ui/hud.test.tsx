@@ -125,6 +125,28 @@ describe('buildHudModel', () => {
     expect(out).toContain('Cerditos 5/0');
   });
 
+  it('el botón de la sala que se coloca enseña el coste en vivo en vez del precio base', () => {
+    const sb = fresh();
+    const model = buildHudModel(sb.state, data, 1, { kind: 'build', room: 'library' }, []);
+    const plain = render(<Hud model={model} onTool={() => {}} />);
+    expect(plain).not.toContain('▸');
+    const live = render(
+      <Hud model={model} onTool={() => {}} liveCost={{ room: 'library', cost: 896, tone: 'ok' }} />,
+    );
+    expect(live).toContain('cost live ok');
+    expect(live).toContain('▸ 896');
+    // Solo cambia el botón de esa sala.
+    expect(live.match(/▸/g)).toHaveLength(1);
+    const poor = render(
+      <Hud
+        model={model}
+        onTool={() => {}}
+        liveCost={{ room: 'library', cost: 9999, tone: 'poor' }}
+      />,
+    );
+    expect(poor).toContain('cost live poor');
+  });
+
   it('avisa de Tesorería llena', () => {
     const sb = fresh();
     sb.state.players[0]!.gold = 9000;

@@ -21,6 +21,8 @@ export interface HudProps {
   speedLabel?: string;
   /** Línea de información de salas: lo que se va a construir o la sala bajo el cursor. */
   infoLine?: string;
+  /** Coste en vivo de lo que se va a construir bajo el cursor: el botón de esa sala lo enseña en vez del precio base. */
+  liveCost?: { room: string; cost: number; tone: 'ok' | 'poor' } | null;
 }
 
 const fmt = (n: number) => n.toLocaleString('es');
@@ -52,6 +54,7 @@ export function Hud({
   endStats,
   speedLabel,
   infoLine,
+  liveCost,
 }: HudProps) {
   return (
     <div class="hud">
@@ -222,7 +225,16 @@ export function Hud({
               onClick={() => onTool({ kind: 'build', room: r.id })}
             >
               <span class="name">{r.name}</span>
-              <span class="cost">{r.available ? fmt(r.minCost) : `🔒 ${r.requires}`}</span>
+              {r.available && liveCost?.room === r.id ? (
+                <span
+                  class={`cost live ${liveCost.tone}`}
+                  title="Coste de lo que vas a colocar bajo el cursor"
+                >
+                  ▸ {fmt(liveCost.cost)}
+                </span>
+              ) : (
+                <span class="cost">{r.available ? fmt(r.minCost) : `🔒 ${r.requires}`}</span>
+              )}
               <kbd>{r.hotkey}</kbd>
             </button>
           ))}

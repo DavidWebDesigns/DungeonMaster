@@ -3,6 +3,7 @@ import {
   activityLabel,
   CREATURE_LOOKS,
   hpColor,
+  creatureBarOf,
   hpFraction,
   impActivityLabel,
   moodCloudOf,
@@ -96,5 +97,20 @@ describe('impActivityLabel', () => {
     expect(impActivityLabel({ ...base, goal: 'haul' }, 10)).toBe('Lleva oro a la Tesorería');
     expect(impActivityLabel({ ...base, goal: 'task', mode: 'working' }, 10)).toBe('Trabajando');
     expect(impActivityLabel({ ...base, goal: 'task', mode: 'moving' }, 10)).toBe('Va a trabajar');
+  });
+});
+
+describe('creatureBarOf', () => {
+  it('las propias solo enseñan la barra si están heridas y sin marco', () => {
+    expect(creatureBarOf(1, 1, 1)).toEqual({ show: false, frame: null });
+    expect(creatureBarOf(1, 1, 0.6)).toEqual({ show: true, frame: null });
+  });
+
+  it('las enemigas siempre la llevan, con un marco del color de su dueño', () => {
+    const full = creatureBarOf(2, 1, 1);
+    expect(full.show).toBe(true);
+    expect(full.frame).toEqual(playerColor(2));
+    expect(creatureBarOf(3, 1, 0.3).frame).toEqual(playerColor(3));
+    expect(creatureBarOf(2, 1, 1).frame).not.toEqual(creatureBarOf(3, 1, 1).frame);
   });
 });

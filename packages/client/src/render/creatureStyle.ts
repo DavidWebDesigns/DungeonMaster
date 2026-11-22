@@ -157,6 +157,22 @@ export interface OwnerMark {
   color: RGB;
 }
 
+export interface CreatureBar {
+  /** Se dibuja la barra de vida. */
+  show: boolean;
+  /** Color del marco de la barra (el del jugador dueño); `null` = sin marco. */
+  frame: RGB | null;
+}
+
+/**
+ * Barra de vida de una criatura: las propias solo la enseñan si están heridas y sin marco; las enemigas la llevan siempre,
+ * con un marco del color del jugador al que pertenecen, para saber de quién es de un vistazo.
+ */
+export function creatureBarOf(owner: number, localPlayer: number, hpFrac: number): CreatureBar {
+  const enemy = owner !== localPlayer;
+  return { show: enemy || hpFrac < 1, frame: enemy ? playerColor(owner) : null };
+}
+
 /** Símbolo distintivo de las unidades enemigas: solo las que no son del jugador local. */
 export function ownerMarkOf(owner: number, localPlayer: number): OwnerMark {
   return { show: owner !== localPlayer, color: playerColor(owner) };

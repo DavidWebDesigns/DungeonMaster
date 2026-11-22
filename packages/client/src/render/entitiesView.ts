@@ -26,6 +26,7 @@ import {
   lookOf,
   moodCloudOf,
   moodIconOf,
+  creatureBarOf,
   ownerMarkOf,
   trapLookOf,
 } from './creatureStyle';
@@ -61,6 +62,8 @@ interface CreatureMesh {
   moodMat: StandardMaterial;
   /** Símbolo de enemigo (solo en las unidades rivales). */
   mark?: Mesh;
+  /** Marco de la barra de vida con el color del dueño (solo en las criaturas rivales). */
+  frame?: Mesh;
   height: number;
 }
 
@@ -281,7 +284,28 @@ export class EntitiesView {
     barBack.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
     barBack.parent = body;
     barBack.position.y = look.height / 2 + 0.12 * S;
+    barBack.renderingGroupId = 2;
     barBack.isPickable = false;
+    // Las criaturas rivales llevan la barra dentro de un marco del color de su dueño.
+    let frame: Mesh | undefined;
+    const bar = creatureBarOf(owner, localPlayer, 1);
+    if (bar.frame) {
+      const pad = 0.05 * S;
+      frame = CreatePlane(
+        `barFrame${id}`,
+        { width: 0.7 * S + pad * 2, height: 0.08 * S + pad * 2 },
+        this.scene,
+      );
+      const frameMat = new StandardMaterial(`barFrameMat${id}`, this.scene);
+      frameMat.disableLighting = true;
+      frameMat.emissiveColor = new Color3(...bar.frame);
+      frame.material = frameMat;
+      frame.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
+      frame.parent = body;
+      frame.position.y = look.height / 2 + 0.12 * S;
+      frame.renderingGroupId = 1;
+      frame.isPickable = false;
+    }
     const fillMat = new StandardMaterial(`barFillMat${id}`, this.scene);
     fillMat.disableLighting = true;
     const barFill = CreatePlane(`barFill${id}`, { width: 0.7 * S, height: 0.08 * S }, this.scene);
@@ -289,12 +313,12 @@ export class EntitiesView {
     barFill.billboardMode = BabylonMesh.BILLBOARDMODE_ALL;
     barFill.parent = body;
     barFill.position.y = look.height / 2 + 0.12 * S;
-    barFill.renderingGroupId = 1;
+    barFill.renderingGroupId = 3;
     barFill.isPickable = false;
     const mark = ownerMarkOf(owner, localPlayer).show
       ? this.makeEnemyMark(`enemyMark${id}`, owner, body, look.height / 2 + 0.55 * S)
       : undefined;
-    return { body, mood, barBack, barFill, fillMat, moodMat, mark, height: look.height };
+    return { body, mood, barBack, barFill, fillMat, moodMat, mark, frame, height: look.height };
   }
 
   /** Criaturas: cápsulas de color por tipo con barra de vida (si están heridas) e icono de ánimo. */
@@ -350,9 +374,11 @@ export class EntitiesView {
         );
       }
       const frac = hpFraction(c, creatureMaxHp(rules, c));
-      m.barBack.setEnabled(frac < 1);
-      m.barFill.setEnabled(frac < 1);
-      if (frac < 1) {
+      const bar = creatureBarOf(c.owner, localPlayer, frac);
+      m.barBack.setEnabled(bar.show);
+      m.barFill.setEnabled(bar.show);
+      m.frame?.setEnabled(bar.show);
+      if (bar.show) {
         m.barFill.scaling.x = Math.max(0.001, frac);
         m.barFill.position.x = -0.35 * S * (1 - frac);
         const col = hpColor(frac);
@@ -373,6 +399,7 @@ export class EntitiesView {
           m.mood.setEnabled(false);
           m.barBack.setEnabled(false);
           m.barFill.setEnabled(false);
+          m.frame?.setEnabled(false);
           m.mark?.setEnabled(false);
           this.dying.push({ mesh: m, born: timeSeconds });
         } else m.body.dispose(false, true);

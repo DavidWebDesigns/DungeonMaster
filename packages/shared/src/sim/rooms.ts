@@ -42,21 +42,6 @@ export function maxRoomLevel(state: MatchState, owner: number, type: string): nu
   return best;
 }
 
-/** Hace crecer `tiles` con el tile del `pool` de menor índice que toque a la sala, hasta `max`. Conserva la conexión. */
-function growInto(state: MatchState, tiles: number[], pool: Set<number>, max: number): boolean {
-  let grew = false;
-  while (tiles.length < max) {
-    let best = -1;
-    for (const t of tiles)
-      for (const n of neighbors4(state, t)) if (pool.has(n) && (best < 0 || n < best)) best = n;
-    if (best < 0) break;
-    tiles.push(best);
-    pool.delete(best);
-    grew = true;
-  }
-  return grew;
-}
-
 /** Componentes conexos (4 vecinos) de un conjunto de tiles, cada uno ordenado, por orden de su tile menor. */
 function components(state: MatchState, tiles: readonly number[]): number[][] {
   const left = new Set(tiles);
@@ -118,18 +103,36 @@ export function removeRoomTile(state: MatchState, rules: Rules, tile: number): v
   if (owner) clampGold(state, rules, owner);
 }
 
-/** Una sala resultante de construir: una existente que se amplía (`roomId`) o una nueva (`null`), con todos sus tiles. */
+/**
+ * Una sala resultante de construir. `roomId` es la sala existente que sobrevive (la de menor id si se unen varias) o
+ * `null` si es nueva; `absorbs` son las otras salas existentes que se unen a ella y desaparecen. Solo salen las salas que
+ * reciben tiles nuevos.
+ */
 export interface RoomPiece {
   roomId: number | null;
+  /** Ids de las demás salas existentes que se fusionan en esta. */
+  absorbs: number[];
   /** Tiles finales de la sala, ordenados. El nivel es `tiles.length`. */
   tiles: number[];
+  /** Los tiles que se colocan ahora en esta sala. */
+  newTiles: number[];
+  /** Oro que cuestan esos tiles nuevos (cada uno, al precio de su número dentro de la sala ya unida). */
+  cost: number;
 }
 
 /**
- * Cómo se repartirá un rectángulo al construirlo (sin tocar el estado): primero se rellenan las salas vecinas del
- * mismo tipo y dueño que no estén llenas (por orden de id) y lo que sobra forma salas nuevas de hasta `maxTiles`
- * tiles, empezando por el tile de menor índice. Solo depende de los índices de tile y de los ids, así que es
- * determinista. La simulación (`buildRoomNow`) y la vista previa del cliente usan esta misma función.
+ * Cómo se repartirá un rectángulo al construirlo (sin tocar el estado). Los tiles se colocan de uno en uno, siempre el de
+ * menor índice entre los que tocan alguna sala (o, si ninguno toca, el de menor índice):
+ *
+ * - Si toca una o varias salas del mismo tipo y dueño que aún no están llenas (menos de `maxTiles`), **se unen todas en
+ *   una** junto con el tile, y el tile se paga al precio de su número dentro de la sala resultante (el total de tiles
+ *   conectados). Así, un tile que une dos salas de 4 y 3 cuesta como el tile n.º 8.
+ * - Si el total de tiles conectados pasaría de `maxTiles`, el tile abre una **sala nueva de nivel 1** (que puede quedar
+ *   pegada a otras). Las salas ya llenas no cuentan: no admiten más tiles.
+ * - Si no toca ninguna, abre una sala nueva.
+ *
+ * Solo depende de los índices de tile y de los ids, así que es determinista. La simulación (`buildRoomNow`) y la
+ * vista previa del cliente usan esta misma función.
  */
 export function planRoomBuild(
   state: MatchState,
@@ -139,35 +142,90 @@ export function planRoomBuild(
   rect: { x: number; y: number; w: number; h: number },
 ): RoomPiece[] {
   const max = roomMaxTiles(rules, type);
+  interface Group {
+    roomId: number | null;
+    absorbs: Set<number>;
+    tiles: number[];
+    newTiles: number[];
+    cost: number;
+  }
+  // Las claves positivas son ids de sala existentes; las negativas, salas nuevas de este reparto.
+  const groups = new Map<number, Group>();
+  const groupAt = new Map<number, number>();
+  for (const room of state.rooms) {
+    if (room.owner !== owner || room.type !== type) continue;
+    groups.set(room.id, {
+      roomId: room.id,
+      absorbs: new Set(),
+      tiles: [...room.tiles],
+      newTiles: [],
+      cost: 0,
+    });
+    for (const t of room.tiles) groupAt.set(t, room.id);
+  }
   const pool = new Set<number>();
   for (let y = rect.y; y < rect.y + rect.h; y++)
     for (let x = rect.x; x < rect.x + rect.w; x++) pool.add(y * state.width + x);
-  const grown = new Map<number, number[]>();
-  // 1. Rellenar las salas vecinas del mismo tipo (hasta que ninguna crezca más).
-  let changed = true;
-  while (changed && pool.size > 0) {
-    changed = false;
-    for (const room of state.rooms) {
-      if (room.owner !== owner || room.type !== type) continue;
-      const tiles = grown.get(room.id) ?? [...room.tiles];
-      if (tiles.length >= max) continue;
-      if (growInto(state, tiles, pool, max)) {
-        changed = true;
-        grown.set(room.id, tiles);
-      }
+  const keysAround = (tile: number): number[] => {
+    const keys = new Set<number>();
+    for (const n of neighbors4(state, tile)) {
+      const k = groupAt.get(n);
+      if (k !== undefined) keys.add(k);
     }
-  }
-  const out: RoomPiece[] = [...grown].map(([roomId, tiles]) => ({
-    roomId,
-    tiles: tiles.sort((a, b) => a - b),
-  }));
-  // 2. Lo que sobra: salas nuevas de hasta `max` tiles conectados.
+    return [...keys];
+  };
+  let nextKey = -1;
   while (pool.size > 0) {
-    const seed = Math.min(...pool);
-    pool.delete(seed);
-    const tiles = [seed];
-    growInto(state, tiles, pool, max);
-    out.push({ roomId: null, tiles: tiles.sort((a, b) => a - b) });
+    let pick = -1;
+    for (const t of pool) if ((pick < 0 || t < pick) && keysAround(t).length > 0) pick = t;
+    if (pick < 0) for (const t of pool) if (pick < 0 || t < pick) pick = t;
+    pool.delete(pick);
+    const open = keysAround(pick).filter((k) => (groups.get(k) as Group).tiles.length < max);
+    const total = 1 + open.reduce((n, k) => n + (groups.get(k) as Group).tiles.length, 0);
+    if (open.length === 0 || total > max) {
+      const key = nextKey--;
+      groups.set(key, {
+        roomId: null,
+        absorbs: new Set(),
+        tiles: [pick],
+        newTiles: [pick],
+        cost: roomTileCost(rules, type, 1),
+      });
+      groupAt.set(pick, key);
+      continue;
+    }
+    // Sobrevive la sala existente de menor id; si todas son nuevas, la más antigua del reparto.
+    const existing = open.filter((k) => k > 0).sort((a, b) => a - b);
+    const survivorKey = existing.length > 0 ? (existing[0] as number) : Math.max(...open);
+    const survivor = groups.get(survivorKey) as Group;
+    for (const k of open) {
+      if (k === survivorKey) continue;
+      const g = groups.get(k) as Group;
+      survivor.tiles.push(...g.tiles);
+      survivor.newTiles.push(...g.newTiles);
+      survivor.cost += g.cost;
+      if (g.roomId !== null) survivor.absorbs.add(g.roomId);
+      for (const id of g.absorbs) survivor.absorbs.add(id);
+      for (const t of g.tiles) groupAt.set(t, survivorKey);
+      groups.delete(k);
+    }
+    survivor.cost += roomTileCost(rules, type, total);
+    survivor.tiles.push(pick);
+    survivor.newTiles.push(pick);
+    groupAt.set(pick, survivorKey);
+  }
+  const out: RoomPiece[] = [];
+  const keys = [...groups.keys()].sort((a, b) => (a > 0 && b > 0 ? a - b : b - a));
+  for (const k of keys) {
+    const g = groups.get(k) as Group;
+    if (g.newTiles.length === 0) continue;
+    out.push({
+      roomId: g.roomId,
+      absorbs: [...g.absorbs].sort((a, b) => a - b),
+      tiles: g.tiles.sort((a, b) => a - b),
+      newTiles: g.newTiles.sort((a, b) => a - b),
+      cost: g.cost,
+    });
   }
   return out;
 }
@@ -193,19 +251,9 @@ export function roomCostRange(rules: Rules, type: string, from: number, to: numb
   return sum;
 }
 
-/** Coste total de un reparto (`planRoomBuild`): cada sala resultante paga desde su tamaño actual hasta el final. */
-export function planCost(
-  state: MatchState,
-  rules: Rules,
-  type: string,
-  pieces: RoomPiece[],
-): number {
-  let sum = 0;
-  for (const p of pieces) {
-    const before = p.roomId === null ? 0 : (getRoom(state, p.roomId)?.tiles.length ?? 0);
-    sum += roomCostRange(rules, type, before, p.tiles.length);
-  }
-  return sum;
+/** Coste total de un reparto (`planRoomBuild`): la suma de lo que cuesta cada tile nuevo en su sala. */
+export function planCost(pieces: readonly RoomPiece[]): number {
+  return pieces.reduce((sum, p) => sum + p.cost, 0);
 }
 
 /** Lo que costaría construir este rectángulo ahora mismo (la misma cuenta que usa la simulación al cobrar). */
@@ -216,7 +264,7 @@ export function roomBuildCost(
   type: string,
   rect: { x: number; y: number; w: number; h: number },
 ): number {
-  return planCost(state, rules, type, planRoomBuild(state, rules, owner, type, rect));
+  return planCost(planRoomBuild(state, rules, owner, type, rect));
 }
 
 /** Lo que vale una sala hoy (para la devolución al venderla): sus tiles pagados con el precio incremental. */
@@ -239,7 +287,7 @@ export function buildRoomNow(
   const def = rules.roomDefs[type];
   if (!def) return;
   const plan = planRoomBuild(state, rules, player.id, type, rect);
-  player.gold -= planCost(state, rules, type, plan);
+  player.gold -= planCost(plan);
   const touched: number[] = [];
   for (const piece of plan) {
     let room = piece.roomId === null ? undefined : getRoom(state, piece.roomId);
@@ -256,6 +304,16 @@ export function buildRoomNow(
       };
       state.rooms.push(room);
     }
+    // Las salas que se unen desaparecen: sus pollos, cerditos y quien las usaba pasan a la que sobrevive.
+    for (const id of piece.absorbs) {
+      const gone = getRoom(state, id);
+      if (!gone) continue;
+      room.stock += gone.stock;
+      room.piglets += gone.piglets;
+      for (const c of state.creatures) if (c.targetRoom === id) c.targetRoom = room.id;
+    }
+    if (piece.absorbs.length > 0)
+      state.rooms = state.rooms.filter((r) => !piece.absorbs.includes(r.id));
     room.tiles = piece.tiles;
     for (const t of room.tiles) state.roomAt[t] = room.id;
     touched.push(room.id);

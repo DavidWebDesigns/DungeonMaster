@@ -362,7 +362,12 @@ export class Game {
     const armed = state.tick < this.surrenderArmedUntil;
     const speed = speedLabel(this.sandbox.paused, this.sandbox.speed);
     const info = this.roomInfoLine();
-    const key = `${speed}|${info}|${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
+    const live = this.liveBuild();
+    const liveCost =
+      live && live.tag.tone !== 'invalid'
+        ? { room: live.room, cost: live.cost, tone: live.tag.tone }
+        : null;
+    const key = `${speed}|${info}|${liveCost?.cost ?? ''}|${liveCost?.tone ?? ''}|${state.tick}|${JSON.stringify(this.input.tool)}|${this.notices.latest()?.tick ?? ''}|${armed}`;
     if (key === this.hudKey) return;
     this.hudKey = key;
     const model = buildHudModel(
@@ -383,6 +388,7 @@ export class Game {
         surrenderArmed: armed,
         speedLabel: speed,
         infoLine: info,
+        liveCost,
         onSurrender: () => this.surrender(),
         onRestart: () => window.location.reload(),
         // Clic en la lista: la recoge (solo las propias; la simulación también lo exige).
@@ -560,23 +566,32 @@ export class Game {
     this.say(this.audio.muted ? 'Sonido desactivado (M para activarlo).' : 'Sonido activado.');
   }
 
-  /** Coste en vivo junto al cursor mientras se elige dónde construir una sala (también donde no se puede). */
-  private updateBuildTag(): void {
+  /** Lo que se va a construir bajo el cursor (etiqueta y coste), o null si no se está eligiendo sitio para una sala. */
+  private liveBuild() {
     const tool = this.input.tool;
-    const mouse = this.dom.cameraInput().mouse;
     const preview = tool.kind === 'build' ? this.input.preview() : null;
-    if (!preview || preview.kind !== 'room' || !mouse) {
-      this.buildTag.style.display = 'none';
-      return;
-    }
+    if (!preview || preview.kind !== 'room') return null;
     const me = this.sandbox.state.players.find((p) => p.id === this.me);
+    const room = (tool as { room: string }).room;
     const tag = roomCostTag(
       this.data,
       preview.room,
-      (tool as { room: string }).room,
+      room,
       me?.gold ?? 0,
       errorMessage(preview.room.error ?? 'INVALID_TARGET'),
     );
+    return { room, tag, cost: preview.room.cost };
+  }
+
+  /** Coste en vivo junto al cursor mientras se elige dónde construir una sala (también donde no se puede). */
+  private updateBuildTag(): void {
+    const mouse = this.dom.cameraInput().mouse;
+    const live = this.liveBuild();
+    if (!live || !mouse) {
+      this.buildTag.style.display = 'none';
+      return;
+    }
+    const tag = live.tag;
     const r = this.renderer.canvas.getBoundingClientRect();
     this.buildTag.textContent = tag.text;
     this.buildTag.className = `buildtag ${tag.tone}`;

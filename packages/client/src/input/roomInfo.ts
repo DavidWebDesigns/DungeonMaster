@@ -15,7 +15,11 @@ export function roomPreviewText(preview: RoomPreview, roomName: string): string 
     (a, b) => b.level - a.level || Number(b.extends) - Number(a.extends),
   );
   const parts = ordered.map((p) =>
-    p.extends ? `amplía una sala a nivel ${p.level}` : `sala nueva de nivel ${p.level}`,
+    p.merged >= 2
+      ? `une ${p.merged} salas en una de nivel ${p.level}`
+      : p.extends
+        ? `amplía una sala a nivel ${p.level}`
+        : `sala nueva de nivel ${p.level}`,
   );
   return `${roomName}: ${parts.join(' + ')} · ${fmt(preview.cost)} de oro`;
 }
@@ -64,7 +68,12 @@ export function roomCostTag(
     const price = roomTileCost(rulesOf(data), roomId, piece.level);
     const percent = Math.round((price / Math.max(1, def.goldPerTile) - 1) * 100);
     const rise = percent > 0 ? `+${percent} % sobre el precio base` : 'precio base';
-    const where = piece.extends ? `amplía la sala a nivel ${piece.level}` : 'sala nueva de nivel 1';
+    const where =
+      piece.merged >= 2
+        ? `une ${piece.merged} salas: nivel ${piece.level}`
+        : piece.extends
+          ? `amplía la sala a nivel ${piece.level}`
+          : 'sala nueva de nivel 1';
     return {
       tone,
       text: `${name} · tile n.º ${piece.level}: ${fmt(price)} de oro (${rise}) · ${where}${missing}`,

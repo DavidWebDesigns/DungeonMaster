@@ -454,3 +454,12 @@
 .locate:hover {
   background: #3a2d47;
 }
+
+/* Coste en vivo en el botón de la sala que se está colocando. */
+.btn .cost.live {
+  font-weight: 800;
+  color: #8fe6a3;
+}
+.btn .cost.live.poor {
+  color: #ffcf7a;
+}

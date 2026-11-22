@@ -150,6 +150,54 @@ describe('etiqueta de coste en vivo', () => {
     expect(far.text).toContain('precio base');
   });
 
+  it('el tile que conecta dos salas separadas cuesta sobre el total de tiles conectados y lo dice', () => {
+    const sb = world();
+    applyCommand(sb.state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 2, y: 11, w: 4, h: 1 },
+    });
+    applyCommand(sb.state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 7, y: 11, w: 3, h: 1 },
+    });
+    step(sb.state, data);
+    // 4 + 3 + el tile del hueco = 8: se paga como el tile n.º 8 (250 × 1,2⁷ ≈ 896).
+    const t = tag(sb, 'library', { x: 6, y: 11, w: 1, h: 1 });
+    expect(t.text).toContain('tile n.º 8');
+    expect(t.text).toContain('une 2 salas: nivel 8');
+    expect(t.text).toContain('896');
+    const preview = previewRoom(sb.state, data, 1, 'library', { x: 6, y: 11, w: 1, h: 1 });
+    expect(preview.pieces).toHaveLength(1);
+    expect(preview.pieces[0]).toMatchObject({ level: 8, merged: 2, newTiles: 1, cost: 896 });
+    expect(roomPreviewText(preview, 'Biblioteca')).toContain('une 2 salas en una de nivel 8');
+  });
+
+  it('si pasaría de 10 tiles conectados, el tile abre una sala nueva de nivel 1 y cuesta el precio base', () => {
+    const sb = world();
+    applyCommand(sb.state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 2, y: 11, w: 6, h: 1 },
+    });
+    applyCommand(sb.state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 9, y: 11, w: 2, h: 2 },
+    });
+    applyCommand(sb.state, data, 1, {
+      type: 'buildRoom',
+      room: 'library',
+      rect: { x: 9, y: 13, w: 1, h: 1 },
+    });
+    step(sb.state, data);
+    const t = tag(sb, 'library', { x: 8, y: 11, w: 1, h: 1 });
+    expect(t.text).toContain('tile n.º 1');
+    expect(t.text).toContain('precio base');
+    expect(t.text).toContain('sala nueva de nivel 1');
+  });
+
   it('con poco oro avisa de cuánto falta; en un sitio inválido, por qué', () => {
     const sb = world();
     sb.state.players[0]!.gold = 100;

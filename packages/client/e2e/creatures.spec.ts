@@ -329,3 +329,39 @@ test('el Criadero muestra sus cerditos: chip en el HUD y bolitas en el mapa', as
   expect(hasPig).toBe(true);
   await page.screenshot({ path: 'test-results/piglets.png' });
 });
+
+test('las criaturas enemigas llevan la barra de vida con un marco del color de su dueño y las propias no', async ({
+  page,
+}) => {
+  await buildLair(page);
+  await advance(page, 61);
+  const ids = await page.evaluate(() => {
+    const st = dm().sandbox.state;
+    const mine = st.creatures[0]!;
+    mine.x = 6.5;
+    mine.y = 6.5;
+    // Una criatura del jugador 2 con la vida llena, a la vista.
+    const enemy = { ...mine, id: 7777, owner: 2, x: 8.5, y: 6.5 };
+    (st.creatures as unknown[]).push(enemy);
+    return { mine: mine.id, enemy: 7777 };
+  });
+  await page.waitForTimeout(500);
+  const meshes = await page.evaluate((i) => {
+    const scene = (
+      dm() as unknown as {
+        renderer: { scene: { getMeshByName(n: string): { isEnabled(): boolean } | null } };
+      }
+    ).renderer.scene;
+    return {
+      enemyFrame: scene.getMeshByName(`barFrame${i.enemy}`)?.isEnabled() ?? null,
+      enemyBar: scene.getMeshByName(`barBack${i.enemy}`)?.isEnabled() ?? null,
+      myFrame: scene.getMeshByName(`barFrame${i.mine}`),
+      myBar: scene.getMeshByName(`barBack${i.mine}`)?.isEnabled() ?? null,
+    };
+  }, ids);
+  expect(meshes.enemyFrame).toBe(true);
+  expect(meshes.enemyBar).toBe(true); // siempre, aunque tenga la vida llena
+  expect(meshes.myFrame).toBeNull(); // las propias no llevan marco
+  expect(meshes.myBar).toBe(false); // y solo enseñan la barra si están heridas
+  await page.screenshot({ path: 'test-results/enemybar.png' });
+});

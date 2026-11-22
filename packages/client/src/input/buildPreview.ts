@@ -72,6 +72,11 @@ export interface RoomPiece {
   level: number;
   /** Amplía una sala que ya existía en vez de abrir una nueva. */
   extends: boolean;
+  /** Salas existentes que quedan unidas en esta (2 o más = el tile conecta salas separadas). */
+  merged: number;
+  /** Tiles que se colocan ahora en esta sala y lo que cuestan. */
+  newTiles: number;
+  cost: number;
 }
 
 export function previewRoom(
@@ -84,12 +89,16 @@ export function previewRoom(
   const rules = rulesOf(data);
   // Se calcula siempre (también sin oro o en un sitio inválido): es lo que se enseña como coste.
   const plan = planRoomBuild(state, rules, playerId, room, rect);
-  const cost = planCost(state, rules, room, plan);
+  const cost = planCost(plan);
   const res = previewCommand(state, data, playerId, { type: 'buildRoom', room, rect });
   const pieces = plan.map((p) => ({
     tiles: p.tiles,
     level: p.tiles.length,
     extends: p.roomId !== null,
+    // Salas que ya existían y quedan unidas en esta (0 = sala nueva, 1 = se amplía una, 2 o más = se conectan).
+    merged: (p.roomId !== null ? 1 : 0) + p.absorbs.length,
+    newTiles: p.newTiles.length,
+    cost: p.cost,
   }));
   // Sin oro el sitio es bueno: se enseña igual cómo quedaría (niveles y coste) para que se vea cuánto falta.
   if (!res.ok)
